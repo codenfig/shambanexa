@@ -1,0 +1,115 @@
+:host { display: block; width: 100%; height: fit-content; align-self: start; }
+.map-frame {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #6ea3b2;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 18px 40px rgba(16, 48, 36, 0.1);
+}
+.map-frame.picking svg { cursor: crosshair; }
+svg {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  transform-origin: center center;
+  font-family: inherit;
+}
+.sea { pointer-events: none; }
+.grid { stroke: rgba(14, 52, 58, 0.62); stroke-width: 1.05; stroke-dasharray: 8 6; stroke-linecap: round; pointer-events: none; }
+.grid-label {
+  fill: #123c44;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.region-fill, .districts, .regions, .lakes { pointer-events: none; }
+.region-fill path { fill: rgba(255, 255, 255, 0.14); stroke: none; }
+.districts path {
+  fill: none;
+  stroke: rgba(20, 62, 42, 0.55);
+  stroke-width: 0.35;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.lakes path {
+  stroke: rgba(70, 130, 148, 0.85);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+.regions path {
+  fill: none;
+  stroke: #1b4a30;
+  stroke-width: 1.35;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.land-shadow { fill: #0e3b28; pointer-events: none; }
+.land, .land-light, .coast { pointer-events: none; }
+.coast { fill: none; stroke: #1a5434; stroke-width: 1.5; stroke-linejoin: round; }
+.boundary, .sketch, .corner { pointer-events: none; }
+.boundary { fill: rgba(22, 101, 52, 0.28); stroke: #14532d; stroke-width: 1.5; stroke-linejoin: round; }
+.sketch { fill: rgba(193, 154, 58, 0.34); stroke: #8d6b22; stroke-width: 1.7; stroke-linejoin: round; }
+.corner { fill: #fffef8; stroke: #8d6b22; stroke-width: 1.4; }
+.marker { cursor: pointer; }
+.marker .ping {
+  fill: none;
+  stroke: #1f8a45;
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ping 2.8s ease-out infinite;
+  pointer-events: none;
+}
+.marker .halo { fill: rgba(255, 255, 255, 0.42); pointer-events: none; }
+.marker .core { fill: #1f8a45; stroke: #fff; stroke-width: 2; }
+.marker .glint { fill: rgba(255, 255, 255, 0.72); pointer-events: none; }
+.marker .chip { fill: rgba(255, 254, 248, 0.94); stroke: rgba(22, 60, 32, 0.1); stroke-width: 1; }
+.marker text {
+  fill: #163024;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}
+.marker.tone-warn .ping { stroke: #c4921c; }
+.marker.tone-warn .core { fill: #d4a72c; }
+.marker.tone-alert .ping { stroke: #c2412d; }
+.marker.tone-alert .core { fill: #d64545; }
+.marker .notice { fill: #b42318; stroke: #fff; stroke-width: 1; pointer-events: none; }
+.marker text.notice-label { fill: #fff; font-size: 10px; font-weight: 800; }
+.marker.selected .core { stroke: #14532d; stroke-width: 2.6; }
+.marker.selected .chip { stroke: #166534; stroke-width: 1.4; }
+.marker.chosen .core { fill: #c19a3a; }
+.place {
+  fill: rgba(28, 68, 74, 0.55);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.compass, .scale { pointer-events: none; }
+.compass circle { fill: rgba(255, 254, 248, 0.88); stroke: rgba(22, 60, 32, 0.12); }
+.compass polygon { fill: #166534; }
+.compass text { fill: #163024; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; }
+.scale line { stroke: #163024; stroke-width: 1.6; stroke-linecap: round; }
+.scale-label { fill: #163024; font-size: 11px; font-weight: 800; }
+:host.fill svg { width: 100%; max-width: none; }
+.callout { pointer-events: none; }
+.callout rect { fill: rgba(255, 254, 248, 0.96); stroke: rgba(22, 101, 52, 0.12); }
+.callout .accent { fill: #166534; stroke: none; }
+.callout .accent.warn { fill: #c4921c; }
+.callout .accent.alert { fill: #b42318; }
+.callout text { fill: #5d6b63; font-size: 12px; font-weight: 700; }
+.callout text.title { fill: #142018; font-size: 13px; font-weight: 800; }
+.marker:focus { outline: none; }
+.marker:focus .core { stroke: #14532d; stroke-width: 2.8; }
+.notice { margin: 8px 0 0; color: #8d6b22; font-size: 13px; font-weight: 700; }
+
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  75%, 100% { transform: scale(2.35); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marker .ping { animation: none; opacity: 0; }
+}

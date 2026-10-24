@@ -1,0 +1,137 @@
+<app-page-header title="Staff" description="People assigned to farms in your scope, and the open tasks recorded for them." />
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading staff"><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (loadError()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="reload()">Retry</button>
+  </div>
+} @else {
+  <div class="grid-2">
+    <article class="card" id="people">
+      <h2>People</h2>
+      @if (people().length === 0) {
+        <p class="empty-state">No records found.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Role</th><th>Farm</th><th>Phone</th><th>Status</th></tr></thead>
+            <tbody>
+              @for (person of people(); track person.id) {
+                <tr>
+                  <td>{{ person.fullName }}</td>
+                  <td>{{ person.roleTitle }}</td>
+                  <td>{{ person.farmName }}</td>
+                  <td>{{ person.phone || '—' }}</td>
+                  <td>{{ person.status }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+    <div class="stack">
+      <form class="entry" id="add" [formGroup]="form" (ngSubmit)="submit()">
+        <header class="entry-head">
+          <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="2.2"/><path d="M4 18c.7-2.4 2.2-3.4 5-3.4s4.3 1 5 3.4"/><path d="M16 8v6M13 11h6"/></svg></span>
+          <div>
+            <h2>Invite Staff</h2>
+            <p>Record a staff member on a farm you can access.</p>
+          </div>
+        </header>
+        <div class="entry-grid">
+          <label>Full name <em>*</em><input formControlName="fullName" placeholder="Full name"></label>
+          <label>Role <em>*</em><input formControlName="roleTitle" placeholder="Role title"></label>
+          <label>Farm <em>*</em>
+            <select formControlName="farmId">
+              @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+            </select>
+          </label>
+          <label>Phone<input formControlName="phone" placeholder="Phone number"></label>
+        </div>
+        @if (error()) { <div class="error">{{ error() }}</div> }
+        <div class="entry-foot">
+          <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Save Staff' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <article class="card" id="assignments" style="margin-top:14px">
+    <h2>Assignments</h2>
+    @if (people().length === 0) {
+      <p class="empty-state">No staff are assigned to a farm.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Person</th><th>Role</th><th>Farm</th><th>Status</th></tr></thead>
+          <tbody>
+            @for (person of people(); track person.id) {
+              <tr>
+                <td>{{ person.fullName }}</td>
+                <td>{{ person.roleTitle }}</td>
+                <td>{{ person.farmName }}</td>
+                <td>{{ person.status }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+
+  <article class="card" id="my-tasks" style="margin-top:14px">
+    <h2>My tasks</h2>
+    @for (task of myTasks(); track task.id) {
+      <p><strong>{{ task.title }}</strong><br><span class="muted">{{ task.farmName }} · due {{ task.dueOn }} · {{ task.assigneeName }}</span></p>
+    } @empty { <p class="muted">No open task is assigned to {{ session()?.fullName || 'this account' }}.</p> }
+  </article>
+
+  <article class="card" id="tasks">
+    <h2>Tasks</h2>
+    <div class="board">
+      <section>
+        <h3>To do ({{ todoTasks().length }})</h3>
+        @for (task of todoTasks(); track task.id) {
+          <article>
+            <strong>{{ task.title }}</strong>
+            <span>{{ task.farmName }}</span>
+            <span>Due {{ task.dueOn }} · {{ task.assigneeName || 'Unassigned' }}</span>
+          </article>
+        } @empty { <p class="muted">None recorded.</p> }
+      </section>
+      <section>
+        <h3>In progress ({{ doingTasks().length }})</h3>
+        @for (task of doingTasks(); track task.id) {
+          <article>
+            <strong>{{ task.title }}</strong>
+            <span>{{ task.farmName }}</span>
+            <span>Due {{ task.dueOn }} · {{ task.assigneeName || 'Unassigned' }}</span>
+          </article>
+        } @empty { <p class="muted">None recorded.</p> }
+      </section>
+      <section>
+        <h3>Completed ({{ doneTasks().length }})</h3>
+        @for (task of doneTasks(); track task.id) {
+          <article>
+            <strong>{{ task.title }}</strong>
+            <span>{{ task.farmName }}</span>
+            <span>Due {{ task.dueOn }} · {{ task.assigneeName || 'Unassigned' }}</span>
+          </article>
+        } @empty { <p class="muted">None recorded.</p> }
+      </section>
+    </div>
+  </article>
+
+  <article class="card" id="calendar" style="margin-top:14px">
+    <h2>Task calendar</h2>
+    @for (day of taskDays(); track day[0]) {
+      <p><strong>{{ day[0] }}</strong></p>
+      @for (task of day[1]; track task.id) {
+        <p class="muted">{{ task.title }} · {{ task.assigneeName || 'Unassigned' }} · {{ task.farmName }}</p>
+      }
+    } @empty { <p class="muted">No dated tasks are recorded.</p> }
+  </article>
+}

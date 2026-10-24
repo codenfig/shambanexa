@@ -1,0 +1,242 @@
+<section class="directory">
+  <app-page-header [title]="pageTitle()" [description]="pageDescription()">
+    <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error() || filtered().length === 0">Export</button>
+    @if (canCreate() && !facilityView()) {
+      <a class="green-btn" routerLink="/farms/new">Add farm</a>
+    }
+  </app-page-header>
+
+  @if (loading()) {
+    <p class="state">Loading farms…</p>
+  } @else if (error()) {
+    <div class="state error-state">
+      <p>{{ error() }}</p>
+      <button class="green-btn" type="button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    @if (!facilityView()) {
+    <div class="summary">
+      <article>
+        <span>Total farms</span>
+        <strong>{{ fmt(summary().total) }}</strong>
+      </article>
+      <article>
+        <span>Active</span>
+        <strong>{{ fmt(summary().active) }}</strong>
+      </article>
+      <article>
+        <span>Regions</span>
+        <strong>{{ fmt(summary().regions) }}</strong>
+      </article>
+      <article>
+        <span>Animals</span>
+        <strong>{{ fmt(summary().animals) }}</strong>
+      </article>
+      <article>
+        <span>Inactive</span>
+        <strong>{{ fmt(summary().inactive) }}</strong>
+      </article>
+    </div>
+    }
+
+    @if (view() === 'facilities' || view() === 'types' || view() === 'maintenance') {
+      <article class="panel map-panel" style="margin-bottom:14px">
+        @if (facilitiesLoading()) {
+          <p>Loading facilities…</p>
+        } @else if (facilitiesError()) {
+          <p>{{ facilitiesError() }}</p>
+        } @else if (view() === 'types') {
+          <h2>Facility types</h2>
+          @if (facilityTypes().length === 0) {
+            <p class="meta">No facilities are recorded.</p>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Type</th><th>Facilities</th></tr></thead>
+                <tbody>
+                  @for (item of facilityTypes(); track item.type) {
+                    <tr><td>{{ item.type }}</td><td>{{ fmt(item.count) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else if (view() === 'maintenance') {
+          <h2>Maintenance</h2>
+          @if (maintenanceRows().length === 0) {
+            <p class="meta">Every recorded facility is active.</p>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Facility</th><th>Farm</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (item of maintenanceRows(); track item.id) {
+                    <tr><td>{{ item.name }}</td><td>{{ item.farmName }}</td><td>{{ item.facilityType }}</td><td>{{ item.status }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else {
+          <div class="summary" style="margin-bottom:14px">
+            <article><span>Facilities</span><strong>{{ fmt(facilityRows().length) }}</strong></article>
+            <article><span>Types</span><strong>{{ fmt(facilityTypes().length) }}</strong></article>
+            <article><span>Needs attention</span><strong>{{ fmt(maintenanceRows().length) }}</strong></article>
+            <article><span>Farms</span><strong>{{ fmt(summary().total) }}</strong></article>
+          </div>
+          <h2>All facilities</h2>
+          @if (facilityRows().length === 0) {
+            <p class="meta">No facilities are recorded.</p>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Facility</th><th>Farm</th><th>Type</th><th>Status</th><th>Capacity</th></tr></thead>
+                <tbody>
+                  @for (item of facilityRows(); track item.id) {
+                    <tr>
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.farmName }}</td>
+                      <td>{{ item.facilityType }}</td>
+                      <td>{{ item.status }}</td>
+                      <td>@if (item.capacity !== null) { {{ item.capacity }} {{ item.capacityUnit }} }</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      </article>
+    }
+
+    @if (!facilityView()) {
+    <div class="toolbar">
+      <label class="search-field">
+        <span class="sr">Search farms</span>
+        <input [ngModel]="query()" (ngModelChange)="setQuery($event)" placeholder="Search farms…" type="search">
+      </label>
+      <label>
+        <span class="sr">Region</span>
+        <select [ngModel]="region()" (ngModelChange)="setRegion($event)">
+          <option value="">All regions</option>
+          @for (item of regions(); track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span class="sr">Status</span>
+        <select [ngModel]="status()" (ngModelChange)="setStatus($event)">
+          <option value="">All statuses</option>
+          @for (item of statuses(); track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span class="sr">Sort</span>
+        <select [ngModel]="sort()" (ngModelChange)="setSort($event)">
+          <option value="name">Sort by name</option>
+          <option value="region">Sort by region</option>
+          <option value="animals">Sort by animals</option>
+          <option value="facilities">Sort by facilities</option>
+          <option value="status">Sort by status</option>
+        </select>
+      </label>
+      <button class="text-btn" type="button" (click)="reset()">Reset</button>
+    </div>
+
+    <div class="workspace">
+      <article class="panel">
+        @if (filtered().length === 0) {
+          <div class="empty">
+            <h2>No farms found.</h2>
+            <p>Try another search, or reset the filters to see every farm you can access.</p>
+          </div>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Farm</th>
+                  <th>Location</th>
+                  <th>Manager</th>
+                  <th>Animals</th>
+                  <th>Facilities</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (farm of paged(); track farm.id) {
+                  <tr>
+                    <td>
+                      <a class="farm-name" [routerLink]="['/farms', farm.id]">{{ farm.name }}</a>
+                      <span class="meta">{{ farm.code }}</span>
+                    </td>
+                    <td>
+                      <span>{{ farm.region }}</span>
+                      <span class="meta">{{ farm.address }}</span>
+                    </td>
+                    <td>{{ farm.managerName || '—' }}</td>
+                    <td>{{ fmt(farm.animalCount) }}</td>
+                    <td>{{ farm.facilityCount }}</td>
+                    <td><span class="status-pill" [class]="'status-pill ' + statusClass(farm.status)">{{ farm.status }}</span></td>
+                    <td>{{ updatedLabel(farm) }}</td>
+                    <td class="actions">
+                      <a [routerLink]="['/farms', farm.id]">View</a>
+                      <a [routerLink]="['/farms', farm.id, 'edit']">Edit</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cards">
+            @for (farm of paged(); track farm.id) {
+              <article class="farm-tile">
+                <div class="tile-top">
+                  <div>
+                    <a [routerLink]="['/farms', farm.id]">{{ farm.name }}</a>
+                    <span class="meta">{{ farm.code }} · {{ farm.region }}</span>
+                  </div>
+                  <span class="status-pill" [class]="'status-pill ' + statusClass(farm.status)">{{ farm.status }}</span>
+                </div>
+                <p>{{ farm.address }}</p>
+                <p class="meta">{{ farm.managerName || 'No manager' }} · {{ fmt(farm.animalCount) }} animals · {{ farm.facilityCount }} facilities</p>
+                <div class="actions">
+                  <a [routerLink]="['/farms', farm.id]">View</a>
+                  <a [routerLink]="['/farms', farm.id, 'edit']">Edit</a>
+                </div>
+              </article>
+            }
+          </div>
+
+          <footer class="pager">
+            <span>{{ rangeLabel() }}</span>
+            <div>
+              <button type="button" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0">Previous</button>
+              @for (index of pages(); track index) {
+                <button type="button" [class.current]="index === visiblePage()" (click)="go(index)">{{ index + 1 }}</button>
+              }
+              <button type="button" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1">Next</button>
+            </div>
+          </footer>
+        }
+      </article>
+
+      <aside class="panel map-panel" id="locations">
+        <h2>Locations</h2>
+        <p class="meta">Each pin is plotted from the farm’s stored latitude and longitude. A red label is an open health alert.</p>
+        @if (filtered().length === 0) {
+          <p class="empty-map">No farms to place on the map.</p>
+        } @else {
+          <app-tanzania-map [pins]="mapPins()" [rings]="boundaries()" ariaLabel="Farm locations in Tanzania" />
+        }
+      </aside>
+    </div>
+    }
+  }
+</section>

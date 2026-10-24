@@ -1,0 +1,103 @@
+<a class="back" routerLink="/farms">← Farms</a>
+
+@if (loading()) {
+  <p class="state">Loading farm…</p>
+} @else if (error()) {
+  <div class="state">
+    <p>{{ error() }}</p>
+    <button class="green-btn" type="button" (click)="load()">Try again</button>
+  </div>
+} @else if (farm()) {
+  @if (farm(); as selected) {
+  <header class="detail-head">
+    <div>
+      <p class="eyebrow">{{ selected.region }} · {{ selected.code }}</p>
+      <div class="title-row">
+        <h1>{{ selected.name }}</h1>
+        <span class="status-pill" [class]="'status-pill ' + statusClass(selected.status)">{{ selected.status }}</span>
+      </div>
+      <p class="lead">{{ selected.address }}</p>
+    </div>
+    <div class="detail-actions">
+      <a class="ghost-btn" [routerLink]="['/livestock']" [queryParams]="{ farmId: selected.id }">Livestock</a>
+      <a class="green-btn" [routerLink]="['/farms', selected.id, 'edit']">Edit farm</a>
+    </div>
+  </header>
+
+  <div class="summary">
+    <article><span>Animals</span><strong>{{ fmt(selected.animalCount) }}</strong></article>
+    <article><span>Facilities</span><strong>{{ selected.facilityCount }}</strong></article>
+    <article><span>Established</span><strong class="text">{{ dateLabel(selected.establishedOn) }}</strong></article>
+    <article><span>Updated</span><strong class="text">{{ updatedLabel(selected.updatedAt) }}</strong></article>
+  </div>
+
+  <nav class="tabs" aria-label="Farm sections">
+    <button type="button" [class.on]="tab() === 'overview'" (click)="show('overview')">Overview</button>
+    <button type="button" [class.on]="tab() === 'location'" (click)="show('location')">Location</button>
+    <button type="button" [class.on]="tab() === 'facilities'" (click)="show('facilities')">Facilities</button>
+  </nav>
+
+  @if (tab() === 'overview') {
+    <article class="sheet">
+      <h2>Farm information</h2>
+      <dl>
+        <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
+        <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
+        <div><dt>Region</dt><dd>{{ selected.region }}</dd></div>
+        <div><dt>Manager</dt><dd>{{ selected.managerName || '—' }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ selected.contactPhone || '—' }}</dd></div>
+        <div><dt>Timezone</dt><dd>{{ selected.timezone }}</dd></div>
+        <div><dt>Animals</dt><dd>{{ fmt(selected.animalCount) }}</dd></div>
+        <div><dt>Facilities</dt><dd>{{ selected.facilityCount }}</dd></div>
+      </dl>
+    </article>
+  }
+
+  @if (tab() === 'location') {
+    <article class="sheet location">
+      <div>
+        <h2>Coordinates</h2>
+        <dl>
+          <div><dt>Address</dt><dd>{{ selected.address }}</dd></div>
+          <div><dt>Latitude</dt><dd>{{ selected.latitude }}</dd></div>
+          <div><dt>Longitude</dt><dd>{{ selected.longitude }}</dd></div>
+          @if (locationPin()[0]?.notice; as notice) {
+            <div><dt>Health alert</dt><dd>{{ notice }}</dd></div>
+          }
+          <div><dt>Timezone</dt><dd>{{ selected.timezone }}</dd></div>
+        </dl>
+      </div>
+      <app-tanzania-map [pins]="locationPin()" [rings]="boundaryRing()" ariaLabel="Farm location in Tanzania" />
+    </article>
+  }
+
+  @if (tab() === 'facilities') {
+    <article class="sheet">
+      <h2>Facilities</h2>
+      @if (facilities().length === 0) {
+        <p class="muted">No facilities are recorded for this farm.</p>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Code</th><th>Type</th><th>Capacity</th><th>Supervisor</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (facility of facilities(); track facility.id) {
+                <tr>
+                  <td>{{ facility.name }}</td>
+                  <td>{{ facility.code }}</td>
+                  <td>{{ facility.facilityType }}</td>
+                  <td>{{ facility.capacity ?? '—' }} {{ facility.capacityUnit || '' }}</td>
+                  <td>{{ facility.supervisorName || '—' }}</td>
+                  <td><span class="status-pill" [class]="'status-pill ' + statusClass(facility.status)">{{ facility.status }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+  }
+}

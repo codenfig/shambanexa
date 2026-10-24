@@ -1,0 +1,418 @@
+<section class="ls" [class.has-drawer]="!!selected()">
+  <header class="ls-head">
+    <div>
+      <div class="title-row">
+        <h1>Animals</h1>
+        <span class="date-chip">{{ today() }}</span>
+      </div>
+      <p>Manage your livestock across all farms.</p>
+    </div>
+    <div class="ls-actions">
+      <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">Export</button>
+      <a class="green-btn" routerLink="/livestock/new">Register animal +</a>
+    </div>
+  </header>
+
+  @if (loading() && animals().length === 0 && batches().length === 0) {
+    <p class="state">Loading livestock…</p>
+  } @else if (error() && animals().length === 0) {
+    <div class="state error-state">
+      <p>{{ error() }}</p>
+      <button class="green-btn" type="button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    <section class="kpis" aria-label="Livestock summary">
+      <article>
+        <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/><path d="M4 16h16v3H4z"/></svg></span>
+        <div>
+          <small>Total livestock</small>
+          <strong>{{ fmt(summary().total) }}</strong>
+          @if (summary().change !== null) {
+            <em class="up">{{ signed(summary().change) }} from last month</em>
+          }
+        </div>
+      </article>
+      <article>
+        <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.5 11 15l4.5-5"/></svg></span>
+        <div>
+          <small>Healthy tagged</small>
+          <strong>{{ fmt(summary().healthy) }}</strong>
+          <em>of {{ fmt(summary().tagged) }} tagged records</em>
+        </div>
+      </article>
+      <article>
+        <span class="bubble red" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10z"/></svg></span>
+        <div>
+          <small>Open health cases</small>
+          <strong>{{ fmt(summary().openCases) }}</strong>
+          <em>{{ fmt(summary().attention) }} tagged need attention</em>
+        </div>
+      </article>
+      <article>
+        <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
+        <div>
+          <small>Herd headcount</small>
+          <strong>{{ fmt(summary().heads) }}</strong>
+          <em>Active herd batches</em>
+        </div>
+      </article>
+      <article>
+        <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l1 6H7z"/><path d="M9 9v11h6V9"/></svg></span>
+        <div>
+          <small>Due treatments</small>
+          <strong>{{ fmt(summary().due) }}</strong>
+          <em>Open vaccination tasks</em>
+        </div>
+      </article>
+    </section>
+
+    <div class="stage">
+      <article class="board" id="ledger">
+        <div class="filters">
+          <label class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <span class="sr">Search livestock</span>
+            <input [ngModel]="query()" (ngModelChange)="setQuery($event)" placeholder="Search tag, animal name, breed or batch…" type="search">
+          </label>
+          <label>
+            <span class="sr">Farm</span>
+            <select [ngModel]="farmId()" (ngModelChange)="setFarm($event)">
+              <option value="">All farms</option>
+              @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+            </select>
+          </label>
+          <label>
+            <span class="sr">Breed</span>
+            <select [ngModel]="breed()" (ngModelChange)="setBreed($event)">
+              <option value="">All breeds</option>
+              @for (name of breeds(); track name) { <option [value]="name">{{ name }}</option> }
+            </select>
+          </label>
+          <label>
+            <span class="sr">Sex</span>
+            <select [ngModel]="sex()" (ngModelChange)="setSex($event)">
+              <option value="">All sexes</option>
+              @for (item of sexes; track item) { <option [value]="item">{{ label(item) }}</option> }
+            </select>
+          </label>
+          <label>
+            <span class="sr">Health</span>
+            <select [ngModel]="health()" (ngModelChange)="setHealth($event)">
+              <option value="">All health</option>
+              @for (item of healthOptions; track item) { <option [value]="item">{{ label(item) }}</option> }
+            </select>
+          </label>
+          @if (filtersActive()) {
+            <button class="text-btn" type="button" (click)="reset()">Clear filters</button>
+          }
+        </div>
+
+        <div class="tab-row" id="transfer">
+          <div class="tabs" role="tablist">
+            <button type="button" [class.on]="speciesTab() === 'all'" (click)="chooseTab('all')">All animals</button>
+            @for (item of speciesTabs(); track item.name) {
+              <button type="button" [class.on]="speciesTab() === item.name" (click)="chooseTab(item.name)">{{ item.name }} <b>{{ fmt(item.count) }}</b></button>
+            }
+            <button type="button" [class.on]="speciesTab() === 'herds'" (click)="chooseTab('herds')">Herds</button>
+            @if (cycles().length) {
+              <button type="button" [class.on]="speciesTab() === 'fish'" (click)="chooseTab('fish')">Fish batches</button>
+            }
+            <button type="button" [class.on]="speciesTab() === 'archived'" (click)="chooseTab('archived')">Archived ({{ archivedCount() }})</button>
+          </div>
+          <div class="views" role="group" aria-label="Layout">
+            <button type="button" [class.on]="view() === 'list'" (click)="setView('list')">List</button>
+            <button type="button" [class.on]="view() === 'cards'" (click)="setView('cards')">Cards</button>
+            <button type="button" [class.on]="view() === 'herds'" (click)="setView('herds')">Herd view</button>
+          </div>
+        </div>
+
+        @if (speciesTab() === 'fish') {
+          @if (cycles().length === 0) {
+            <div class="empty"><h2>No fish cycles recorded.</h2></div>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Cycle</th><th>Farm</th><th>Stocked</th><th>Mortality</th><th>Live estimate</th><th>Started</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (cycle of cycles(); track cycle.id) {
+                    <tr>
+                      <td><strong>{{ cycle.code }}</strong></td>
+                      <td>{{ cycle.farmName }}</td>
+                      <td>{{ fmt(cycle.stockedQuantity) }}</td>
+                      <td>{{ fmt(cycle.mortality) }}</td>
+                      <td>{{ fmt(cycle.estimatedLiveCount) }}</td>
+                      <td>{{ dateLabel(cycle.startedOn) }}</td>
+                      <td><span class="status-pill is-active">{{ cycle.status }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else if (view() === 'herds' || speciesTab() === 'herds') {
+          @if (countError()) { <div class="error">{{ countError() }}</div> }
+          @if (filteredBatches().length === 0) {
+            <div class="empty"><h2>No herd batches match these filters.</h2></div>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Herd</th><th>Species</th><th>Farm</th><th>Purpose</th><th>Head</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (batch of filteredBatches(); track batch.id) {
+                    <tr>
+                      <td><strong>{{ batch.name }}</strong><span class="meta">{{ batch.code }}</span></td>
+                      <td>{{ batch.speciesName }}</td>
+                      <td>{{ batch.farmName }}</td>
+                      <td>{{ batch.purpose }}</td>
+                      <td>
+                        @if (canWrite()) {
+                          <span class="count-edit">
+                            <input type="number" min="0" max="1000000" [value]="countValue(batch)" (change)="draftCount(batch.id, $any($event.target).value)" [attr.aria-label]="'Headcount for ' + batch.name">
+                            <button type="button" (click)="saveCount(batch)">Save</button>
+                          </span>
+                        } @else {
+                          {{ fmt(batch.quantity) }}
+                        }
+                      </td>
+                      <td><span class="status-pill is-active">{{ batch.status }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else if (filteredAnimals().length === 0) {
+          <div class="empty">
+            <h2>{{ filtersActive() ? 'No livestock match the selected filters.' : 'No tagged animals recorded.' }}</h2>
+            <p>Herd headcount is tracked in herd batches. Open Herd view to see those counts.</p>
+          </div>
+        } @else if (view() === 'cards') {
+          <div class="cards">
+            @for (animal of pagedAnimals(); track animal.id) {
+              <article class="tile" [class.picked]="selected()?.id === animal.id">
+                <div class="who">
+                  <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                  <button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button>
+                  <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
+                </div>
+                <p class="meta">{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</p>
+                <p>{{ label(animal.sex) }} · {{ ageLabel(animal.birthDate) }}</p>
+                <p class="meta">{{ animal.farmName }}</p>
+                <div class="row-actions">
+                  <button type="button" (click)="open(animal)">View</button>
+                  @if (animal.status === 'ACTIVE') {
+                    <button type="button" (click)="startTransfer(animal)">Transfer</button>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+          <footer class="pager">
+            <span>{{ rangeLabel() }}</span>
+            <div>
+              <button type="button" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0">Previous</button>
+              @for (index of pages(); track index) {
+                <button type="button" [class.current]="index === visiblePage()" (click)="go(index)">{{ index + 1 }}</button>
+              }
+              <button type="button" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1">Next</button>
+            </div>
+          </footer>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Animal</th>
+                  <th>Species &amp; breed</th>
+                  <th>Farm</th>
+                  <th>Sex &amp; age</th>
+                  <th>Health</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (animal of pagedAnimals(); track animal.id) {
+                  <tr [class.picked]="selected()?.id === animal.id">
+                    <td>
+                      <div class="who">
+                        <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                        <span>
+                          <button class="name" type="button" (click)="open(animal)">{{ animal.name || 'Unnamed' }}</button>
+                          <span class="meta">{{ animal.tag }}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>{{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</td>
+                    <td>{{ animal.farmName }}</td>
+                    <td>{{ label(animal.sex) }} · {{ ageLabel(animal.birthDate) }}</td>
+                    <td><span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span></td>
+                    <td><span class="status-pill is-active">{{ label(animal.status) }}</span></td>
+                    <td class="row-actions">
+                      <button type="button" (click)="open(animal)">View</button>
+                      @if (animal.status === 'ACTIVE') {
+                        <button type="button" (click)="startTransfer(animal)">Transfer</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <footer class="pager">
+            <span>{{ rangeLabel() }}</span>
+            <div>
+              <button type="button" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0">Previous</button>
+              @for (index of pages(); track index) {
+                <button type="button" [class.current]="index === visiblePage()" (click)="go(index)">{{ index + 1 }}</button>
+              }
+              <button type="button" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1">Next</button>
+            </div>
+          </footer>
+        }
+      </article>
+
+      @if (selected(); as animal) {
+        <aside class="drawer" aria-label="Animal profile">
+          <header>
+            <div class="who">
+              <span class="avatar lg" aria-hidden="true">{{ initial(animal) }}</span>
+              <div>
+                <h2>{{ animal.name || animal.tag }}</h2>
+                <p>{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</p>
+              </div>
+            </div>
+            <button type="button" class="text-btn" (click)="closeDetail()" aria-label="Close profile">Close</button>
+          </header>
+          <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
+          <div class="drawer-tabs">
+            <button type="button" [class.on]="drawerTab() === 'overview'" (click)="drawerTab.set('overview')">Overview</button>
+            <button type="button" [class.on]="drawerTab() === 'health'" (click)="drawerTab.set('health')">Health</button>
+          </div>
+          @if (drawerTab() === 'overview') {
+            <dl>
+              <div><dt>Tag</dt><dd>{{ animal.tag }}</dd></div>
+              <div><dt>Sex</dt><dd>{{ label(animal.sex) }}</dd></div>
+              <div><dt>Species</dt><dd>{{ animal.speciesName }}</dd></div>
+              <div><dt>Breed</dt><dd>{{ animal.breedName || '—' }}</dd></div>
+              <div><dt>Farm</dt><dd><a [routerLink]="['/farms', animal.farmId]">{{ animal.farmName }}</a></dd></div>
+              <div><dt>Birth</dt><dd>{{ dateLabel(animal.birthDate) }}</dd></div>
+              <div><dt>Age</dt><dd>{{ ageLabel(animal.birthDate) }}</dd></div>
+              <div><dt>Color</dt><dd>{{ animal.color || '—' }}</dd></div>
+              <div><dt>Status</dt><dd>{{ label(animal.status) }}</dd></div>
+            </dl>
+          } @else {
+            <dl>
+              <div><dt>Health</dt><dd>{{ label(animal.healthStatus) }}</dd></div>
+            </dl>
+            <h3>Open cases on {{ animal.farmName }}</h3>
+            @if (farmCases().length === 0) {
+              <p class="meta">No open health case is recorded for this farm.</p>
+            }
+            @for (item of farmCases(); track item.id) {
+              <article class="case">
+                <strong>{{ item.title }}</strong>
+                <span class="meta">{{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span>
+                @if (item.notes) { <p>{{ item.notes }}</p> }
+              </article>
+            }
+          }
+          <div class="sheet-actions">
+            @if (animal.status === 'ACTIVE') {
+              <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer</button>
+            }
+          </div>
+        </aside>
+      }
+    </div>
+
+    <section class="insights">
+      <article class="card">
+        <h2>Animal distribution by species</h2>
+        @if (distribution().length === 0) {
+          <p class="meta">No species counts recorded.</p>
+        } @else {
+          <div class="chart-row">
+            <div class="donut" [style.background]="donut()" role="img" aria-label="Species distribution">
+              <span>{{ fmt(summary().total) }}</span>
+            </div>
+            <ul>
+              @for (item of distribution(); track item.name) {
+                <li><i [style.background]="item.color"></i>{{ item.name }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(0) }}%</em></li>
+              }
+            </ul>
+          </div>
+        }
+      </article>
+      <article class="card">
+        <h2>Health overview</h2>
+        <p class="meta">Tagged animals only. Herd batches are not health-scored individually.</p>
+        @if (canWrite()) {
+          <a class="green-btn report-link" routerLink="/alerts" fragment="report">Report sick animals, deaths, or recovery</a>
+        }
+        @if (healthMix().length === 0) {
+          <p class="meta">No tagged animals recorded.</p>
+        } @else {
+          <div class="chart-row">
+            <div class="donut" [style.background]="healthDonut()" role="img" aria-label="Health overview">
+              <span>{{ fmt(summary().tagged) }}</span>
+            </div>
+            <ul>
+              @for (item of healthMix(); track item.status) {
+                <li>{{ label(item.status) }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(1) }}%</em></li>
+              }
+            </ul>
+          </div>
+        }
+      </article>
+      <article class="card">
+        <h2>Upcoming livestock activities</h2>
+        @if (upcoming().length === 0) {
+          <p class="meta">No open tasks recorded.</p>
+        }
+        @for (task of upcoming(); track task.id) {
+          <div class="task">
+            <strong>{{ task.title }}</strong>
+            <span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span>
+          </div>
+        }
+      </article>
+    </section>
+    <p class="audit">All changes are recorded in the audit trail.</p>
+  }
+</section>
+
+@if (transferAnimal(); as animal) {
+  <div class="modal-back" (click)="closeTransfer()">
+    <form class="entry" role="dialog" aria-modal="true" aria-labelledby="transfer-title" (click)="$event.stopPropagation()" (ngSubmit)="transfer()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span>
+        <div>
+          <h2 id="transfer-title">New Animal Transfer</h2>
+          <p>{{ animal.tag }} leaves {{ animal.farmName }}. The herd total stays the same.</p>
+        </div>
+      </header>
+      <div class="entry-grid">
+        <label>Origin farm
+          <input [value]="animal.farmName" disabled>
+        </label>
+        <label>Destination farm <em>*</em>
+          <select [ngModel]="destination()" (ngModelChange)="destination.set($event)" name="destination" required>
+            <option value="">Select a farm</option>
+            @for (farm of destinationFarms(); track farm.id) {
+              <option [value]="farm.id">{{ farm.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="wide">Reason <em>*</em>
+          <input [ngModel]="reason()" (ngModelChange)="reason.set($event)" name="reason" required maxlength="300" placeholder="Why this animal is moving">
+        </label>
+      </div>
+      @if (transferError()) { <div class="error">{{ transferError() }}</div> }
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="closeTransfer()" [disabled]="transferring()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="transferring()">{{ transferring() ? 'Posting…' : 'Record Transfer' }}</button>
+      </div>
+    </form>
+  </div>
+}

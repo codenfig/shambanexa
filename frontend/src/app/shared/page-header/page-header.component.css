@@ -1,0 +1,15 @@
+:host { display: block; margin-bottom: 18px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+h1 {
+  margin: 0; font-family: Manrope, "Segoe UI", sans-serif; font-size: 30px; font-weight: 800;
+  letter-spacing: -0.04em; color: #142018;
+}
+p { margin: 6px 0 0; max-width: 560px; color: #66756c; line-height: 1.45; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.actions a { text-decoration: none; }
+
+@media (max-width: 760px) {
+  .page-header { flex-direction: column; align-items: flex-start; }
+  h1 { font-size: 28px; }
+  .actions { width: 100%; justify-content: flex-start; }
+}

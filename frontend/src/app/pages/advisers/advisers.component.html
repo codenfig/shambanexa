@@ -1,0 +1,206 @@
+<app-page-header title="Farm advisers" description="See where Farm Advisers work, search their talents, and check availability, load, ratings, and recommendations." />
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading advisers"><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (error()) {
+  <div class="state">
+    <h2>Unable to load advisers.</h2>
+    <button class="green-btn" type="button" (click)="load()">Retry</button>
+  </div>
+} @else {
+  @if (canAdvise()) {
+    <form class="card listing" (submit)="saveProfile(); $event.preventDefault()">
+      <div>
+        <h2>Your listing</h2>
+        <p>Add the talents farmers can search, and say whether you are free to take work.</p>
+      </div>
+      <label>
+        Talents
+        <input [value]="talentDraft()" (input)="setTalentDraft($event)" maxlength="400" placeholder="Dairy health, goats, fish">
+      </label>
+      <label>
+        Availability
+        <select [value]="availabilityDraft()" (change)="setAvailabilityDraft($event)">
+          <option value="">Choose availability</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="LIMITED">Limited</option>
+          <option value="UNAVAILABLE">Unavailable</option>
+        </select>
+      </label>
+      <label>
+        Note
+        <input [value]="noteDraft()" (input)="setNoteDraft($event)" maxlength="240" placeholder="Where you can visit this week">
+      </label>
+      @if (profileError()) { <p class="form-error">{{ profileError() }}</p> }
+      <button class="green-btn" type="submit" [disabled]="savingProfile()">{{ savingProfile() ? 'Saving…' : 'Save listing' }}</button>
+    </form>
+  }
+
+  <form class="filters" (submit)="$event.preventDefault()">
+    <label>
+      Search by talent
+      <input [value]="talent()" (input)="setTalent($event)" placeholder="Dairy, goats, fish">
+    </label>
+    <label>
+      Availability
+      <select [value]="availability()" (change)="setAvailability($event)">
+        <option value="">Any availability</option>
+        <option value="AVAILABLE">Available</option>
+        <option value="LIMITED">Limited</option>
+        <option value="UNAVAILABLE">Unavailable</option>
+        <option value="UNSET">Not set</option>
+      </select>
+    </label>
+    <label>
+      Load
+      <select [value]="loadFilter()" (change)="setLoad($event)">
+        <option value="">Any load</option>
+        <option value="Light">Light</option>
+        <option value="Steady">Steady</option>
+        <option value="Heavy">Heavy</option>
+      </select>
+    </label>
+  </form>
+
+  @if (people().length === 0) {
+    <article class="card"><p class="empty-state">No Farm Adviser is assigned yet. An administrator assigns that role under Users &amp; Roles.</p></article>
+  } @else {
+    <section class="stage">
+      <article class="card map-card">
+        <header>
+          <h2>Where they work</h2>
+        </header>
+        @if (pins().length === 0) {
+          <p class="empty-state">No adviser with a farm location matches this search.</p>
+        } @else {
+          <app-tanzania-map
+            [pins]="pins()"
+            [places]="true"
+            [regions]="true"
+            [selectedId]="selectedPin()"
+            [callout]="callout()"
+            (pinPicked)="pickPin($event)"
+            ariaLabel="Farm advisers in Tanzania" />
+        }
+        <ul class="counts">
+          @for (item of availabilityCounts(); track item.label) {
+            <li>{{ item.label }} <b>{{ item.count }}</b></li>
+          }
+        </ul>
+        <ul class="counts">
+          @for (item of loadCounts(); track item.label) {
+            <li>{{ item.label }} load <b>{{ item.count }}</b></li>
+          }
+        </ul>
+      </article>
+
+      <div class="list">
+        @if (visible().length === 0) {
+          <article class="card"><p class="empty-state">No adviser matches that talent.</p></article>
+        } @else {
+          @for (person of visible(); track person.id) {
+            <button type="button" class="card person" [class.selected]="isChosen(person.id)" (click)="pick(person.id)">
+              <span class="who">
+                <strong>{{ person.fullName }}</strong>
+                <small>{{ availabilityLabel(person.availability) }}</small>
+              </span>
+              <span class="meta">{{ person.load }} load · {{ person.openAlerts }} alerts · {{ person.openTasks }} tasks</span>
+              <span class="meta">{{ person.talents.length ? person.talents.join(', ') : 'No talent listed' }}</span>
+              <span class="meta">{{ ratingLabel(person) }} · {{ person.recommendationCount }} {{ person.recommendationCount === 1 ? 'recommendation' : 'recommendations' }}</span>
+            </button>
+          }
+        }
+      </div>
+    </section>
+
+    @if (chosen(); as person) {
+      <article class="card detail" id="adviser">
+        <header>
+          <div>
+            <h2>{{ person.fullName }}</h2>
+            <p>{{ availabilityLabel(person.availability) }}@if (person.availabilityNote) { · {{ person.availabilityNote }} }</p>
+          </div>
+          <span class="load" [attr.data-load]="person.load">{{ person.load }}</span>
+        </header>
+
+        <dl>
+          <div>
+            <dt>Talents</dt>
+            <dd>{{ person.talents.length ? person.talents.join(', ') : 'No talent listed yet.' }}</dd>
+          </div>
+          <div>
+            <dt>Farms</dt>
+            <dd>
+              @if (person.allFarms) {
+                Covers every farm ({{ person.assignedFarmCount }}).
+              } @else if (person.places.length === 0) {
+                No farm is assigned.
+              } @else {
+                {{ farmNames(person) }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Load</dt>
+            <dd>{{ person.openAlerts }} open alerts and {{ person.openTasks }} open tasks on those farms. Light is none, Steady is 1 to 3, and Heavy is 4 or more.</dd>
+          </div>
+          <div>
+            <dt>Rating</dt>
+            <dd>{{ ratingLabel(person) }}</dd>
+          </div>
+        </dl>
+
+        <section>
+          <h3>Recommendations</h3>
+          @if (person.recommendations.length === 0) {
+            <p class="empty-state">No one has recommended this adviser yet.</p>
+          } @else {
+            <ul class="endorsements">
+              @for (item of person.recommendations; track item.recommenderName + item.createdAt) {
+                <li>
+                  <strong>{{ item.recommenderName }}</strong>
+                  <span>{{ when(item.createdAt) }}</span>
+                  @if (item.note) { <p>{{ item.note }}</p> }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        @if (person.self) {
+          <p class="note">This is your listing. Another signed-in person can rate it and recommend it.</p>
+        } @else {
+          <div class="actions">
+            <form (submit)="saveRating(); $event.preventDefault()">
+              <h3>Rate {{ person.fullName }}</h3>
+              <div class="stars" role="group" aria-label="Rating">
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <button type="button" [class.on]="score() >= star" (click)="score.set(star)" [attr.aria-label]="'Rate ' + star">{{ star }}</button>
+                }
+              </div>
+              <label>
+                Note
+                <input [value]="ratingNote()" (input)="setRatingNote($event)" maxlength="400" placeholder="What stood out">
+              </label>
+              <button class="green-btn" type="submit" [disabled]="savingRating() || score() < 1">{{ savingRating() ? 'Saving…' : person.myScore ? 'Update rating' : 'Save rating' }}</button>
+            </form>
+            <form (submit)="recommend(); $event.preventDefault()">
+              <h3>Recommend {{ person.fullName }}</h3>
+              <label>
+                Note
+                <textarea [value]="recommendNote()" (input)="setRecommendNote($event)" maxlength="400" placeholder="Why other farmers should ask for this adviser"></textarea>
+              </label>
+              <div class="row">
+                <button class="green-btn" type="submit" [disabled]="savingRecommendation()">{{ savingRecommendation() ? 'Saving…' : person.recommendedByMe ? 'Update recommendation' : 'Recommend' }}</button>
+                @if (person.recommendedByMe) {
+                  <button class="ghost-btn" type="button" (click)="withdraw()" [disabled]="savingRecommendation()">Withdraw</button>
+                }
+              </div>
+            </form>
+          </div>
+          @if (actionError()) { <p class="form-error">{{ actionError() }}</p> }
+        }
+      </article>
+    }
+  }
+}

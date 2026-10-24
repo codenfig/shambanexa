@@ -1,0 +1,13 @@
+#assignments, #my-tasks, #tasks, #calendar { margin-top: 14px; }
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.board section { background: #f6faf7; border-radius: 14px; padding: 12px; min-height: 120px; }
+.board h3 { margin: 0 0 10px; font-size: 14px; }
+.board article {
+  background: #fff; border: 1px solid #e7eee9; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+  display: grid; gap: 3px;
+}
+.board article span { color: #66756c; font-size: 12px; font-weight: 650; }
+
+@media (max-width: 900px) {
+  .board { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,68 @@
+<section class="register">
+  <form class="studio" [formGroup]="form" (ngSubmit)="submit()">
+    <header class="studio-head">
+      <a class="back" routerLink="/login">Sign in</a>
+      <div>
+        <p class="eyebrow">Create account</p>
+        <h1>Register your farm</h1>
+        <p>Your account starts with Own Farm Only access. Draw the farm boundary before you continue.</p>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Account</h2>
+        <div class="fields">
+          <label class="wide"><span>Full name <em>*</em></span>
+            <input formControlName="fullName" maxlength="160" autocomplete="name">
+          </label>
+          <label><span>Email <em>*</em></span>
+            <input formControlName="email" type="email" autocomplete="email" maxlength="180">
+          </label>
+          <label><span>Password <em>*</em></span>
+            <input formControlName="password" type="password" autocomplete="new-password" minlength="8">
+          </label>
+        </div>
+        <h2>Farm</h2>
+        <div class="fields">
+          <label><span>Farm name <em>*</em></span>
+            <input formControlName="farmName" maxlength="160">
+          </label>
+          <label><span>Farm code <em>*</em></span>
+            <input formControlName="farmCode" maxlength="40" autocomplete="off">
+          </label>
+          <label class="wide"><span>Region <em>*</em></span>
+            <select formControlName="region">
+              <option value="">Select a region</option>
+              @for (name of regions; track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          </label>
+          <label class="wide"><span>Address <em>*</em></span>
+            <input formControlName="address" maxlength="300">
+          </label>
+          <label class="wide"><span>Phone</span>
+            <input formControlName="contactPhone" maxlength="40">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Boundary</h2>
+        <p class="hint">Click at least three corners inside Tanzania. The farm location is the centre of that shape.</p>
+        <div class="draw-tools">
+          <button type="button" class="ghost-btn" (click)="undoCorner()" [disabled]="boundary().length === 0">Undo corner</button>
+          <span>{{ boundary().length }} corners</span>
+        </div>
+        <app-tanzania-map [drawing]="true" [sketch]="boundary()" ariaLabel="Draw the farm boundary" (corner)="addCorner($event)" />
+      </section>
+    </div>
+
+    @if (error()) { <div class="error">{{ error() }}</div> }
+    <div class="actions">
+      <p>You will see only this farm until an administrator changes your access scope.</p>
+      <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create account' }}</button>
+    </div>
+  </form>
+</section>

@@ -1,0 +1,98 @@
+<app-page-header title="Inventory" description="Stock on hand, reorder points, and adjustments for farms in your scope.">
+  <a class="green-btn" href="#add">Add item</a>
+</app-page-header>
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading inventory"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (loadError()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="reload()">Retry</button>
+  </div>
+} @else {
+  <article class="card" id="stock">
+    <div class="tabs" role="tablist" aria-label="Stock categories">
+      <button type="button" [class.on]="category() === 'ALL'" (click)="category.set('ALL')">All</button>
+      @for (name of categories(); track name) {
+        <button type="button" [class.on]="category() === name" (click)="category.set(name)">{{ name }}</button>
+      }
+      @if (lowOnly()) { <span class="tag warn">Low stock</span> }
+    </div>
+    <h2>{{ lowOnly() ? 'Low-stock alerts' : 'Stock on hand' }}</h2>
+    <h2 id="adjustments">Adjustments</h2>
+    <p class="muted">Use Adjust on a row to post a quantity change. Available stock cannot go below zero.</p>
+    @if (visibleItems().length === 0) {
+      <p class="empty-state">{{ lowOnly() ? 'No item is at or under its reorder point.' : 'No records found.' }}</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+            <thead><tr><th>Item</th><th>Category</th><th>Farm</th><th>On hand</th><th>Available</th><th>Reorder</th><th>Actions</th></tr></thead>
+          <tbody>
+            @for (item of visibleItems(); track item.id) {
+              <tr>
+                <td>{{ item.name }} <span class="muted">{{ item.sku }}</span></td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.farmName }}</td>
+                <td>{{ fmt(item.quantityOnHand) }} {{ item.unit }}</td>
+                <td>{{ fmt(item.available) }} {{ item.unit }} @if (item.lowStock) { <span class="tag warn">Low</span> }</td>
+                <td>{{ fmt(item.reorderPoint) }}</td>
+                <td><button class="ghost-btn" type="button" (click)="selected.set(item)">Adjust</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+  <form class="entry" id="add" [formGroup]="form" (ngSubmit)="create()">
+    <header class="entry-head">
+      <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg></span>
+      <div>
+        <h2>Stock Receipt</h2>
+        <p>Log incoming stock items to a farm or store.</p>
+      </div>
+    </header>
+    <div class="entry-grid">
+      <label>SKU <em>*</em><input formControlName="sku" placeholder="Stock code"></label>
+      <label>Name <em>*</em><input formControlName="name" placeholder="Item name"></label>
+      <label>Farm <em>*</em>
+        <select formControlName="farmId">
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+      </label>
+      <label>Category <em>*</em>
+        <select formControlName="category"><option>FEED</option><option>MEDICINE</option><option>SUPPLY</option></select>
+      </label>
+      <label>Quantity <em>*</em><input formControlName="quantityOnHand" type="number"></label>
+      <label>Unit <em>*</em><input formControlName="unit"></label>
+      <label>Reorder point <em>*</em><input formControlName="reorderPoint" type="number"></label>
+    </div>
+    @if (error()) { <div class="error">{{ error() }}</div> }
+    <div class="entry-foot">
+      <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Record Stock Receipt' }}</button>
+    </div>
+  </form>
+}
+
+@if (selected(); as item) {
+  <div class="modal-back" (click)="closeAdjust()">
+    <form class="entry" role="dialog" aria-modal="true" aria-labelledby="adjust-title" (click)="$event.stopPropagation()" [formGroup]="adjustForm" (ngSubmit)="adjust(item)">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+        <div>
+          <h2 id="adjust-title">Stock Adjustment</h2>
+          <p>Adjust {{ item.name }}. Available stock cannot go below zero. On hand {{ fmt(item.quantityOnHand) }} {{ item.unit }}.</p>
+        </div>
+      </header>
+      <div class="entry-grid">
+        <label>Change (+/−) <em>*</em><input formControlName="delta" type="number" step="0.01"></label>
+        <label>Reason <em>*</em><input formControlName="reason"></label>
+      </div>
+      @if (adjustError()) { <div class="error">{{ adjustError() }}</div> }
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="closeAdjust()" [disabled]="adjusting()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="adjusting()">{{ adjusting() ? 'Saving…' : 'Record Adjustment' }}</button>
+      </div>
+    </form>
+  </div>
+}

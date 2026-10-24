@@ -1,0 +1,39 @@
+<app-page-header title="Help centre" description="How herd movements, production, stock, and access are recorded." />
+    <article class="card help" id="centre">
+      <h2>How the record works</h2>
+      <article>
+        <h3 id="movements">Register and move animals</h3>
+        <p>A new tag posts a registration on the movement ledger. A transfer posts an out movement and an in movement in one action, so the herd total stays the same and the farm counts change.</p>
+      </article>
+      <article>
+        <h3 id="milk">Milk and revenue</h3>
+        <p>Milk today is the sum of milk records for the current Dar es Salaam date. Revenue is income posted in the current month. Each dashboard number links back to those stored rows.</p>
+      </article>
+      <article>
+        <h3 id="fish">Fish cycles</h3>
+        <p>Estimated live count is stocked quantity minus mortality and harvest. The screen labels it as an estimate.</p>
+      </article>
+      <article>
+        <h3 id="stock">Stock</h3>
+        <p>An adjustment cannot take available quantity below zero. Low-stock rows are the ones at or under their reorder point.</p>
+      </article>
+      <article>
+        <h3 id="access">Access</h3>
+        <p>A tenant administrator sees every farm. A farm manager sees only farms named on their role grant. The Northern Farm manager account is limited to that farm. The stored roles and the permissions each one holds are listed under Roles &amp; Permissions.</p>
+      </article>
+    </article>
+    <article class="card" id="contact" style="margin-top:14px">
+      <h2>Contact support</h2>
+      <p>The tenant administrator for this workspace is <a href="mailto:admin&#64;shambanexa.com">admin&#64;shambanexa.com</a>.</p>
+    </article>
+    <article class="card" id="status" style="margin-top:14px">
+      <h2>System status</h2>
+      @if (status(); as current) {
+        <p>The operations API responded for {{ current.tenantName }}.</p>
+        <p class="muted">{{ current.timezone }} · {{ current.currencyCode }} · {{ current.locale }}</p>
+      } @else if (statusError()) {
+        <p>The operations API did not respond.</p>
+      } @else {
+        <p class="muted">Checking the operations API…</p>
+      }
+    </article>

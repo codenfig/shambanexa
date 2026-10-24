@@ -1,0 +1,21 @@
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.stats article {
+  background: #fff; border: 1px solid #e7eee9; border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 8px 20px rgba(20, 36, 24, 0.04);
+}
+.stats small { color: #66756c; font-weight: 750; font-size: 12px; }
+.stats strong { display: block; margin-top: 4px; font-size: 26px; letter-spacing: -0.04em; }
+.split { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 14px; align-items: start; }
+#history, #rules, #report { margin-top: 14px; }
+.tag {
+  margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #fde8e6; color: #9f2d20;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.02em;
+}
+#report textarea { min-height: 84px; resize: vertical; }
+.linkish { background: none; border: 0; padding: 0; color: #1f7a3a; font-weight: 800; cursor: pointer; text-align: left; }
+tr.picked td { background: #f3faf4; }
+#detail h3 { margin: 10px 0 6px; }
+
+@media (max-width: 900px) {
+  .stats, .split { grid-template-columns: 1fr; }
+}

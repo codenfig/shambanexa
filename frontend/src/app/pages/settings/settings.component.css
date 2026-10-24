@@ -1,0 +1,9 @@
+.settings-grid { display: grid; grid-template-columns: 1.4fr 0.7fr; gap: 14px; align-items: start; }
+.settings-grid .card + .card { margin-top: 14px; }
+#help { display: grid; gap: 10px; }
+#help a { color: #1f7a3a; font-weight: 800; text-decoration: none; }
+#help a:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}

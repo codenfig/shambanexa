@@ -1,0 +1,57 @@
+<app-page-header title="Settings" description="Tenant preferences and the account you are signed in with." />
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading settings"><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (error()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (settings()) {
+  @if (settings(); as current) {
+    <div class="settings-grid">
+      <div>
+        <article class="card" id="general">
+          <h2>System settings</h2>
+          <dl>
+            <div><dt>Workspace</dt><dd>{{ current.tenantName }}</dd></div>
+            <div><dt>Currency</dt><dd>{{ current.currencyCode }}</dd></div>
+            <div><dt>Timezone</dt><dd>{{ current.timezone }}</dd></div>
+            <div><dt>Locale</dt><dd>{{ current.locale }}</dd></div>
+            <div><dt>Season</dt><dd>{{ current.seasonLabel }}</dd></div>
+            <div><dt>Plan</dt><dd>{{ current.subscriptionPlan }} through {{ current.subscriptionValidUntil }}</dd></div>
+            <div><dt>Signed in</dt><dd>{{ session()?.email }} · {{ session()?.roleLabel }}</dd></div>
+          </dl>
+        </article>
+        <article class="card" id="master">
+          <h2>Master data</h2>
+          @if (species().length === 0) {
+            <p class="empty-state">No species are recorded.</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Species</th><th>Code</th><th>Category</th></tr></thead>
+                <tbody>
+                  @for (item of species(); track item.id) {
+                    <tr><td>{{ item.name }}</td><td>{{ item.code }}</td><td>{{ item.category }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </article>
+        <article class="card" id="integrations">
+          <h2>Integrations</h2>
+          <p>Currency, timezone, and locale are stored on the tenant. No external integration is configured.</p>
+        </article>
+      </div>
+      <aside class="card" id="help">
+        <h2>Help centre</h2>
+        <a routerLink="/help" fragment="centre">How records work</a>
+        <a routerLink="/help" fragment="movements">Animal movements</a>
+        <a routerLink="/help" fragment="contact">Contact support</a>
+        <a routerLink="/help" fragment="status">System status</a>
+      </aside>
+    </div>
+  }
+}

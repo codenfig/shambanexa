@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "timezone=UTC"]
+    environment:
+      POSTGRES_DB: shambanexa
+      POSTGRES_USER: shambanexa
+      POSTGRES_PASSWORD: shambanexa
+    ports:
+      - "5432:5432"
+    volumes:
+      - shambanexa-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shambanexa -d shambanexa"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  shambanexa-pg:

@@ -1,0 +1,70 @@
+<form class="entry" [formGroup]="form" (ngSubmit)="submit()">
+  <header class="entry-head">
+    <span class="entry-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/><path d="M4 16h16v3H4z"/></svg>
+    </span>
+    <div>
+      <h1>Register Animal</h1>
+      <p>Add an animal to your livestock records.</p>
+    </div>
+  </header>
+
+  <h3>Animal information</h3>
+  <div class="entry-grid">
+    <label>Tag <em>*</em>
+      <input formControlName="tag" maxlength="40" autocomplete="off" placeholder="Unique tag or animal ID">
+      @if (invalid('tag')) { <small>Enter a tag, up to 40 characters.</small> }
+    </label>
+    <label>Name
+      <input formControlName="name" maxlength="120" placeholder="Animal name">
+    </label>
+    <label>Species <em>*</em>
+      <select formControlName="speciesId" (change)="loadBreeds()">
+        <option value="">Select a species</option>
+        @for (item of species(); track item.id) { <option [value]="item.id">{{ item.name }}</option> }
+      </select>
+      @if (invalid('speciesId')) { <small>Choose a species.</small> }
+    </label>
+    <label>Breed
+      <select formControlName="breedId">
+        <option value="">No breed</option>
+        @for (breed of breeds(); track breed.id) { <option [value]="breed.id">{{ breed.name }}</option> }
+      </select>
+    </label>
+    <label>Sex <em>*</em>
+      <select formControlName="sex">
+        <option value="">Select</option>
+        @for (item of sexes; track item) { <option [value]="item">{{ item }}</option> }
+      </select>
+      @if (invalid('sex')) { <small>Choose FEMALE, MALE, or UNKNOWN.</small> }
+    </label>
+    <label>Birth date
+      <input formControlName="birthDate" type="date">
+    </label>
+    <label>Color
+      <input formControlName="color" maxlength="80" placeholder="Coat or marking">
+    </label>
+    <label>Health status <em>*</em>
+      <select formControlName="healthStatus">
+        @for (item of healthOptions; track item) { <option [value]="item">{{ item }}</option> }
+      </select>
+    </label>
+  </div>
+
+  <h3>Farm</h3>
+  <div class="entry-grid">
+    <label>Farm <em>*</em>
+      <select formControlName="farmId">
+        <option value="">Select a farm</option>
+        @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+      </select>
+      @if (invalid('farmId')) { <small>Choose a farm.</small> }
+    </label>
+  </div>
+
+  @if (error()) { <div class="error">{{ error() }}</div> }
+  <div class="entry-foot">
+    <a class="ghost-btn" routerLink="/livestock">Cancel</a>
+    <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Register Animal' }}</button>
+  </div>
+</form>

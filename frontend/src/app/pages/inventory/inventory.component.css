@@ -1,0 +1,7 @@
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.tabs button {
+  border: 1px solid #d7e3da; background: #fff; border-radius: 999px; min-height: 34px; padding: 0 14px;
+  font-weight: 800; color: #3d5144; cursor: pointer;
+}
+.tabs button.on { background: #1f7a3a; color: #fff; border-color: #1f7a3a; }
+#add { margin-top: 14px; }

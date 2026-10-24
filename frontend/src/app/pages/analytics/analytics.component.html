@@ -1,0 +1,72 @@
+<app-page-header title="Reports &amp; Exports" description="Herd, production, and open health cases from the current records." />
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading analytics"><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (error()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (data()) {
+  @if (data(); as board) {
+  <div id="reports">
+  <section class="report-cards">
+    <a href="#herd"><strong>Herd by farm</strong><span>Animals recorded at each farm.</span></a>
+    <a href="#production"><strong>Production trend</strong><span>Six months of milk and revenue.</span></a>
+    <a href="#health"><strong>Animal health</strong><span>Open health cases in your scope.</span></a>
+    <a href="#exports"><strong>Export</strong><span>Download the current operational report.</span></a>
+  </section>
+  <article class="card" id="herd">
+    <h2>Herd by farm</h2>
+    @if (board.locations.length === 0) {
+      <p class="empty-state">No records found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Farm</th><th>Region</th><th>Animals</th></tr></thead>
+          <tbody>
+            @for (farm of board.locations; track farm.id) {
+              <tr><td>{{ farm.name }}</td><td>{{ farm.region }}</td><td>{{ fmt(farm.animalCount) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+  <article class="card" id="production" style="margin-top:14px">
+    <h2>Six-month production</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Month</th><th>Milk (L)</th><th>Revenue</th></tr></thead>
+        <tbody>
+          @for (point of board.trends; track point.month) {
+            <tr>
+              <td>{{ month(point.month) }}</td>
+              <td>{{ fmt(point.milkLitres) }}</td>
+              <td>{{ money(point.revenue, board.currencyCode) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Animal change {{ signed(board.animalChangePercent) }}. Revenue change {{ signed(board.revenueChangePercent) }}.</p>
+  </article>
+  <article class="card" id="health" style="margin-top:14px">
+    <h2>Open health cases</h2>
+    @for (item of cases(); track item.id) {
+      <p>
+        <strong>{{ item.title }}</strong>
+        <span class="status-pill" [class]="severityClass(item.severity)">{{ item.severity }}</span>
+        · {{ item.farmName }}<br>
+        <span class="muted">{{ item.notes }}</span>
+      </p>
+    } @empty { <p class="muted">No records found.</p> }
+  </article>
+  <article class="card" id="exports" style="margin-top:14px">
+    <h2>Saved exports</h2>
+    <p class="muted">Exports are generated from the current records. They are not stored on the server.</p>
+    <button class="green-btn" type="button" (click)="exportReport()" [disabled]="exporting()">{{ exporting() ? 'Exporting…' : 'Download operational report' }}</button>
+  </article>
+  </div>
+  }
+}

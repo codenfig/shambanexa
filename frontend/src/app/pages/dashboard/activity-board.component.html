@@ -1,0 +1,203 @@
+<section class="board" id="activity">
+  <header class="board-head">
+    <div>
+      <h1>Recent Activity</h1>
+      <p>Monitor changes and operational events across accessible farms.</p>
+    </div>
+    <div class="board-actions">
+      <button class="export" type="button" (click)="exportActivity()" [disabled]="filtered().length === 0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>
+        Export Activity
+      </button>
+      <label class="range">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+        <select [value]="range()" (change)="range.set($any($event.target).value)" aria-label="Activity period">
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="all">All recorded</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  @if (loading() && events().length === 0) {
+    <p class="state">Loading activity…</p>
+  } @else if (error() && events().length === 0) {
+    <div class="state">
+      <p>{{ error() }}</p>
+      <button class="export" type="button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    <section class="kpis" aria-label="Activity summary">
+      <article>
+        <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M10 8h4M10 12h4M10 16h2"/></svg></span>
+        <div><strong>{{ fmt(stats().total) }}</strong><small>Total events</small></div>
+      </article>
+      <article>
+        <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>
+        <div><strong>{{ fmt(stats().today) }}</strong><small>Today</small></div>
+      </article>
+      <article>
+        <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+        <div><strong>{{ fmt(stats().modules) }}</strong><small>Modules</small></div>
+      </article>
+      <article>
+        <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11 12 5l8 6"/><path d="M6 10.5V19h12v-8.5"/></svg></span>
+        <div><strong>{{ fmt(stats().farms) }}</strong><small>Farms covered</small></div>
+      </article>
+    </section>
+
+    <div class="filters">
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+        <input type="search" placeholder="Search activity..." [value]="query()" (input)="query.set($any($event.target).value)" aria-label="Search activity">
+      </label>
+      <label>
+        <span>Farm</span>
+        <select [value]="farmId()" (change)="farmId.set($any($event.target).value)">
+          <option value="">All farms</option>
+          @if (farmOptions().workspace) {
+            <option value="workspace">Not tied to one farm</option>
+          }
+          @for (farm of farmOptions().farms; track farm.id) {
+            <option [value]="farm.id">{{ farm.label }}</option>
+          }
+        </select>
+        <small>Scope: {{ scopeLabel() }}</small>
+      </label>
+      <label>
+        <span>Module</span>
+        <select [value]="module()" (change)="module.set($any($event.target).value)" aria-label="Module">
+          <option value="">All modules</option>
+          @for (item of moduleOptions(); track item.type) {
+            <option [value]="item.type">{{ item.label }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" class="clear" (click)="clearFilters()" [disabled]="!filtersActive()">Clear filters</button>
+    </div>
+
+    <div class="stage" [class.has-detail]="!!chosen()">
+      <div class="feed">
+        @if (filtered().length === 0) {
+          <p class="empty">No activity matches these filters.</p>
+        }
+        @for (group of groups(); track group.key) {
+          <header class="day">
+            <strong>{{ group.label }}</strong>
+            <span>{{ group.date }}</span>
+          </header>
+          <ul>
+            @for (item of group.items; track item.id) {
+              <li>
+                <button type="button" class="event" [class.selected]="chosen()?.id === item.id" (click)="pinned.set(item.id)">
+                  <time [attr.datetime]="item.occurredAt">{{ clock(item.occurredAt) }}</time>
+                  <span class="mark" [attr.data-type]="kind(item)" aria-hidden="true">
+                    @switch (kind(item)) {
+                      @case ('move') { <svg viewBox="0 0 24 24"><path d="M5 15c.4-2 1.6-3 3.2-3 0-1.6 1.2-2.6 2.6-2.6h1.4c.8 0 1.6.4 2 1.1 1.2.1 2.2.9 2.4 2 .9.3 1.6 1.1 1.6 2.1V16H5v-1z"/></svg> }
+                      @case ('add') { <svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg> }
+                      @case ('milk') { <svg viewBox="0 0 24 24"><path d="M9 4h6l1 3v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V7z"/></svg> }
+                      @case ('task') { <svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5L16 9"/></svg> }
+                      @case ('farm') { <svg viewBox="0 0 24 24"><path d="M4 11 12 5l8 6"/><path d="M6 10.5V19h12v-8.5"/></svg> }
+                      @case ('money') { <svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="2"/><circle cx="12" cy="12" r="2"/></svg> }
+                      @case ('stock') { <svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg> }
+                      @default { <svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="2"/><path d="M5 17c.6-2 2-3 4-3s3.4 1 4 3"/></svg> }
+                    }
+                  </span>
+                  <span class="copy">
+                    <strong>{{ item.title }}</strong>
+                    <small>{{ item.detail }}</small>
+                  </span>
+                  <span class="chip farm">{{ item.farmName || 'All farms' }}</span>
+                  <span class="chip module" [attr.data-type]="kind(item)">{{ moduleLabel(item.eventType) }}</span>
+                  <span class="more">View details →</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <aside class="side">
+        <article class="panel">
+          <h2>Activity breakdown</h2>
+          @if (breakdown().length === 0) {
+            <p class="empty">No events in this view.</p>
+          } @else {
+            <ul class="bars">
+              @for (row of breakdown(); track row.key) {
+                <li>
+                  <span class="mark sm" [attr.data-type]="row.tone" aria-hidden="true"></span>
+                  <span class="bar-copy">
+                    <span>{{ row.label }}</span>
+                    <span class="track"><span [style.width.%]="row.share" [attr.data-type]="row.tone"></span></span>
+                  </span>
+                  <strong>{{ fmt(row.count) }}</strong>
+                  <em>{{ row.share }}%</em>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <article class="panel">
+          <h2>Most active farms</h2>
+          @if (activeFarms().length === 0) {
+            <p class="empty">No farm is named on these events.</p>
+          } @else {
+            <ol>
+              @for (row of activeFarms(); track row.key; let index = $index) {
+                <li>
+                  <span class="rank">{{ index + 1 }}</span>
+                  <span>{{ row.label }}</span>
+                  <strong>{{ fmt(row.count) }}</strong>
+                  <em>{{ row.share }}%</em>
+                </li>
+              }
+            </ol>
+          }
+        </article>
+
+        <article class="panel live">
+          <div>
+            <h2>Live updates</h2>
+            <p>New activity appears while this is on.</p>
+          </div>
+          <button type="button" class="switch" role="switch" [attr.aria-checked]="live()" (click)="toggleLive()">
+            <span></span>
+          </button>
+        </article>
+      </aside>
+
+      @if (chosen(); as item) {
+        <aside class="detail" aria-label="Event details">
+          <header>
+            <span class="mark" [attr.data-type]="kind(item)" aria-hidden="true">
+              @switch (kind(item)) {
+                @case ('move') { <svg viewBox="0 0 24 24"><path d="M5 15c.4-2 1.6-3 3.2-3 0-1.6 1.2-2.6 2.6-2.6h1.4c.8 0 1.6.4 2 1.1 1.2.1 2.2.9 2.4 2 .9.3 1.6 1.1 1.6 2.1V16H5v-1z"/></svg> }
+                @case ('add') { <svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg> }
+                @case ('milk') { <svg viewBox="0 0 24 24"><path d="M9 4h6l1 3v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V7z"/></svg> }
+                @case ('farm') { <svg viewBox="0 0 24 24"><path d="M4 11 12 5l8 6"/><path d="M6 10.5V19h12v-8.5"/></svg> }
+                @case ('money') { <svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="2"/><circle cx="12" cy="12" r="2"/></svg> }
+                @case ('stock') { <svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg> }
+                @default { <svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="2"/><path d="M5 17c.6-2 2-3 4-3s3.4 1 4 3"/></svg> }
+              }
+            </span>
+            <div>
+              <h2>{{ item.title }}</h2>
+              <p>{{ item.detail }}</p>
+            </div>
+            <button type="button" class="close" (click)="pinned.set('closed')" aria-label="Close event details">×</button>
+          </header>
+          <dl>
+            <div><dt>Event ID</dt><dd>{{ item.id }}</dd></div>
+            <div><dt>Timestamp</dt><dd>{{ stamp(item.occurredAt) }}</dd></div>
+            <div><dt>Farm</dt><dd>{{ farmLabel(item) }}</dd></div>
+            <div><dt>Module</dt><dd>{{ moduleLabel(item.eventType) }}</dd></div>
+          </dl>
+          <a class="open" [routerLink]="destination(item).commands">{{ destination(item).label }}</a>
+        </aside>
+      }
+    </div>
+  }
+</section>

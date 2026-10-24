@@ -1,0 +1,97 @@
+<app-page-header title="Production" description="Milk, eggs, and fish recorded for farms in your scope.">
+  <a class="ghost-btn" href="#records">Records</a>
+  <a class="green-btn" href="#record">Add record</a>
+</app-page-header>
+
+@if (loadError()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="reload()">Retry</button>
+  </div>
+} @else {
+  <section class="stats" id="overview" aria-label="Production totals">
+    <article><small>Milk</small><strong>{{ fmt(totals().milk) }} L</strong></article>
+    <article><small>Eggs</small><strong>{{ fmt(totals().eggs) }}</strong></article>
+    <article><small>Fish</small><strong>{{ fmt(totals().fish) }}</strong></article>
+    <article><small>Records</small><strong>{{ fmt(totals().count) }}</strong></article>
+  </section>
+
+  <div class="split">
+    <form class="entry" id="record" [formGroup]="form" (ngSubmit)="submit()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9M9 19V5M14 19v-7M19 19V8"/></svg></span>
+        <div>
+          <h2>Record Production</h2>
+          <p>Log daily production from farm activities.</p>
+        </div>
+      </header>
+      <h3>Production information</h3>
+      <div class="entry-grid">
+        <label>Farm <em>*</em>
+          <select formControlName="farmId">
+            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+          </select>
+        </label>
+        <label>Product <em>*</em>
+          <select formControlName="productType"><option>MILK</option><option>EGGS</option><option>FISH</option></select>
+        </label>
+        <label>Quantity <em>*</em>
+          <input formControlName="quantity" type="number" min="0.01" step="0.01">
+        </label>
+        <label>Unit <em>*</em><input formControlName="unit"></label>
+        <label>Date<input formControlName="recordedOn" type="date"></label>
+        <label class="wide">Notes<input formControlName="notes" placeholder="Optional note about this record"></label>
+      </div>
+      @if (error()) { <div class="error">{{ error() }}</div> }
+      <div class="entry-foot">
+        <a class="ghost-btn" href="#records">Cancel</a>
+        <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Record Production' }}</button>
+      </div>
+    </form>
+
+    <article class="card" id="cycles">
+      <h2>Fish cycles</h2>
+      <p class="muted">Estimated live count is stocked minus mortality and harvest.</p>
+      <div class="cycles">
+        @for (cycle of cycles(); track cycle.id) {
+          <article class="cycle">
+            <header>
+              <strong>{{ cycle.code }}</strong>
+              <span class="status-pill is-active">{{ cycle.status }}</span>
+            </header>
+            <p>{{ cycle.farmName }}</p>
+            <p class="muted">Stocked {{ fmt(cycle.stockedQuantity) }} · Mortality {{ fmt(cycle.mortality) }} · Harvested {{ fmt(cycle.harvested) }}</p>
+            <div class="bar" aria-hidden="true"><span [style.width.%]="progress(cycle.stockedQuantity, cycle.estimatedLiveCount)"></span></div>
+            <small>Estimated live {{ fmt(cycle.estimatedLiveCount) }} · {{ progress(cycle.stockedQuantity, cycle.estimatedLiveCount) }}%</small>
+          </article>
+        } @empty { <p class="muted">No fish cycles are recorded.</p> }
+      </div>
+    </article>
+  </div>
+
+  <article class="card" id="records">
+    <h2>Production records</h2>
+    @if (loading()) {
+      <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
+    } @else if (records().length === 0) {
+      <p class="empty-state">No records found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Farm</th><th>Product</th><th>Quantity</th><th>Notes</th></tr></thead>
+          <tbody>
+            @for (row of records(); track row.id) {
+              <tr>
+                <td>{{ row.recordedOn }}</td>
+                <td>{{ row.farmName }}</td>
+                <td>{{ row.productType }}</td>
+                <td>{{ fmt(row.quantity) }} {{ row.unit }}</td>
+                <td>{{ row.notes || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+}

@@ -1,0 +1,212 @@
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading adviser overview">
+    <div class="skeleton title-skel"></div>
+    <div class="kpis">
+      @for (item of [1, 2, 3, 4]; track item) { <div class="skeleton kpi-skel"></div> }
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <p>The adviser overview could not be loaded.</p>
+    <button class="green-btn" type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (data()) {
+  <header class="hello">
+    <div>
+      <h1>{{ greeting() }}, {{ firstName() }}</h1>
+      <p>Here is what needs your attention across your assigned farms.</p>
+    </div>
+    <span class="scope"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>{{ scopeLabel() }}</span>
+    <a class="ghost-btn" routerLink="/advice" fragment="post">+ Create Recommendation</a>
+  </header>
+
+  <section class="kpis" aria-label="Adviser summary">
+    <article class="card kpi">
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg></span>
+      <div><small>Assigned Farms</small><strong>{{ farms().length }}</strong><p>Farms in your access scope</p></div>
+    </article>
+    <article class="card kpi">
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="2.4"/><circle cx="16" cy="9.5" r="2"/><path d="M4.5 18c.8-2.4 2.4-3.6 4.6-3.6S13 15.6 13.8 18M14 14.8c1.2-.4 2.5 0 3.6.8"/></svg></span>
+      <div><small>Open alerts</small><strong>{{ openAlerts().length }}</strong><p>Open on the assigned farms</p></div>
+    </article>
+    <article class="card kpi">
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>
+      <div><small>Open tasks</small><strong>{{ tasks()?.length ?? 0 }}</strong><p>Still open on those farms</p></div>
+    </article>
+    <article class="card kpi">
+      <span class="bubble red" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 16.5h.01"/></svg></span>
+      <div><small>Urgent health alerts</small><strong>{{ urgentAlerts().length }}</strong><p>Critical, or a reported health alert</p></div>
+    </article>
+  </section>
+
+  <div class="stage">
+    <div class="main-col">
+      <article class="card map-card">
+        <header class="card-head">
+          <h2>Assigned Farms</h2>
+          <a routerLink="/farms">View all farms</a>
+        </header>
+        <div class="map-layout">
+          <app-tanzania-map
+            [pins]="mapPins()"
+            [rings]="boundaries()"
+            [zoom]="zoom()"
+            [places]="true"
+            [regions]="true"
+            [selectedId]="selectedId()"
+            [callout]="callout()"
+            (pinFocused)="focusPin($event)"
+            (pinPicked)="pickPin($event)"
+            ariaLabel="Assigned farms in Tanzania" />
+          <ul class="legend">
+            @for (item of legend(); track item.label) {
+              <li><i [attr.data-tone]="item.tone"></i>{{ item.label }} <b>({{ item.count }})</b></li>
+            }
+          </ul>
+        </div>
+        <div class="map-tools">
+          <button type="button" (click)="zoomIn()" aria-label="Zoom in">+</button>
+          <button type="button" (click)="zoomOut()" aria-label="Zoom out">−</button>
+        </div>
+      </article>
+
+      <div class="pair">
+        <article class="card">
+          <header class="card-head">
+            <h2>Recent activity</h2>
+            <a routerLink="/dashboard" fragment="activity">View all</a>
+          </header>
+          @if (activity().length === 0) {
+            <p class="empty-state">No activity is recorded for these farms.</p>
+          } @else {
+            <ul class="requests">
+              @for (item of activity(); track item.id) {
+                <li>
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.farmName || 'All farms' }}</span>
+                  <em>{{ when(item.occurredAt) }}</em>
+                  <a [routerLink]="activityLink(item)">View</a>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2>Production signals</h2>
+            @if (chart(); as chart) { <span class="quiet">{{ chart.range }}</span> }
+          </header>
+          @if (chart(); as chart) {
+            <svg class="trend" [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height" role="img" [attr.aria-label]="'Milk recorded, ' + chart.range">
+              <path class="area" [attr.d]="chart.area" />
+              <path class="line" [attr.d]="chart.line" />
+              @for (point of chart.points; track point.label) {
+                <circle [attr.cx]="point.x" [attr.cy]="point.y" r="3" />
+                <text [attr.x]="point.x" [attr.y]="chart.height - 4">{{ point.label }}</text>
+              }
+            </svg>
+            <p class="quiet legend-line"><i></i> Milk recorded (L)</p>
+          } @else {
+            <p class="empty-state">Milk has not been recorded across enough months to draw a trend.</p>
+          }
+        </article>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <article class="card">
+        <header class="card-head">
+          <h2>Priority advisory cases</h2>
+          <a routerLink="/alerts">View all cases</a>
+        </header>
+        @if (cases().length === 0) {
+          <p class="empty-state">No open alert on the assigned farms.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Case</th>
+                  <th>Severity</th>
+                  <th>Farm</th>
+                  <th>Age</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (alert of cases(); track alert.id) {
+                  <tr>
+                    <td>{{ alert.title }}</td>
+                    <td><span class="pill" [attr.data-severity]="alert.severity">{{ severity(alert.severity) }}</span></td>
+                    <td>{{ alert.farmName || 'All farms' }}<small>{{ lead(alert.farmId) }}</small></td>
+                    <td>{{ age(alert.occurredAt) }}</td>
+                    <td><span class="pill status">{{ status(alert.status) }}</span></td>
+                    <td><a class="review" [routerLink]="review(alert)">Review</a></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </article>
+
+      <article class="card">
+        <header class="card-head">
+          <h2>Open tasks</h2>
+          <a routerLink="/staff">View tasks</a>
+        </header>
+        @if (upcoming().length === 0) {
+          <p class="empty-state">No open task is scheduled on the assigned farms.</p>
+        } @else {
+          <ul class="schedule">
+            @for (task of upcoming(); track task.id) {
+              <li>
+                <span class="when">{{ due(task.dueOn) }}</span>
+                <div>
+                  <strong>{{ task.title }}</strong>
+                  <p>{{ task.notes || task.taskType }}</p>
+                </div>
+                <em>{{ status(task.status) }}</em>
+                <a [routerLink]="['/farms', task.farmId]" [attr.aria-label]="'Open ' + task.farmName">{{ task.farmName }}</a>
+              </li>
+            }
+          </ul>
+        }
+      </article>
+
+      <div class="pair">
+        <article class="card">
+          <header class="card-head">
+            <h2>Recent recommendations</h2>
+            <a routerLink="/advice">View all</a>
+          </header>
+          @if (recommendations().length === 0) {
+            <p class="empty-state">No recommendation has been published.</p>
+          } @else {
+            <ul class="recs">
+              @for (note of recommendations(); track note.id) {
+                <li>
+                  <strong>{{ note.topic }}</strong>
+                  <span>{{ note.medication || 'Advice' }}</span>
+                  <em>{{ when(note.createdAt) }}</em>
+                  <a routerLink="/advice">Open</a>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <article class="card actions" aria-label="Quick actions">
+          <h2>Quick actions</h2>
+          <a routerLink="/advice" fragment="post"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Create recommendation</a>
+          <a routerLink="/alerts"><svg viewBox="0 0 24 24"><path d="M12 4 3 19h18z"/></svg>Review alerts</a>
+          <a routerLink="/farms"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>Open farms</a>
+          <a routerLink="/production"><svg viewBox="0 0 24 24"><path d="M4 16c2-6 4-8 8-8s6 2 8 8"/><path d="M8 16v3M16 16v3"/></svg>Production</a>
+        </article>
+      </div>
+    </div>
+  </div>
+}

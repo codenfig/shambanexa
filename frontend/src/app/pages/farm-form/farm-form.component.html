@@ -1,0 +1,105 @@
+@if (loading()) {
+  <p class="state">Loading farm…</p>
+} @else {
+  <form class="studio" [formGroup]="form" (ngSubmit)="submit()">
+    <header class="studio-head">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 20V10l8-6 8 6v10"/><path d="M10 20v-6h4v6"/></svg>
+      </span>
+      <div>
+        <p class="eyebrow">{{ editing ? 'Farm record' : 'New farm' }}</p>
+        <h1>{{ editing ? 'Edit Farm' : 'Add Farm' }}</h1>
+        <p>{{ editing ? 'Update the farm record. The change is kept with the audit trail.' : 'Register the farm, then click the map to draw its boundary. Several farms can share one region.' }}</p>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-copy">
+          <h2>Farm details</h2>
+          <p>Name, code, and the people who run it.</p>
+        </div>
+        <div class="fields">
+          <label><span>Farm name <em>*</em></span>
+            <input formControlName="name" maxlength="160" placeholder="Name of the farm">
+            @if (invalid('name')) { <small>Enter the farm name.</small> }
+          </label>
+          <label><span>Farm code <em>*</em></span>
+            <input formControlName="code" autocomplete="off" maxlength="40" placeholder="Short unique code">
+            @if (invalid('code')) { <small>Enter a farm code, up to 40 characters.</small> }
+          </label>
+          <label class="wide"><span>Region <em>*</em></span>
+            <select formControlName="region">
+              <option value="">Select a region</option>
+              @for (name of regionChoices(); track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+            @if (invalid('region')) { <small>Choose a region.</small> }
+            <p class="region-note">{{ regionHint() }}</p>
+          </label>
+          <label><span>Manager</span>
+            <input formControlName="managerName" maxlength="160" placeholder="Farm manager">
+          </label>
+          <label><span>Phone</span>
+            <input formControlName="contactPhone" maxlength="40" placeholder="Contact phone">
+          </label>
+          <label class="wide"><span>Address <em>*</em></span>
+            <input formControlName="address" maxlength="300" placeholder="Village, ward, or street">
+            @if (invalid('address')) { <small>Enter the address.</small> }
+          </label>
+          @if (editing) {
+            <p class="readonly">Status <strong>{{ status() }}</strong></p>
+            @if (establishedOn()) {
+              <p class="readonly">Established <strong>{{ establishedOn() }}</strong></p>
+            }
+          }
+        </div>
+        @if (!editing) {
+          <p class="aside-note">Saving the farm also opens a grazing area on that farm.</p>
+        }
+      </section>
+
+      <section class="panel location">
+        <div class="panel-copy">
+          <h2>Boundary</h2>
+          <p>Click each corner of the farm. At least three corners close the boundary.</p>
+        </div>
+        <div class="draw-tools">
+          <button type="button" class="ghost-btn" (click)="undoCorner()" [disabled]="boundary().length === 0">Undo corner</button>
+          <button type="button" class="ghost-btn" (click)="clearBoundary()" [disabled]="boundary().length === 0">Clear</button>
+          <span>{{ boundary().length }} corner{{ boundary().length === 1 ? '' : 's' }}</span>
+        </div>
+        <app-tanzania-map
+          class="fill"
+          [drawing]="true"
+          [sketch]="boundary()"
+          [markerLatitude]="coordinate('latitude')"
+          [markerLongitude]="coordinate('longitude')"
+          markerLabel="Farm"
+          ariaLabel="Draw the farm boundary in Tanzania"
+          (corner)="addCorner($event)"
+        />
+        <div class="coords">
+          <label><span>Latitude <em>*</em></span>
+            <input formControlName="latitude" type="number" step="0.000001" min="-90" max="90" placeholder="Set on the map">
+            @if (invalid('latitude')) { <small>Enter a latitude between -90 and 90.</small> }
+          </label>
+          <label><span>Longitude <em>*</em></span>
+            <input formControlName="longitude" type="number" step="0.000001" min="-180" max="180" placeholder="Set on the map">
+            @if (invalid('longitude')) { <small>Enter a longitude between -180 and 180.</small> }
+          </label>
+        </div>
+      </section>
+    </div>
+
+    @if (error()) { <div class="error">{{ error() }}</div> }
+    <div class="actions">
+      <p>Fields marked <em>*</em> are required. The farm code stays unique.</p>
+      <div>
+        <a class="ghost-btn" [routerLink]="farmId ? ['/farms', farmId] : ['/farms']">Cancel</a>
+        <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : (editing ? 'Save Changes' : 'Create Farm') }}</button>
+      </div>
+    </div>
+  </form>
+}

@@ -1,0 +1,12 @@
+.report-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.report-cards a {
+  display: grid; gap: 6px; background: #fff; border: 1px solid #e7eee9; border-radius: 16px;
+  padding: 16px; text-decoration: none; color: inherit; box-shadow: 0 8px 20px rgba(20, 36, 24, 0.04);
+}
+.report-cards a:hover { border-color: #2f9e44; }
+.report-cards strong { font-size: 16px; }
+.report-cards span { color: #66756c; font-size: 13px; line-height: 1.4; }
+
+@media (max-width: 900px) {
+  .report-cards { grid-template-columns: 1fr 1fr; }
+}

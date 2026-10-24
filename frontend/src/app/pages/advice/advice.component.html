@@ -1,0 +1,76 @@
+<app-page-header title="Expert advice" description="Advice and medication recommendations from a Farm Adviser, visible to every farmer.">
+  @if (canAdvise()) {
+    <a class="green-btn" href="#post">Post advice</a>
+  }
+</app-page-header>
+
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading advice"><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (error()) {
+  <div class="state">
+    <h2>Unable to load data.</h2>
+    <button class="green-btn" type="button" (click)="load()">Retry</button>
+  </div>
+} @else {
+  <section class="stats" aria-label="Advice counts">
+    <article><small>Published</small><strong>{{ notes().length }}</strong></article>
+    <article><small>With medication</small><strong>{{ withMedication() }}</strong></article>
+  </section>
+
+  <div class="split">
+    <section id="board" aria-label="Advice for all farmers">
+      @if (notes().length === 0) {
+        <article class="card"><p class="empty-state">No expert advice has been posted.</p></article>
+      } @else {
+        @for (note of notes(); track note.id) {
+          <article class="card note">
+            <header>
+              <h2>{{ note.topic }}</h2>
+              @if (note.mine) {
+                <button type="button" class="ghost-btn" (click)="remove(note)" [disabled]="removing() === note.id">{{ removing() === note.id ? 'Removing…' : 'Remove' }}</button>
+              }
+            </header>
+            <p>{{ note.advice }}</p>
+            @if (note.medication) {
+              <p class="medication"><strong>{{ note.medication }}</strong>@if (note.medicationNote) { <span>{{ note.medicationNote }}</span> }</p>
+            }
+            <p class="muted">{{ note.authorName }} · Farm Adviser · {{ when(note.createdAt) }}</p>
+          </article>
+        }
+      }
+    </section>
+
+    <form class="entry" id="post" [formGroup]="form" (ngSubmit)="submit()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v4M8 7l-2-2M16 7l2-2M6 13h12M8 17h8"/><path d="M7 9h10v11H7z"/></svg></span>
+        <div>
+          <h2>Post advice</h2>
+          <p>What you write here is shown to every farmer in this workspace.</p>
+        </div>
+      </header>
+      @if (!canAdvise()) {
+        <p class="muted">Posting advice needs the Farm Adviser role. An administrator assigns it under Users &amp; Roles.</p>
+      } @else {
+        <div class="entry-grid">
+          <label class="wide">Topic <em>*</em>
+            <input formControlName="topic" maxlength="160" placeholder="What this advice is about">
+          </label>
+          <label class="wide">Advice <em>*</em>
+            <textarea formControlName="advice" rows="5" maxlength="2000" placeholder="The guidance farmers should follow"></textarea>
+          </label>
+          <label class="wide">Medication
+            <input formControlName="medication" maxlength="160" placeholder="Name of a medication, if you recommend one">
+          </label>
+          <label class="wide">How to use it
+            <textarea formControlName="medicationNote" rows="3" maxlength="400" placeholder="Your note about that medication"></textarea>
+          </label>
+        </div>
+        @if (formError()) { <div class="error">{{ formError() }}</div> }
+        <div class="entry-foot">
+          <a class="ghost-btn" href="#board">Cancel</a>
+          <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Publishing…' : 'Publish for all farmers' }}</button>
+        </div>
+      }
+    </form>
+  </div>
+}

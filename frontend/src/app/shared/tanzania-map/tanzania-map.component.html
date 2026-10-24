@@ -1,0 +1,151 @@
+<div class="map-frame" [class.picking]="selectable()" [class.zoomed]="zoom() !== 1">
+  <svg #surface [attr.viewBox]="viewBox" [style.aspect-ratio]="width + ' / ' + height" [style.transform]="zoom() === 1 ? 'none' : 'scale(' + zoom() + ')'" (click)="onMapClick($event)" role="img" [attr.aria-label]="ariaLabel()">
+    <defs>
+      <radialGradient [attr.id]="uid + '-sea'" cx="46%" cy="40%" r="78%">
+        <stop offset="0%" stop-color="#e9f7f8" />
+        <stop offset="52%" stop-color="#b5d9e3" />
+        <stop offset="100%" stop-color="#679eb0" />
+      </radialGradient>
+      <linearGradient [attr.id]="uid + '-land'" x1="0.15" y1="0" x2="0.85" y2="1">
+        <stop offset="0%" stop-color="#e7f6d6" />
+        <stop offset="38%" stop-color="#b7d7a1" />
+        <stop offset="100%" stop-color="#6aa368" />
+      </linearGradient>
+      <radialGradient [attr.id]="uid + '-light'" cx="34%" cy="28%" r="62%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55" />
+        <stop offset="72%" stop-color="#ffffff" stop-opacity="0" />
+      </radialGradient>
+      <filter [attr.id]="uid + '-lift'" x="-18%" y="-18%" width="136%" height="146%">
+        <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0c3324" flood-opacity="0.34" />
+      </filter>
+      <filter [attr.id]="uid + '-card'" x="-12%" y="-20%" width="130%" height="160%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#10281c" flood-opacity="0.2" />
+      </filter>
+      <clipPath [attr.id]="uid + '-landclip'">
+        <path [attr.d]="outline" />
+      </clipPath>
+    </defs>
+
+    <rect class="sea" x="0" y="0" [attr.width]="width" [attr.height]="height" [attr.fill]="'url(#' + uid + '-sea)'" />
+    @for (line of graticule; track line.id) {
+      <text class="grid-label" [attr.x]="line.lx" [attr.y]="line.ly" [attr.text-anchor]="line.anchor">{{ line.label }}</text>
+    }
+
+    <path class="land-shadow" [attr.d]="outline" [attr.filter]="'url(#' + uid + '-lift)'" />
+    <path class="land" [attr.d]="outline" [attr.fill]="'url(#' + uid + '-land)'" />
+    <path class="land-light" [attr.d]="outline" [attr.fill]="'url(#' + uid + '-light)'" />
+    @if (regions()) {
+      <g class="region-fill" [attr.clip-path]="'url(#' + uid + '-landclip)'">
+        @for (region of regionPaths; track region.name) {
+          <path [attr.d]="region.d" />
+        }
+      </g>
+      <g class="districts" [attr.clip-path]="'url(#' + uid + '-landclip)'">
+        @for (district of districtPaths; track district.name) {
+          <path [attr.d]="district.d"><title>{{ district.name }}</title></path>
+        }
+      </g>
+      <g class="regions" [attr.clip-path]="'url(#' + uid + '-landclip)'">
+        @for (region of regionPaths; track region.name) {
+          <path [attr.d]="region.d"><title>{{ region.name }}</title></path>
+        }
+      </g>
+    }
+    <g class="lakes" [attr.clip-path]="'url(#' + uid + '-landclip)'">
+      @for (lake of lakes; track lake.name) {
+        <path [attr.d]="lake.d" [attr.fill]="'url(#' + uid + '-sea)'"><title>{{ lake.name }}</title></path>
+      }
+    </g>
+    @for (line of graticule; track line.id) {
+      <line class="grid" [attr.x1]="line.x1" [attr.y1]="line.y1" [attr.x2]="line.x2" [attr.y2]="line.y2" />
+    }
+    <path class="coast" [attr.d]="outline" />
+
+    <g class="compass" [attr.transform]="'translate(' + compass.x + ' ' + compass.y + ')'" aria-hidden="true">
+      <circle r="16" />
+      <polygon points="0,-9 3.2,3.5 0,1 -3.2,3.5" />
+      <text y="27" text-anchor="middle">N</text>
+    </g>
+
+    <g class="scale" [attr.transform]="'translate(' + scaleBar.x + ' ' + scaleBar.y + ')'" aria-hidden="true">
+      <line x1="0" y1="-4" x2="0" y2="4" />
+      <line x1="0" y1="0" [attr.x2]="scaleBar.width" y2="0" />
+      <line [attr.x1]="scaleBar.width" y1="-4" [attr.x2]="scaleBar.width" y2="4" />
+      <text class="scale-label" [attr.x]="scaleBar.width / 2" y="-8" text-anchor="middle">{{ scaleBar.km }} km</text>
+    </g>
+
+    @if (places()) {
+      @for (label of neighbors; track label.name) {
+        <text class="place" [attr.x]="label.x" [attr.y]="label.y">{{ label.name }}</text>
+      }
+    }
+
+    @for (ring of ringPaths(); track ring.id) {
+      <path class="boundary" [attr.d]="ring.d" />
+    }
+    @if (sketchPath()) {
+      <path class="sketch" [attr.d]="sketchPath()" />
+      @for (dot of sketchDots(); track $index) {
+        <circle class="corner" [attr.cx]="dot.x" [attr.cy]="dot.y" r="3.4" />
+      }
+    }
+
+    @for (pin of placed(); track pin.id) {
+      @if (pin.link) {
+        <a class="marker" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" [routerLink]="pin.link" [attr.aria-label]="pin.title" (mouseenter)="pinFocused.emit(pin.id)" (mouseleave)="pinFocused.emit('')" (click)="pinPicked.emit(pin.id); $event.stopPropagation()">
+          <title>{{ pin.title }}</title>
+          <circle class="ping" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" [style.animation-delay]="pin.delay" />
+          <circle class="halo" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r + 3.5" />
+          <circle class="core" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" />
+          <circle class="glint" [attr.cx]="pin.glintX" [attr.cy]="pin.glintY" [attr.r]="pin.glintR" />
+          <rect class="chip" [attr.x]="pin.chipX" [attr.y]="pin.chipY" [attr.width]="pin.chipW" height="18" rx="9" [attr.filter]="'url(#' + uid + '-card)'" />
+          <text [attr.x]="pin.chipX + pin.chipW / 2" [attr.y]="pin.chipY + 12.5" text-anchor="middle">{{ pin.label }}</text>
+          @if (noticeBox(pin); as badge) {
+            <rect class="notice" [attr.x]="badge.x" [attr.y]="badge.y" [attr.width]="badge.width" height="16" rx="8" />
+            <text class="notice-label" [attr.x]="badge.x + badge.width / 2" [attr.y]="badge.y + 11.5" text-anchor="middle">{{ pin.notice }}</text>
+          }
+        </a>
+      } @else {
+        <g class="marker" role="button" tabindex="0" [attr.aria-label]="pin.title" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" (mouseenter)="pinFocused.emit(pin.id)" (mouseleave)="pinFocused.emit('')" (click)="pinPicked.emit(pin.id); $event.stopPropagation()" (keydown.enter)="pinPicked.emit(pin.id)" (keydown.space)="$event.preventDefault(); pinPicked.emit(pin.id)">
+          <title>{{ pin.title }}</title>
+          <circle class="ping" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" [style.animation-delay]="pin.delay" />
+          <circle class="halo" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r + 3.5" />
+          <circle class="core" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" />
+          <circle class="glint" [attr.cx]="pin.glintX" [attr.cy]="pin.glintY" [attr.r]="pin.glintR" />
+          <rect class="chip" [attr.x]="pin.chipX" [attr.y]="pin.chipY" [attr.width]="pin.chipW" height="18" rx="9" [attr.filter]="'url(#' + uid + '-card)'" />
+          <text [attr.x]="pin.chipX + pin.chipW / 2" [attr.y]="pin.chipY + 12.5" text-anchor="middle">{{ pin.label }}</text>
+          @if (noticeBox(pin); as badge) {
+            <rect class="notice" [attr.x]="badge.x" [attr.y]="badge.y" [attr.width]="badge.width" height="16" rx="8" />
+            <text class="notice-label" [attr.x]="badge.x + badge.width / 2" [attr.y]="badge.y + 11.5" text-anchor="middle">{{ pin.notice }}</text>
+          }
+        </g>
+      }
+    }
+
+    @if (calloutDraw(); as tip) {
+      <g class="callout" [attr.transform]="'translate(' + tip.x + ' ' + tip.y + ')'">
+        <rect [attr.width]="tip.boxW" [attr.height]="tip.boxH" rx="14" [attr.filter]="'url(#' + uid + '-card)'" />
+        <rect class="accent" [class.alert]="tip.tone === 'alert'" [class.warn]="tip.tone === 'warn'" width="4" [attr.height]="tip.boxH - 16" x="0" y="8" rx="2" />
+        @for (line of tip.lines; track $index) {
+          <text [attr.x]="16" [attr.y]="22 + $index * 18" [class.title]="$index === 0">{{ line }}</text>
+        }
+      </g>
+    }
+
+    @if (selection(); as point) {
+      <g class="marker chosen">
+        <circle class="halo" [attr.cx]="point.x" [attr.cy]="point.y" [attr.r]="point.r + 3.5" />
+        <circle class="core" [attr.cx]="point.x" [attr.cy]="point.y" [attr.r]="point.r" />
+        <circle class="glint" [attr.cx]="point.glintX" [attr.cy]="point.glintY" [attr.r]="point.glintR" />
+        <rect class="chip" [attr.x]="point.chipX" [attr.y]="point.chipY" [attr.width]="point.chipW" height="18" rx="9" />
+        <text [attr.x]="point.chipX + point.chipW / 2" [attr.y]="point.chipY + 12.5" text-anchor="middle">{{ point.label }}</text>
+      </g>
+    }
+  </svg>
+</div>
+@if (selection()?.outside) {
+  <p class="notice">These coordinates are outside Tanzania.</p>
+}
+@if (notice()) {
+  <p class="notice">{{ notice() }}</p>
+}
