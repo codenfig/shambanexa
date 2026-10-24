@@ -42,4 +42,39 @@ export class SettingsComponent {
       }
     });
   }
+
+  initials(name: string): string {
+    const parts = name.split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+  }
+
+  scopeLabel(scope: string): string {
+    if (scope === 'ALL_FARMS') {
+      return 'All farms';
+    }
+    if (scope === 'SELECTED_FARMS') {
+      return 'Selected farms';
+    }
+    return 'Assigned farm';
+  }
+
+  scopeDetail(scope: string, count: number): string {
+    if (scope === 'ALL_FARMS') {
+      return 'Every farm in the workspace';
+    }
+    return `${count} assigned farm${count === 1 ? '' : 's'}`;
+  }
+
+  planDate(value: string): string {
+    if (!value) {
+      return '';
+    }
+    const day = value.slice(0, 10);
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    }).format(new Date(`${day}T00:00:00Z`));
+  }
 }

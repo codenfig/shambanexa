@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { AccessCatalog, ActivityItem, AdviceNote, Adviser, AlertItem, Animal, Breed, Dashboard, Farm, Facility, FishCycle, HealthCase, HerdBatch, InventoryItem, Page, ProductionRecord, SearchHit, Settings, Species, StaffMember, UserAccess, WorkTask } from './models';
+import { AccessCatalog, ActivityItem, AdviceNote, Adviser, AlertItem, Animal, Breed, Dashboard, Farm, FarmClimate, FarmForecast, Facility, FishCycle, HealthCase, HerdBatch, InventoryItem, Page, ProductionRecord, SearchHit, Settings, Species, StaffMember, UserAccess, WorkTask } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -20,6 +20,14 @@ export class ApiService {
 
   farm(id: string) {
     return this.http.get<{ farm: Farm; facilities: Facility[] }>(`/api/v1/farms/${id}`);
+  }
+
+  farmClimate(id: string) {
+    return this.http.get<FarmClimate>(`/api/v1/farms/${id}/climate`);
+  }
+
+  farmForecast(id: string) {
+    return this.http.get<FarmForecast>(`/api/v1/farms/${id}/forecast`);
   }
 
   createFarm(body: unknown) {

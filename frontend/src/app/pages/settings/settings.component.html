@@ -1,4 +1,4 @@
-<app-page-header title="Settings" description="Tenant preferences and the account you are signed in with." />
+<app-page-header title="Settings" description="Workspace preferences, master data, and the services the farm pages call." />
 
 @if (loading()) {
   <div class="skeleton-stack" aria-busy="true" aria-label="Loading settings"><div class="skeleton"></div><div class="skeleton"></div></div>
@@ -9,48 +9,120 @@
   </div>
 } @else if (settings()) {
   @if (settings(); as current) {
-    <div class="settings-grid">
+    <section class="identity">
       <div>
-        <article class="card" id="general">
-          <h2>System settings</h2>
-          <dl>
-            <div><dt>Workspace</dt><dd>{{ current.tenantName }}</dd></div>
-            <div><dt>Currency</dt><dd>{{ current.currencyCode }}</dd></div>
-            <div><dt>Timezone</dt><dd>{{ current.timezone }}</dd></div>
-            <div><dt>Locale</dt><dd>{{ current.locale }}</dd></div>
-            <div><dt>Season</dt><dd>{{ current.seasonLabel }}</dd></div>
-            <div><dt>Plan</dt><dd>{{ current.subscriptionPlan }} through {{ current.subscriptionValidUntil }}</dd></div>
-            <div><dt>Signed in</dt><dd>{{ session()?.email }} · {{ session()?.roleLabel }}</dd></div>
-          </dl>
-        </article>
-        <article class="card" id="master">
-          <h2>Master data</h2>
-          @if (species().length === 0) {
-            <p class="empty-state">No species are recorded.</p>
-          } @else {
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Species</th><th>Code</th><th>Category</th></tr></thead>
-                <tbody>
-                  @for (item of species(); track item.id) {
-                    <tr><td>{{ item.name }}</td><td>{{ item.code }}</td><td>{{ item.category }}</td></tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </article>
-        <article class="card" id="integrations">
-          <h2>Integrations</h2>
-          <p>Currency, timezone, and locale are stored on the tenant. No external integration is configured.</p>
-        </article>
+        <p class="eyebrow">Workspace</p>
+        <h2>{{ current.tenantName }}</h2>
+        <div class="pills">
+          <span>{{ current.seasonLabel }}</span>
+          <span>{{ current.subscriptionPlan }}</span>
+          <span>Through {{ planDate(current.subscriptionValidUntil) }}</span>
+        </div>
       </div>
-      <aside class="card" id="help">
-        <h2>Help centre</h2>
-        <a routerLink="/help" fragment="centre">How records work</a>
-        <a routerLink="/help" fragment="movements">Animal movements</a>
-        <a routerLink="/help" fragment="contact">Contact support</a>
-        <a routerLink="/help" fragment="status">System status</a>
+      @if (session(); as person) {
+        <div class="who">
+          <span class="avatar" aria-hidden="true">{{ initials(person.fullName) }}</span>
+          <div>
+            <strong>{{ person.fullName }}</strong>
+            <em>{{ person.roleLabel }}</em>
+            <span>{{ person.email }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="panel" id="general">
+      <header>
+        <h2>General</h2>
+        <p>Stored on this workspace. These values are used for dates, money, and the season label.</p>
+      </header>
+      <div class="tiles">
+        <article><span>Currency</span><strong>{{ current.currencyCode }}</strong></article>
+        <article><span>Timezone</span><strong>{{ current.timezone }}</strong></article>
+        <article><span>Locale</span><strong>{{ current.locale }}</strong></article>
+        <article><span>Season</span><strong>{{ current.seasonLabel }}</strong></article>
+        <article><span>Plan</span><strong>{{ current.subscriptionPlan }}</strong><em>Through {{ planDate(current.subscriptionValidUntil) }}</em></article>
+        @if (session(); as person) {
+          <article><span>Data scope</span><strong>{{ scopeLabel(person.accessScope) }}</strong><em>{{ scopeDetail(person.accessScope, person.farmIds.length) }}</em></article>
+        }
+      </div>
+    </section>
+
+    <section class="panel" id="master">
+      <header>
+        <h2>Master data</h2>
+        <p>Species kept for livestock records. Counts on the dashboard come from animals, not from this list.</p>
+      </header>
+      @if (species().length === 0) {
+        <p class="empty">No species are recorded.</p>
+      } @else {
+        <div class="species">
+          @for (item of species(); track item.id) {
+            <article>
+              <i [style.background]="item.chartColor"></i>
+              <div>
+                <strong>{{ item.name }}</strong>
+                <span>{{ item.code }} · {{ item.category }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="split">
+      <section class="panel" id="integrations">
+        <header>
+          <h2>Integrations</h2>
+          <p>The browser does not call these services. The API does, and only for the farm pages.</p>
+        </header>
+        <div class="services">
+          <article>
+            <div><strong>Open-Meteo</strong><span class="live">On the farm page</span></div>
+            <p>Seven-day forecast for a farm’s coordinates. A model, not a gauge on the farm.</p>
+          </article>
+          <article>
+            <div><strong>NASA POWER</strong><span class="live">On the farm page</span></div>
+            <p>Historical climate for a farm’s coordinates, compared with the long-term normal.</p>
+          </article>
+          <article class="quiet">
+            <div><strong>Map service</strong><span>Not called</span></div>
+            <p>The Tanzania map is drawn in the app. Farm coordinates stay in PostgreSQL.</p>
+          </article>
+          <article class="quiet">
+            <div><strong>FAOSTAT, GBIF, SoilGrids</strong><span>Not called</span></div>
+            <p>Reference data only, when those modules are added. They are not used for farm transactions.</p>
+          </article>
+        </div>
+      </section>
+
+      <aside class="panel help" id="help">
+        <header>
+          <h2>Help</h2>
+          <p>How records are kept in this workspace.</p>
+        </header>
+        <a routerLink="/help" fragment="centre">
+          <strong>How records work</strong>
+          <span>Movements, milk, stock, and access.</span>
+        </a>
+        <a routerLink="/help" fragment="movements">
+          <strong>Animal movements</strong>
+          <span>Registration and transfers on the ledger.</span>
+        </a>
+        <a routerLink="/help" fragment="contact">
+          <strong>Contact support</strong>
+          <span>The tenant administrator for this workspace.</span>
+        </a>
+        <a routerLink="/help" fragment="status">
+          <strong>System status</strong>
+          <span>Whether the operations API responded.</span>
+        </a>
+        @if (session()?.canManageAccess) {
+          <a routerLink="/access">
+            <strong>Roles and permissions</strong>
+            <span>Who can see which farms.</span>
+          </a>
+        }
       </aside>
     </div>
   }

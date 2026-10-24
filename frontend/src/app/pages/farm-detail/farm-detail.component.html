@@ -51,6 +51,246 @@
         <div><dt>Facilities</dt><dd>{{ selected.facilityCount }}</dd></div>
       </dl>
     </article>
+    <article class="sheet forecast">
+      <h2>7-day forecast</h2>
+      <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
+      @if (forecastLoading()) {
+        <p class="muted">Asking Open-Meteo…</p>
+      } @else if (forecast()) {
+        @if (forecast(); as outlook) {
+          @if (!outlook.available) {
+            <p>{{ outlook.message }}</p>
+          } @else {
+            <div class="now">
+              @if (outlook.currentTemperatureC != null) { <span><strong>{{ outlook.currentTemperatureC }}°</strong> now</span> }
+              @if (outlook.currentHumidity != null) { <span>Humidity {{ outlook.currentHumidity }}%</span> }
+              @if (outlook.currentRainMm != null) { <span>Rain {{ outlook.currentRainMm }} mm</span> }
+              @if (outlook.currentWindMs != null) { <span>Wind {{ outlook.currentWindMs }} m/s</span> }
+            </div>
+            <div class="forecast-scroll">
+              <div class="forecast-days" role="img" aria-label="Seven day forecast">
+                @for (day of outlook.days; track day.date) {
+                  <article>
+                    <strong>{{ weekday(day.date) }}</strong>
+                    <span>{{ day.label }}</span>
+                    <b>{{ day.highC }}°</b>
+                    <em>{{ day.lowC }}°</em>
+                    <i class="chance" [attr.title]="(day.rainChance ?? 0) + '% chance of rain'"><b [style.height.%]="day.rainChance ?? 0"></b></i>
+                    <span>{{ day.rainChance ?? 0 }}%</span>
+                    <span>{{ day.rainMm }} mm</span>
+                  </article>
+                }
+              </div>
+            </div>
+          }
+          <h3>Health records</h3>
+          @if (outlook.reported.length === 0) {
+            <p>No disease report or open health case is stored for this farm.</p>
+          } @else {
+            <ul class="reported">
+              @for (item of outlook.reported; track item.id) {
+                <li>
+                  <a [routerLink]="item.sourceType === 'CASE' ? '/livestock' : '/alerts'" [queryParams]="item.sourceType === 'CASE' ? { farmId: outlook.farmId } : null">{{ item.title }}</a>
+                  <span>{{ illnessLabel(item.sourceType) }}@if (item.farmName) { · {{ item.farmName }} }</span>
+                  @if (item.notes) { <em>{{ item.notes }}</em> }
+                </li>
+              }
+            </ul>
+          }
+          @if (outlook.checks.length > 0) {
+            <h3>Conditions to check</h3>
+            <ul class="checks">
+              @for (note of outlook.checks; track note) {
+                <li>{{ note }}</li>
+              }
+            </ul>
+          }
+          <p class="muted">A forecast does not name a disease or choose a medicine. A Farm Adviser does that. {{ outlook.attribution }}</p>
+        }
+      } @else {
+        <p class="muted">Open-Meteo did not return a forecast for this farm.</p>
+      }
+    </article>
+    <article class="sheet climate">
+      <h2>Historical climate</h2>
+      <p class="muted">NASA POWER. Advisory model data for this location, not a measurement taken on the farm.</p>
+      @if (climateLoading()) {
+        <p class="muted">Asking NASA POWER…</p>
+      } @else if (climate()) {
+        @if (climate(); as report) {
+          @if (!report.available) {
+            <p>{{ report.message }}</p>
+          } @else {
+            <div class="climate-grid">
+              <section class="plot wide">
+                <h3>Water</h3>
+                <div class="bars" role="img" [attr.aria-label]="waterLabel(report)">
+                  @if (report.rainfallMm != null) {
+                    <div class="bar">
+                      <span>Rainfall <em>{{ balanceLabel(report.rainfallBalance) }}</em></span>
+                      <i><b class="rain" [style.width.%]="pct(report.rainfallMm, waterScale(report))"></b></i>
+                      <strong>{{ report.rainfallMm }} mm</strong>
+                    </div>
+                  }
+                  @if (report.rainfallNormalMm != null) {
+                    <div class="bar">
+                      <span>Normal rainfall</span>
+                      <i><b class="gold" [style.width.%]="pct(report.rainfallNormalMm, waterScale(report))"></b></i>
+                      <strong>{{ report.rainfallNormalMm }} mm</strong>
+                    </div>
+                  }
+                  @if (report.evapotranspirationMm != null) {
+                    <div class="bar">
+                      <span>Evapotranspiration <em>{{ balanceLabel(report.evapotranspirationBalance) }}</em></span>
+                      <i><b class="teal" [style.width.%]="pct(report.evapotranspirationMm, waterScale(report))"></b></i>
+                      <strong>{{ report.evapotranspirationMm }} mm</strong>
+                    </div>
+                  }
+                  @if (report.evapotranspirationNormalMm != null) {
+                    <div class="bar">
+                      <span>Normal water loss</span>
+                      <i><b class="gold" [style.width.%]="pct(report.evapotranspirationNormalMm, waterScale(report))"></b></i>
+                      <strong>{{ report.evapotranspirationNormalMm }} mm</strong>
+                    </div>
+                  }
+                </div>
+              </section>
+              <section class="plot">
+                <h3>Soil wetness</h3>
+                <div class="gauges">
+                  @if (report.averageSurfaceWetness != null) {
+                    <div class="gauge" role="img" [attr.aria-label]="'Surface wetness ' + report.averageSurfaceWetness + ' percent, top 5 cm'">
+                      <div class="ring" [style.background]="ring(report.averageSurfaceWetness, '#2f6fd6')"><span>{{ report.averageSurfaceWetness }}%</span></div>
+                      <strong>Surface</strong>
+                      <em>Top 5 cm</em>
+                    </div>
+                  }
+                  @if (report.averageRootWetness != null) {
+                    <div class="gauge" role="img" [attr.aria-label]="'Root-zone wetness ' + report.averageRootWetness + ' percent'">
+                      <div class="ring" [style.background]="ring(report.averageRootWetness, '#166534')"><span>{{ report.averageRootWetness }}%</span></div>
+                      <strong>Root zone</strong>
+                      <em>Top 1 m</em>
+                    </div>
+                  }
+                </div>
+                @if (report.rootWetnessNormal != null) {
+                  <p class="note">Root-zone normal {{ report.rootWetnessNormal }}% · {{ balanceLabel(report.rootWetnessBalance) }}</p>
+                }
+              </section>
+
+              <section class="plot">
+                <h3>Temperature</h3>
+                @if (report.averageMinC != null && report.averageMaxC != null) {
+                  <div class="thermo" role="img" [attr.aria-label]="'Average low ' + report.averageMinC + ' degrees, average high ' + report.averageMaxC + ' degrees'">
+                    <div class="track">
+                      <b [style.left.%]="pct(report.averageMinC, tempScale(report))" [style.width.%]="pct(report.averageMaxC - report.averageMinC, tempScale(report))"></b>
+                      @if (report.averageDewPointC != null) {
+                        <i class="dew" [style.left.%]="pct(report.averageDewPointC, tempScale(report))"></i>
+                      }
+                      @if (report.averageWetBulbC != null) {
+                        <i class="wet" [style.left.%]="pct(report.averageWetBulbC, tempScale(report))"></i>
+                      }
+                    </div>
+                    <div class="axis"><span>0°</span><span>{{ tempScale(report) }}°</span></div>
+                  </div>
+                }
+                <ul class="pills">
+                  @if (report.averageMinC != null) { <li><i class="low"></i>Low {{ report.averageMinC }}°</li> }
+                  @if (report.averageMaxC != null) { <li><i class="high"></i>High {{ report.averageMaxC }}°</li> }
+                  @if (report.averageDewPointC != null) { <li><i class="dew"></i>Dew {{ report.averageDewPointC }}°</li> }
+                  @if (report.averageWetBulbC != null) { <li><i class="wet"></i>Wet bulb {{ report.averageWetBulbC }}°</li> }
+                  @if (report.averageHumidity != null) { <li><i class="humid"></i>Humidity {{ report.averageHumidity }}%</li> }
+                </ul>
+              </section>
+
+              <section class="plot">
+                <h3>Days in this window</h3>
+                <div class="bars" role="img" [attr.aria-label]="daysLabel(report)">
+                  @if (report.dryDays != null) {
+                    <div class="bar">
+                      <span>Dry days <em>under 1 mm</em></span>
+                      <i><b class="gold" [style.width.%]="pct(report.dryDays, report.days)"></b></i>
+                      <strong>{{ report.dryDays }}</strong>
+                    </div>
+                  }
+                  @if (report.longestDrySpell != null) {
+                    <div class="bar">
+                      <span>Longest dry spell</span>
+                      <i><b class="amber" [style.width.%]="pct(report.longestDrySpell, report.days)"></b></i>
+                      <strong>{{ report.longestDrySpell }}</strong>
+                    </div>
+                  }
+                  @if (report.hotDays != null) {
+                    <div class="bar">
+                      <span>Hot days <em>32°C or more</em></span>
+                      <i><b class="hot" [style.width.%]="pct(report.hotDays, report.days)"></b></i>
+                      <strong>{{ report.hotDays }}</strong>
+                    </div>
+                  }
+                  @if (report.coldNights != null) {
+                    <div class="bar">
+                      <span>Cold nights <em>10°C or less</em></span>
+                      <i><b class="cold" [style.width.%]="pct(report.coldNights, report.days)"></b></i>
+                      <strong>{{ report.coldNights }}</strong>
+                    </div>
+                  }
+                  @if (report.heatStressDays != null) {
+                    <div class="bar">
+                      <span>Heat-stress days <em>index 72+</em></span>
+                      <i><b class="stress" [style.width.%]="pct(report.heatStressDays, report.days)"></b></i>
+                      <strong>{{ report.heatStressDays }}</strong>
+                    </div>
+                  }
+                </div>
+                @if (report.growingDegreeDays != null) {
+                  <p class="degree"><strong>{{ report.growingDegreeDays }}</strong> growing degree days, base 10°C</p>
+                }
+              </section>
+
+              <section class="plot">
+                <h3>Light and wind</h3>
+                <div class="bars">
+                  @if (report.averageSunlightMj != null) {
+                    <div class="bar" role="img" [attr.aria-label]="'Sunlight ' + report.averageSunlightMj + ' megajoules per square metre per day'">
+                      <span>Sunlight <em>{{ report.sunlightDays }} days</em></span>
+                      <i><b class="sun" [style.width.%]="pct(report.averageSunlightMj, lightScale(report))"></b></i>
+                      <strong>{{ report.averageSunlightMj }} MJ</strong>
+                    </div>
+                  }
+                  @if (report.averageParMj != null) {
+                    <div class="bar">
+                      <span>Plant light</span>
+                      <i><b class="leaf" [style.width.%]="pct(report.averageParMj, lightScale(report))"></b></i>
+                      <strong>{{ report.averageParMj }} MJ</strong>
+                    </div>
+                  }
+                  @if (report.parNormalMj != null) {
+                    <div class="bar">
+                      <span>Plant-light normal</span>
+                      <i><b class="gold" [style.width.%]="pct(report.parNormalMj, lightScale(report))"></b></i>
+                      <strong>{{ report.parNormalMj }} MJ</strong>
+                    </div>
+                  }
+                  @if (report.averageWindMs != null) {
+                    <div class="bar" role="img" [attr.aria-label]="'Wind ' + report.averageWindMs + ' metres per second'">
+                      <span>Wind</span>
+                      <i><b class="wind" [style.width.%]="pct(report.averageWindMs, windScale(report))"></b></i>
+                      <strong>{{ report.averageWindMs }} m/s</strong>
+                    </div>
+                  }
+                </div>
+                @if (report.averageParMj == null && report.parNormalMj != null) {
+                  <p class="note">No daily plant-light values for these dates. The bar is the long-term normal.</p>
+                }
+              </section>
+            </div>
+            <p class="muted">{{ climateRange(report) }} · {{ report.days }} days · {{ report.attribution }}</p>
+          }
+        }
+      } @else {
+        <p class="muted">NASA POWER did not return climate for this farm.</p>
+      }
+    </article>
   }
 
   @if (tab() === 'location') {

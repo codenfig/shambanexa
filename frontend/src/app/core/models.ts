@@ -98,6 +98,84 @@ export interface ActivityItem {
   farmCode?: string | null;
 }
 
+export interface ForecastDay {
+  date: string;
+  label: string;
+  highC: number | null;
+  lowC: number | null;
+  rainMm: number | null;
+  rainChance: number | null;
+  humidity: number | null;
+  windMs: number | null;
+}
+
+export interface ReportedIllness {
+  id: string;
+  title: string;
+  sourceType: string;
+  farmName: string | null;
+  notes: string | null;
+  openedOn: string | null;
+}
+
+export interface FarmForecast {
+  farmId: string;
+  farmName: string;
+  available: boolean;
+  message: string | null;
+  source: string;
+  attribution: string;
+  retrievedAt: string | null;
+  cached: boolean;
+  currentTemperatureC: number | null;
+  currentHumidity: number | null;
+  currentRainMm: number | null;
+  currentWindMs: number | null;
+  days: ForecastDay[];
+  reported: ReportedIllness[];
+  checks: string[];
+}
+
+export interface FarmClimate {
+  farmId: string;
+  farmName: string;
+  available: boolean;
+  message: string | null;
+  source: string;
+  attribution: string;
+  retrievedAt: string | null;
+  cached: boolean;
+  start: string | null;
+  end: string | null;
+  days: number;
+  rainfallMm: number | null;
+  rainfallNormalMm: number | null;
+  rainfallBalance: string | null;
+  evapotranspirationMm: number | null;
+  evapotranspirationNormalMm: number | null;
+  evapotranspirationBalance: string | null;
+  averageSurfaceWetness: number | null;
+  averageRootWetness: number | null;
+  rootWetnessNormal: number | null;
+  rootWetnessBalance: string | null;
+  averageMaxC: number | null;
+  averageMinC: number | null;
+  averageHumidity: number | null;
+  averageDewPointC: number | null;
+  averageWetBulbC: number | null;
+  hotDays: number | null;
+  coldNights: number | null;
+  heatStressDays: number | null;
+  growingDegreeDays: number | null;
+  averageSunlightMj: number | null;
+  sunlightDays: number | null;
+  averageParMj: number | null;
+  parNormalMj: number | null;
+  averageWindMs: number | null;
+  dryDays: number | null;
+  longestDrySpell: number | null;
+}
+
 export interface Farm {
   id: string;
   code: string;
