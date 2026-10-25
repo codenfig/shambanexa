@@ -1,6 +1,5 @@
 package com.shambanexa.service;
 
-import com.shambanexa.dto.AdjustRequest;
 import com.shambanexa.dto.AnimalHealthRequest;
 import com.shambanexa.dto.AnimalHealthResponse;
 import com.shambanexa.dto.BreedResponse;
@@ -8,12 +7,11 @@ import com.shambanexa.dto.DiseaseReportRequest;
 import com.shambanexa.dto.DiseaseReportResponse;
 import com.shambanexa.dto.FishCycleResponse;
 import com.shambanexa.dto.HealthCaseResponse;
-import com.shambanexa.dto.InventoryRequest;
-import com.shambanexa.dto.InventoryResponse;
 import com.shambanexa.dto.ProductionRequest;
 import com.shambanexa.dto.ProductionResponse;
 import com.shambanexa.dto.SearchHit;
 import com.shambanexa.dto.SettingsResponse;
+import com.shambanexa.dto.SettingsUpdateRequest;
 import com.shambanexa.dto.SpeciesResponse;
 import com.shambanexa.dto.StaffRequest;
 import com.shambanexa.dto.StaffResponse;
@@ -26,12 +24,6 @@ public interface OperationsService {
     List<ProductionResponse> production();
 
     ProductionResponse recordProduction(ProductionRequest request);
-
-    List<InventoryResponse> inventory();
-
-    InventoryResponse createInventory(InventoryRequest request);
-
-    InventoryResponse adjust(UUID id, AdjustRequest request);
 
     List<StaffResponse> staff();
 
@@ -52,6 +44,8 @@ public interface OperationsService {
     AnimalHealthResponse reportAnimalHealth(AnimalHealthRequest request);
 
     SettingsResponse settings();
+
+    SettingsResponse updateSettings(SettingsUpdateRequest request);
 
     List<SearchHit> search(String q);
 

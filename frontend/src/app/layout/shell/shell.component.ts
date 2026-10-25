@@ -16,6 +16,7 @@ export interface NavChildView {
   fragment?: string;
   active: boolean;
   species?: string;
+  icon?: string;
 }
 
 export interface NavItemView {
@@ -203,6 +204,16 @@ export class ShellComponent {
     }
     if (root === 'livestock' && parts[1] === 'new') {
       return [section, first, { label: 'Register animal', link: null }];
+    }
+    if (root === 'inventory' && parts[1]) {
+      const pages: Record<string, string> = {
+        receipts: 'Stock Receipts',
+        adjustments: 'Adjustments',
+        transfers: 'Transfers',
+        suppliers: 'Suppliers',
+        low: 'Low-stock Alerts'
+      };
+      return [section, first, { label: pages[parts[1]] || parts[1], link: null }];
     }
     return [section, first, { label: parts[parts.length - 1], link: null }];
   }
@@ -471,6 +482,10 @@ export class ShellComponent {
     return [];
   }
 
+  branchOn(item: NavItemView): boolean {
+    return item.active || item.children.some(child => child.active);
+  }
+
   private toChild(child: NavChildConfig): NavChildView {
     return {
       id: child.id,
@@ -479,6 +494,7 @@ export class ShellComponent {
       query: child.target.query,
       fragment: child.target.fragment,
       species: child.species,
+      icon: child.icon,
       active: this.matches(child.match)
     };
   }

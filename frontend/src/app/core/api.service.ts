@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { AccessCatalog, ActivityItem, AdviceNote, Adviser, AlertItem, Animal, Breed, Dashboard, Farm, FarmClimate, FarmForecast, Facility, FishCycle, HealthCase, HerdBatch, InventoryItem, Page, ProductionRecord, SearchHit, Settings, Species, StaffMember, UserAccess, WorkTask } from './models';
+import { AccessCatalog, ActivityItem, AdviceNote, Adviser, AlertItem, Animal, Breed, Dashboard, Farm, FarmClimate, FarmForecast, Facility, FishCycle, HealthCase, HerdBatch, InventoryAdjustment, InventoryItem, InventoryMovement, Page, ProductionRecord, SearchHit, Settings, Species, StaffMember, UserAccess, WorkTask } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -96,8 +96,32 @@ export class ApiService {
     return this.http.post<InventoryItem>('/api/v1/inventory', body);
   }
 
+  receiveInventory(id: string, body: unknown) {
+    return this.http.post<InventoryItem>(`/api/v1/inventory/${id}/receipts`, body);
+  }
+
+  issueInventory(id: string, body: unknown) {
+    return this.http.post<InventoryItem>(`/api/v1/inventory/${id}/issues`, body);
+  }
+
+  transferInventory(id: string, body: unknown) {
+    return this.http.post<InventoryItem>(`/api/v1/inventory/${id}/transfers`, body);
+  }
+
   adjustInventory(id: string, body: unknown) {
-    return this.http.post<InventoryItem>(`/api/v1/inventory/${id}/adjustments`, body);
+    return this.http.post<InventoryAdjustment>(`/api/v1/inventory/${id}/adjustments`, body);
+  }
+
+  decideAdjustment(id: string, approve: boolean) {
+    return this.http.post<InventoryAdjustment>(`/api/v1/inventory/adjustments/${id}/decision`, { approve });
+  }
+
+  inventoryLedger() {
+    return this.http.get<InventoryMovement[]>('/api/v1/inventory/ledger');
+  }
+
+  inventoryAdjustments() {
+    return this.http.get<InventoryAdjustment[]>('/api/v1/inventory/adjustments');
   }
 
   staff() {
@@ -208,6 +232,10 @@ export class ApiService {
 
   settings() {
     return this.http.get<Settings>('/api/v1/settings');
+  }
+
+  updateSettings(body: Pick<Settings, 'currencyCode' | 'timezone' | 'seasonLabel' | 'locale'> & { name: string; code: string }) {
+    return this.http.put<Settings>('/api/v1/settings', body);
   }
 
   accessCatalog() {

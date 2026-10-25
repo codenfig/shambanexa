@@ -24,6 +24,7 @@ export interface NavChildConfig {
   match?: NavMatch;
   permission?: NavPermission;
   species?: string;
+  icon?: string;
 }
 
 export interface NavItemConfig {
@@ -242,30 +243,49 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         label: 'Inventory',
         icon: 'inventory',
         target: { commands: ['/inventory'] },
-        match: page('/inventory'),
+        match: { path: '/inventory' },
         children: [
           {
             id: 'inventory-stock',
             label: 'Stock Overview',
-            target: { commands: ['/inventory'], fragment: 'stock' },
-            match: {
-              any: [
-                { path: '/inventory', exact: true, withoutQuery: ['view'] },
-                { path: '/inventory', exact: true, fragment: 'stock', withoutQuery: ['view'] }
-              ]
-            }
+            icon: 'chart',
+            target: { commands: ['/inventory'] },
+            match: { path: '/inventory', exact: true }
+          },
+          {
+            id: 'inventory-receipts',
+            label: 'Stock Receipts',
+            icon: 'truck',
+            target: { commands: ['/inventory', 'receipts'] },
+            match: page('/inventory/receipts')
           },
           {
             id: 'inventory-adjust',
             label: 'Adjustments',
-            target: { commands: ['/inventory'], fragment: 'adjustments' },
-            match: section('/inventory', 'adjustments')
+            icon: 'doc',
+            target: { commands: ['/inventory', 'adjustments'] },
+            match: page('/inventory/adjustments')
+          },
+          {
+            id: 'inventory-transfers',
+            label: 'Transfers',
+            icon: 'transfer',
+            target: { commands: ['/inventory', 'transfers'] },
+            match: page('/inventory/transfers')
+          },
+          {
+            id: 'inventory-suppliers',
+            label: 'Suppliers',
+            icon: 'people',
+            target: { commands: ['/inventory', 'suppliers'] },
+            match: page('/inventory/suppliers')
           },
           {
             id: 'inventory-low',
             label: 'Low-stock Alerts',
-            target: { commands: ['/inventory'], query: { view: 'low' } },
-            match: query('/inventory', 'view', 'low')
+            icon: 'bell',
+            target: { commands: ['/inventory', 'low'] },
+            match: page('/inventory/low')
           }
         ]
       },
@@ -474,7 +494,7 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         children: [
           {
             id: 'settings-general',
-            label: 'General Settings',
+            label: 'General',
             target: { commands: ['/settings'], fragment: 'general' },
             match: { any: [page('/settings'), section('/settings', 'general')] }
           },
@@ -489,6 +509,12 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
             label: 'Integrations',
             target: { commands: ['/settings'], fragment: 'integrations' },
             match: section('/settings', 'integrations')
+          },
+          {
+            id: 'settings-security',
+            label: 'Security',
+            target: { commands: ['/settings'], fragment: 'security' },
+            match: section('/settings', 'security')
           }
         ]
       },

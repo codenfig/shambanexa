@@ -1,0 +1,114 @@
+<header class="inv-head">
+  <div>
+    <div class="title-row">
+      <h1>Stock transfers</h1>
+      @if (!store.loading() && !store.loadError()) {
+        <span class="farm-chip">{{ chip() }}</span>
+      }
+    </div>
+    <p>Quantity moved from one farm to another. Each farm keeps one stock line per SKU.</p>
+  </div>
+  <div class="head-actions">
+    <a class="ghost-btn" routerLink="/inventory">Stock overview</a>
+    <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
+    @if (canWrite()) {
+      <button class="green-btn" type="button" (click)="showForm()">New transfer</button>
+    }
+  </div>
+</header>
+
+@if (store.loading() && !store.movements().length) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading transfers"><div class="skeleton"></div></div>
+} @else if (store.loadError()) {
+  <div class="state"><h2>Unable to load data.</h2><button class="green-btn" type="button" (click)="store.refresh()">Retry</button></div>
+} @else {
+  <div class="kpi-row">
+    <article class="kpi static">
+      <span class="mark items" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h11l-2.2-2.2M16 7l-2.2 2.2"/><path d="M17 17H6l2.2 2.2M8 17l2.2-2.2"/></svg></span>
+      <span><small>Transfer lines</small><strong>{{ fmt(rows().length) }}</strong><em>Ledger lines in this view</em></span>
+    </article>
+    <article class="kpi static">
+      <span class="mark low" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 8l4 4-4 4"/></svg></span>
+      <span><small>Sent from a farm</small><strong>{{ fmt(sent()) }}</strong><em>Transfer out</em></span>
+    </article>
+    <article class="kpi static">
+      <span class="mark mix" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 12H7M11 8 7 12l4 4"/></svg></span>
+      <span><small>Received on a farm</small><strong>{{ fmt(received()) }}</strong><em>Transfer in</em></span>
+    </article>
+    <article class="kpi static">
+      <span class="mark soon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V6M16 20v-8M20 20V8"/></svg></span>
+      <span><small>Farms in those lines</small><strong>{{ fmt(farmsTouched()) }}</strong><em>Distinct farms</em></span>
+    </article>
+  </div>
+  <section class="sheet">
+    <div class="toolbar trio">
+      <input [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search item, farm, store, or reason" aria-label="Search transfers">
+      <select [value]="farmFilter()" (change)="farmFilter.set($any($event.target).value)" aria-label="Farm">
+        <option value="ALL">All farms</option>
+        @for (farm of store.farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+      </select>
+      <button class="ghost-btn slim" type="button" (click)="search.set(''); farmFilter.set('ALL')">Clear filters</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>Movement</th><th>Item</th><th>Farm</th><th>Quantity</th><th>Store</th><th>Reason</th><th>Recorded by</th></tr></thead>
+        <tbody>
+          @if (rows().length === 0) {
+            <tr><td class="blank" colspan="8">No transfers are stored yet.</td></tr>
+          } @else {
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td>{{ when(row.occurredAt) }}</td>
+                <td><span class="pill" [class.low]="row.movementType === 'TRANSFER_OUT'" [class.in]="row.movementType === 'TRANSFER_IN'">{{ title(row.movementType) }}</span></td>
+                <td><strong>{{ row.itemName }}</strong><span>{{ row.sku }}</span></td>
+                <td>{{ row.farmName }}</td>
+                <td>{{ signed(row.quantityDelta) }} {{ row.unit }}</td>
+                <td>{{ row.storeName || '—' }}</td>
+                <td>{{ row.reason }}</td>
+                <td>{{ row.actorName }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="pager"><span>{{ rows().length }} line{{ rows().length === 1 ? '' : 's' }}</span></footer>
+    <p class="note">A transfer writes two ledger lines, one leaving the source farm and one arriving at the destination. Available stock cannot go below zero.</p>
+  </section>
+}
+
+@if (open()) {
+  <div class="modal-back" (click)="close()">
+    <form class="entry" role="dialog" aria-modal="true" aria-labelledby="transfer-title" (click)="$event.stopPropagation()" [formGroup]="form" (ngSubmit)="submit()">
+      <header class="entry-head">
+        <div>
+          <h2 id="transfer-title">Stock transfer</h2>
+          <p>Move quantity to another farm in your scope. The destination can keep its own store name.</p>
+        </div>
+      </header>
+      <div class="entry-grid">
+        <label class="wide">Item <em>*</em>
+          <select formControlName="itemId" (change)="pickDestination()">
+            @for (item of store.items(); track item.id) { <option [value]="item.id">{{ item.name }} · {{ item.farmName }}</option> }
+          </select>
+        </label>
+        <label>Destination farm <em>*</em>
+          <select formControlName="destinationFarmId">
+            @for (farm of otherFarms(form.controls.itemId.value); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+          </select>
+        </label>
+        <label>Quantity <em>*</em><input formControlName="quantity" type="number" min="0.01" step="0.01"></label>
+        <label>Reason <em>*</em><input formControlName="reason"></label>
+        <label class="wide">Destination store<input formControlName="destinationStore" placeholder="Optional"></label>
+      </div>
+      @if (!otherFarms(form.controls.itemId.value).length) {
+        <p class="quiet">Another farm in your scope is required before this line can move.</p>
+      }
+      @if (error()) { <div class="error">{{ error() }}</div> }
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="open.set(false)" [disabled]="busy()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="form.invalid || busy() || !otherFarms(form.controls.itemId.value).length">{{ busy() ? 'Saving…' : 'Record transfer' }}</button>
+      </div>
+    </form>
+  </div>
+}

@@ -13,6 +13,9 @@ public record InventoryRequest(
         @jakarta.validation.constraints.NotBlank String unit,
         @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.PositiveOrZero BigDecimal reorderPoint,
         String lotCode,
-        LocalDate expiresOn
+        LocalDate expiresOn,
+        @jakarta.validation.constraints.PositiveOrZero BigDecimal unitCost,
+        @jakarta.validation.constraints.Size(max = 160) String supplierName,
+        @jakarta.validation.constraints.Size(max = 160) String storeName
 ) {
 }

@@ -1,4 +1,14 @@
-<app-page-header title="Settings" description="Workspace preferences, master data, and the services the farm pages call." />
+<app-page-header title="Settings" description="Configure your organization, defaults, integrations and security.">
+  @if (!loading() && settings()) {
+    <span class="status" [class.warn]="dirty()">
+      <i aria-hidden="true">{{ dirty() ? '!' : '✓' }}</i>
+      {{ dirty() ? 'Unsaved changes' : 'All changes saved' }}
+    </span>
+    @if (canEdit()) {
+      <a class="history" routerLink="/access" fragment="activity">View change history</a>
+    }
+  }
+</app-page-header>
 
 @if (loading()) {
   <div class="skeleton-stack" aria-busy="true" aria-label="Loading settings"><div class="skeleton"></div><div class="skeleton"></div></div>
@@ -8,122 +18,205 @@
     <button class="green-btn" type="button" (click)="load()">Retry</button>
   </div>
 } @else if (settings()) {
-  @if (settings(); as current) {
-    <section class="identity">
-      <div>
-        <p class="eyebrow">Workspace</p>
-        <h2>{{ current.tenantName }}</h2>
-        <div class="pills">
-          <span>{{ current.seasonLabel }}</span>
-          <span>{{ current.subscriptionPlan }}</span>
-          <span>Through {{ planDate(current.subscriptionValidUntil) }}</span>
-        </div>
-      </div>
-      @if (session(); as person) {
-        <div class="who">
-          <span class="avatar" aria-hidden="true">{{ initials(person.fullName) }}</span>
-          <div>
-            <strong>{{ person.fullName }}</strong>
-            <em>{{ person.roleLabel }}</em>
-            <span>{{ person.email }}</span>
-          </div>
-        </div>
-      }
-    </section>
-
-    <section class="panel" id="general">
-      <header>
-        <h2>General</h2>
-        <p>Stored on this workspace. These values are used for dates, money, and the season label.</p>
-      </header>
-      <div class="tiles">
-        <article><span>Currency</span><strong>{{ current.currencyCode }}</strong></article>
-        <article><span>Timezone</span><strong>{{ current.timezone }}</strong></article>
-        <article><span>Locale</span><strong>{{ current.locale }}</strong></article>
-        <article><span>Season</span><strong>{{ current.seasonLabel }}</strong></article>
-        <article><span>Plan</span><strong>{{ current.subscriptionPlan }}</strong><em>Through {{ planDate(current.subscriptionValidUntil) }}</em></article>
-        @if (session(); as person) {
-          <article><span>Data scope</span><strong>{{ scopeLabel(person.accessScope) }}</strong><em>{{ scopeDetail(person.accessScope, person.farmIds.length) }}</em></article>
-        }
-      </div>
-    </section>
-
-    <section class="panel" id="master">
-      <header>
-        <h2>Master data</h2>
-        <p>Species kept for livestock records. Counts on the dashboard come from animals, not from this list.</p>
-      </header>
-      @if (species().length === 0) {
-        <p class="empty">No species are recorded.</p>
-      } @else {
-        <div class="species">
-          @for (item of species(); track item.id) {
-            <article>
-              <i [style.background]="item.chartColor"></i>
-              <div>
-                <strong>{{ item.name }}</strong>
-                <span>{{ item.code }} · {{ item.category }}</span>
-              </div>
-            </article>
-          }
-        </div>
-      }
-    </section>
-
-    <div class="split">
-      <section class="panel" id="integrations">
-        <header>
-          <h2>Integrations</h2>
-          <p>The browser does not call these services. The API does, and only for the farm pages.</p>
-        </header>
-        <div class="services">
-          <article>
-            <div><strong>Open-Meteo</strong><span class="live">On the farm page</span></div>
-            <p>Seven-day forecast for a farm’s coordinates. A model, not a gauge on the farm.</p>
-          </article>
-          <article>
-            <div><strong>NASA POWER</strong><span class="live">On the farm page</span></div>
-            <p>Historical climate for a farm’s coordinates, compared with the long-term normal.</p>
-          </article>
-          <article class="quiet">
-            <div><strong>Map service</strong><span>Not called</span></div>
-            <p>The Tanzania map is drawn in the app. Farm coordinates stay in PostgreSQL.</p>
-          </article>
-          <article class="quiet">
-            <div><strong>FAOSTAT, GBIF, SoilGrids</strong><span>Not called</span></div>
-            <p>Reference data only, when those modules are added. They are not used for farm transactions.</p>
-          </article>
-        </div>
-      </section>
-
-      <aside class="panel help" id="help">
-        <header>
-          <h2>Help</h2>
-          <p>How records are kept in this workspace.</p>
-        </header>
-        <a routerLink="/help" fragment="centre">
-          <strong>How records work</strong>
-          <span>Movements, milk, stock, and access.</span>
-        </a>
-        <a routerLink="/help" fragment="movements">
-          <strong>Animal movements</strong>
-          <span>Registration and transfers on the ledger.</span>
-        </a>
-        <a routerLink="/help" fragment="contact">
-          <strong>Contact support</strong>
-          <span>The tenant administrator for this workspace.</span>
-        </a>
-        <a routerLink="/help" fragment="status">
-          <strong>System status</strong>
-          <span>Whether the operations API responded.</span>
-        </a>
-        @if (session()?.canManageAccess) {
-          <a routerLink="/access">
-            <strong>Roles and permissions</strong>
-            <span>Who can see which farms.</span>
-          </a>
-        }
+  @if (draft(); as form) {
+    <div class="studio">
+      <aside class="health" aria-label="Configuration health">
+        <p>Configuration health</p>
+        <ul>
+          <li><i class="ok"></i><div><strong>Database</strong><span>Reached</span></div></li>
+          <li><i class="ok"></i><div><strong>NASA POWER</strong><span>In use</span></div></li>
+          <li><i class="ok"></i><div><strong>Open-Meteo</strong><span>In use</span></div></li>
+          <li><i></i><div><strong>Map service</strong><span>Not called</span></div></li>
+          <li><i class="bad"></i><div><strong>Email</strong><span>Not configured</span></div></li>
+        </ul>
       </aside>
+      <nav class="local" aria-label="Settings sections">
+        <button type="button" [class.on]="section() === 'general'" (click)="open('general')">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.6L19 9l-3.4 3.2.8 4.8L12 14.8 7.6 17l.8-4.8L5 9l4.8-1.4z"/></svg></span>
+          <span><strong>General</strong><small>Organization profile and regional preferences</small></span>
+        </button>
+        <button type="button" [class.on]="section() === 'master'" (click)="open('master')">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+          <span><strong>Master Data</strong><small>Species kept for livestock records</small></span>
+        </button>
+        <button type="button" [class.on]="section() === 'integrations'" (click)="open('integrations')">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 8V5a3 3 0 0 1 6 0v3M8 8h8v11H8z"/></svg></span>
+          <span><strong>Integrations</strong><small>Services the farm pages call</small></span>
+        </button>
+        <button type="button" [class.on]="section() === 'security'" (click)="open('security')">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.4 7.6-8 9-4.6-1.4-8-4-8-9V6z"/></svg></span>
+          <span><strong>Security</strong><small>Signed-in account and access</small></span>
+        </button>
+      </nav>
+
+      <section class="sheet" [id]="section()">
+        @if (section() === 'general') {
+          <header class="sheet-head">
+            <div class="intro">
+              <img src="assets/logo-mark.png" alt="">
+              <div>
+                <p class="eyebrow">Workspace</p>
+                <h2>{{ form.name }}</h2>
+                <div class="pills">
+                  <span>{{ form.seasonLabel }}</span>
+                  <span>{{ settings()!.subscriptionPlan }}</span>
+                  <span>{{ form.currencyCode }} · {{ form.locale }}</span>
+                </div>
+              </div>
+            </div>
+            <span class="badge">{{ canEdit() ? 'Super Admin only' : session()?.roleLabel }}</span>
+          </header>
+          <p class="lede">Organization details and the regional settings stored for this workspace.</p>
+
+          <h3><span>1</span> Organization profile</h3>
+          <div class="fields">
+            <label class="field">
+              <span>Organization Name</span>
+              <input [value]="form.name" maxlength="160" autocomplete="off" [readonly]="!canEdit()" (input)="edit('name', $any($event.target).value)">
+              <small>Stored name for this workspace.</small>
+            </label>
+            <label class="field">
+              <span>Workspace Code</span>
+              <input [value]="form.code" maxlength="40" autocomplete="off" [readonly]="!canEdit()" (input)="edit('code', $any($event.target).value)">
+              <small>Short code stored on the workspace.</small>
+            </label>
+            <label class="field">
+              <span>Season</span>
+              <input [value]="form.seasonLabel" maxlength="80" autocomplete="off" [readonly]="!canEdit()" (input)="edit('seasonLabel', $any($event.target).value)">
+              <small>Season label used with dates and reports.</small>
+            </label>
+            <label class="field">
+              <span>Plan</span>
+              <input [value]="settings()!.subscriptionPlan" readonly>
+              <small>Through {{ planDate(settings()!.subscriptionValidUntil) }}.</small>
+            </label>
+            <label class="field">
+              <span>Locale</span>
+              <input [value]="form.locale" maxlength="16" autocomplete="off" [readonly]="!canEdit()" (input)="edit('locale', $any($event.target).value)">
+              <small>Locale stored for this workspace.</small>
+            </label>
+            <label class="field">
+              <span>Organization logo</span>
+              <div class="logo-box"><img src="assets/logo.png" alt="Shamba Nexa"></div>
+              <small>The mark shown in the sidebar.</small>
+            </label>
+          </div>
+
+          <h3><span>2</span> Regional preferences</h3>
+          <div class="fields">
+            <label class="field">
+              <span>Timezone</span>
+              <input [value]="form.timezone" maxlength="64" autocomplete="off" [readonly]="!canEdit()" (input)="edit('timezone', $any($event.target).value)">
+              <small>Used for dates, times and scheduled tasks.</small>
+            </label>
+            <label class="field">
+              <span>Currency</span>
+              <input [value]="form.currencyCode" maxlength="3" autocomplete="off" [readonly]="!canEdit()" (input)="edit('currencyCode', $any($event.target).value)">
+              <small>Code stored for money. Existing amounts are not converted.</small>
+            </label>
+            <label class="field">
+              <span>Language</span>
+              <input [value]="form.locale" readonly>
+              <small>The workspace locale is the language setting.</small>
+            </label>
+          </div>
+
+          @if (session(); as person) {
+            <h3><span>3</span> Your access</h3>
+            <div class="fields">
+              <label class="field">
+                <span>Role</span>
+                <input [value]="person.roleLabel" readonly>
+                <small>The role on this sign-in.</small>
+              </label>
+              <label class="field">
+                <span>Data scope</span>
+                <input [value]="scopeLabel(person.accessScope)" readonly>
+                <small>{{ scopeDetail(person.accessScope, person.farmIds.length) }}.</small>
+              </label>
+              <label class="field wide">
+                <span>Signed in</span>
+                <input [value]="person.email" readonly>
+                <small>{{ person.fullName }}</small>
+              </label>
+            </div>
+          }
+
+          @if (canEdit()) {
+            @if (saveError()) {
+              <p class="save-error">{{ saveError() }}</p>
+            }
+            <footer class="savebar">
+              <p>A saved change is written to the audit log.</p>
+              <div>
+                <button class="ghost-btn" type="button" (click)="revert()" [disabled]="!dirty() || saving()">Reset changes</button>
+                <button class="ghost-btn" type="button" (click)="revert()" [disabled]="!dirty() || saving()">Cancel</button>
+                <button class="green-btn" type="button" (click)="save()" [disabled]="!dirty() || saving()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
+              </div>
+            </footer>
+          }
+        } @else if (section() === 'master') {
+          <header class="sheet-head">
+            <div>
+              <h2>Master Data</h2>
+              <p>Species kept for livestock records. Counts on the dashboard come from animals, not from this list.</p>
+            </div>
+          </header>
+          @if (species().length === 0) {
+            <p class="empty">No species are recorded.</p>
+          } @else {
+            <ul class="species">
+              @for (item of species(); track item.id) {
+                <li>
+                  <i [style.background]="item.chartColor"></i>
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <span>{{ item.code }}</span>
+                  </div>
+                  <em>{{ item.category }}</em>
+                </li>
+              }
+            </ul>
+          }
+        } @else if (section() === 'integrations') {
+          <header class="sheet-head">
+            <div>
+              <h2>Integrations</h2>
+              <p>The browser does not call these services. The API does, and only for the farm pages. Weather does not choose a medicine.</p>
+            </div>
+          </header>
+          <ul class="rows services">
+            <li><div><strong>Open-Meteo</strong><span>Seven-day forecast for a farm’s coordinates.</span></div><em class="ok">In use</em></li>
+            <li><div><strong>NASA POWER</strong><span>Historical climate compared with the long-term normal.</span></div><em class="ok">In use</em></li>
+            <li><div><strong>Map service</strong><span>The Tanzania map is drawn in the app. Coordinates stay in PostgreSQL.</span></div><em>Not called</em></li>
+            <li><div><strong>Email service</strong><span>No mail delivery is configured.</span></div><em class="bad">Not configured</em></li>
+            <li><div><strong>FAOSTAT, GBIF, SoilGrids</strong><span>Not used for farm transactions.</span></div><em>Not called</em></li>
+          </ul>
+        } @else {
+          <header class="sheet-head">
+            <div>
+              <h2>Security</h2>
+              <p>The account you are signed in with, and where access is managed.</p>
+            </div>
+          </header>
+          @if (session(); as person) {
+            <div class="fields">
+              <label class="field"><span>Name</span><input [value]="person.fullName" readonly></label>
+              <label class="field"><span>Email</span><input [value]="person.email" readonly></label>
+              <label class="field"><span>Role</span><input [value]="person.roleLabel" readonly></label>
+              <label class="field"><span>Data scope</span><input [value]="scopeLabel(person.accessScope)" readonly><small>{{ scopeDetail(person.accessScope, person.farmIds.length) }}.</small></label>
+            </div>
+          }
+          <div class="links">
+            @if (canEdit()) {
+              <a routerLink="/access">Roles and permissions</a>
+            }
+            <a routerLink="/help" fragment="centre">How records work</a>
+            <a routerLink="/help" fragment="contact">Contact support</a>
+            <a routerLink="/help" fragment="status">System status</a>
+          </div>
+        }
+      </section>
     </div>
   }
 }

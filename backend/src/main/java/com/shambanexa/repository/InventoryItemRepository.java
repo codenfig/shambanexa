@@ -12,7 +12,9 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
 
     Optional<InventoryItem> findByIdAndTenantId(UUID id, UUID tenantId);
 
-    boolean existsByTenantIdAndSkuIgnoreCase(UUID tenantId, String sku);
+    boolean existsByTenantIdAndFarmIdAndSkuIgnoreCase(UUID tenantId, UUID farmId, String sku);
+
+    Optional<InventoryItem> findByTenantIdAndFarmIdAndSkuIgnoreCase(UUID tenantId, UUID farmId, String sku);
 
     List<InventoryItem> findTop8ByTenantIdAndNameContainingIgnoreCase(UUID tenantId, String name);
 }

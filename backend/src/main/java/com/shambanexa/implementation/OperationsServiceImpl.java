@@ -4,7 +4,6 @@ import com.shambanexa.service.OperationsService;
 import com.shambanexa.service.AuditTrail;
 import com.shambanexa.service.FarmService;
 
-import com.shambanexa.dto.AdjustRequest;
 import com.shambanexa.dto.AnimalHealthRequest;
 import com.shambanexa.dto.AnimalHealthResponse;
 import com.shambanexa.dto.BreedResponse;
@@ -12,12 +11,11 @@ import com.shambanexa.dto.DiseaseReportRequest;
 import com.shambanexa.dto.DiseaseReportResponse;
 import com.shambanexa.dto.FishCycleResponse;
 import com.shambanexa.dto.HealthCaseResponse;
-import com.shambanexa.dto.InventoryRequest;
-import com.shambanexa.dto.InventoryResponse;
 import com.shambanexa.dto.ProductionRequest;
 import com.shambanexa.dto.ProductionResponse;
 import com.shambanexa.dto.SearchHit;
 import com.shambanexa.dto.SettingsResponse;
+import com.shambanexa.dto.SettingsUpdateRequest;
 import com.shambanexa.dto.SpeciesResponse;
 import com.shambanexa.dto.StaffRequest;
 import com.shambanexa.dto.StaffResponse;
@@ -52,8 +50,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -141,57 +141,6 @@ public class OperationsServiceImpl implements OperationsService {
                 record.getFarmId());
         return new ProductionResponse(record.getId(), record.getFarmId(), farms.load(record.getFarmId()).getName(),
                 record.getProductType(), record.getQuantity(), record.getUnit(), record.getRecordedOn(), record.getNotes());
-    }
-
-    @Transactional(readOnly = true)
-    public List<InventoryResponse> inventory() {
-        Map<UUID, Farm> farmMap = farmMap();
-        return inventory.findByTenantIdOrderByNameAsc(access.tenantId()).stream()
-                .filter(item -> access.canReadFarm(item.getFarmId()))
-                .map(item -> toInventory(item, farmMap))
-                .toList();
-    }
-
-    @Transactional
-    public InventoryResponse createInventory(InventoryRequest request) {
-        access.requireAuthority("INVENTORY_WRITE");
-        access.checkFarm(request.farmId());
-        String sku = request.sku().trim().toUpperCase();
-        if (inventory.existsByTenantIdAndSkuIgnoreCase(access.tenantId(), sku)) {
-            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_SKU", "That SKU is already used");
-        }
-        InventoryItem item = new InventoryItem();
-        item.setTenantId(access.tenantId());
-        item.setFarmId(request.farmId());
-        item.setSku(sku);
-        item.setName(request.name().trim());
-        item.setCategory(request.category().trim().toUpperCase());
-        item.setQuantityOnHand(request.quantityOnHand());
-        item.setReservedQuantity(BigDecimal.ZERO);
-        item.setUnit(request.unit().trim());
-        item.setReorderPoint(request.reorderPoint());
-        item.setLotCode(blank(request.lotCode()));
-        item.setExpiresOn(request.expiresOn());
-        inventory.save(item);
-        audit.record("INVENTORY_CREATED", "INVENTORY", item.getId(), item.getSku());
-        return toInventory(item, farmMap());
-    }
-
-    @Transactional
-    public InventoryResponse adjust(UUID id, AdjustRequest request) {
-        access.requireAuthority("INVENTORY_WRITE");
-        InventoryItem item = inventory.findByIdAndTenantId(id, access.tenantId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND", "Inventory item not found"));
-        access.checkFarm(item.getFarmId());
-        BigDecimal next = item.getQuantityOnHand().add(request.delta());
-        if (next.compareTo(item.getReservedQuantity()) < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "NEGATIVE_STOCK", "Available stock cannot go negative");
-        }
-        item.setQuantityOnHand(next);
-        inventory.save(item);
-        audit.record("INVENTORY_ADJUSTED", "INVENTORY", item.getId(), request.reason().trim());
-        audit.activity("INVENTORY", "Stock adjusted", item.getName() + " · " + request.reason().trim(), item.getFarmId());
-        return toInventory(item, farmMap());
     }
 
     @Transactional(readOnly = true)
@@ -499,6 +448,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "TENANT_NOT_FOUND", "Tenant not found"));
         return new SettingsResponse(
                 tenant.getName(),
+                tenant.getCode(),
                 tenant.getCurrencyCode(),
                 tenant.getTimezone(),
                 tenant.getSeasonLabel(),
@@ -506,6 +456,62 @@ public class OperationsServiceImpl implements OperationsService {
                 tenant.getSubscriptionPlan(),
                 tenant.getSubscriptionValidUntil()
         );
+    }
+
+    @Transactional
+    public SettingsResponse updateSettings(SettingsUpdateRequest request) {
+        if (!access.canManageAccess()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have permission to do that");
+        }
+        Tenant tenant = tenants.findById(access.tenantId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "TENANT_NOT_FOUND", "Tenant not found"));
+        String name = request.name().trim();
+        String code = request.code().trim();
+        String currency = request.currencyCode().trim().toUpperCase(Locale.ROOT);
+        String timezone = request.timezone().trim();
+        String season = request.seasonLabel().trim();
+        String locale = request.locale().trim();
+        if (!currency.matches("[A-Z]{3}")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CURRENCY_INVALID", "Currency must be a 3-letter code.");
+        }
+        try {
+            ZoneId.of(timezone);
+        } catch (DateTimeException ex) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "TIMEZONE_INVALID", "Enter a timezone such as Africa/Dar_es_Salaam.");
+        }
+        if (tenants.existsByCodeAndIdNot(code, tenant.getId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "CODE_IN_USE", "That workspace code is already used.");
+        }
+        List<String> changes = new ArrayList<>();
+        if (!name.equals(tenant.getName())) {
+            changes.add("name");
+        }
+        if (!code.equals(tenant.getCode())) {
+            changes.add("code");
+        }
+        if (!currency.equals(tenant.getCurrencyCode())) {
+            changes.add("currency");
+        }
+        if (!timezone.equals(tenant.getTimezone())) {
+            changes.add("timezone");
+        }
+        if (!season.equals(tenant.getSeasonLabel())) {
+            changes.add("season");
+        }
+        if (!locale.equals(tenant.getLocale())) {
+            changes.add("locale");
+        }
+        tenant.setName(name);
+        tenant.setCode(code);
+        tenant.setCurrencyCode(currency);
+        tenant.setTimezone(timezone);
+        tenant.setSeasonLabel(season);
+        tenant.setLocale(locale);
+        tenants.save(tenant);
+        if (!changes.isEmpty()) {
+            audit.record("SETTINGS_UPDATED", "TENANT", tenant.getId(), String.join(", ", changes));
+        }
+        return settings();
     }
 
     @Transactional(readOnly = true)
@@ -550,27 +556,6 @@ public class OperationsServiceImpl implements OperationsService {
         csv.append("\nfarm,region,animals\n");
         dashboard.locations().forEach(pin -> csv.append(pin.name()).append(',').append(pin.region()).append(',').append(pin.animalCount()).append('\n'));
         return csv.toString();
-    }
-
-    private InventoryResponse toInventory(InventoryItem item, Map<UUID, Farm> farmMap) {
-        BigDecimal available = item.getQuantityOnHand().subtract(item.getReservedQuantity());
-        return new InventoryResponse(
-                item.getId(),
-                item.getSku(),
-                item.getName(),
-                item.getCategory(),
-                item.getFarmId(),
-                farmName(farmMap, item.getFarmId()),
-                item.getQuantityOnHand(),
-                item.getReservedQuantity(),
-                available,
-                item.getUnit(),
-                item.getReorderPoint(),
-                available.compareTo(item.getReorderPoint()) <= 0,
-                item.getLotCode(),
-                item.getExpiresOn(),
-                item.getVersion()
-        );
     }
 
     private int estimated(FishCycle cycle) {

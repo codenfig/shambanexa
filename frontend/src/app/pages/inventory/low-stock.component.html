@@ -1,0 +1,95 @@
+<header class="inv-head">
+  <div>
+    <div class="title-row">
+      <h1>Low-stock alerts</h1>
+      @if (!store.loading() && !store.loadError()) {
+        <span class="farm-chip">{{ chip() }}</span>
+      }
+    </div>
+    <p>Lines whose available quantity is at or under the reorder point.</p>
+  </div>
+  <div class="head-actions">
+    <a class="ghost-btn" routerLink="/inventory">Stock overview</a>
+    <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
+    @if (canWrite() && selected(); as item) {
+      <a class="green-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: item.id }">Adjust this item</a>
+    }
+  </div>
+</header>
+
+@if (store.loading() && !store.items().length) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading low stock"><div class="skeleton"></div></div>
+} @else if (store.loadError()) {
+  <div class="state"><h2>Unable to load data.</h2><button class="green-btn" type="button" (click)="store.refresh()">Retry</button></div>
+} @else {
+  <div class="board">
+    <section class="sheet">
+      <div class="chips">
+        <span>{{ fmt(rows().length) }} at or under reorder</span>
+        <span class="out">{{ fmt(outCount()) }} with nothing available</span>
+      </div>
+      <div class="toolbar pair">
+        <input [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search item, SKU, farm, or batch" aria-label="Search low stock">
+        <button class="ghost-btn slim" type="button" (click)="search.set('')">Clear filters</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th><th>SKU</th><th>Category</th><th>Farm</th><th>Available</th><th>Reorder</th><th>Batch</th><th>Expiry</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (rows().length === 0) {
+              <tr><td class="blank" colspan="9">No item is at or under its reorder point.</td></tr>
+            } @else {
+              @for (item of rows(); track item.id) {
+                <tr [class.picked]="selected()?.id === item.id" (click)="pick(item)">
+                  <td><strong>{{ item.name }}</strong></td>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ label(item.category) }}</td>
+                  <td>{{ item.farmName }}</td>
+                  <td>{{ fmt(item.available, item.available % 1 ? 2 : 0) }} {{ item.unit }}</td>
+                  <td>{{ fmt(item.reorderPoint, item.reorderPoint % 1 ? 2 : 0) }}</td>
+                  <td>{{ item.lotCode || '—' }}</td>
+                  <td>{{ expiry(item.expiresOn) }}</td>
+                  <td><span class="pill" [class.in]="statusClass(item) === 'in'" [class.low]="statusClass(item) === 'low'" [class.soon]="statusClass(item) === 'soon'" [class.out]="statusClass(item) === 'out'">{{ statusOf(item) }}</span></td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="pager"><span>{{ rows().length }} alert{{ rows().length === 1 ? '' : 's' }}</span></footer>
+      <p class="note">Available quantity is on hand minus reserved. An adjustment from this list still waits for approval before the quantity changes.</p>
+    </section>
+    <aside class="side">
+      <article class="detail">
+        <h2>Alert details</h2>
+        @if (selected(); as item) {
+          <div class="title-row">
+            <strong>{{ item.name }}</strong>
+            <span class="pill" [class.low]="statusClass(item) === 'low'" [class.out]="statusClass(item) === 'out'" [class.soon]="statusClass(item) === 'soon'">{{ statusOf(item) }}</span>
+          </div>
+          <dl class="facts">
+            <div><dt>Farm</dt><dd>{{ item.farmName }}</dd></div>
+            <div><dt>Category</dt><dd>{{ label(item.category) }}</dd></div>
+            <div><dt>Available</dt><dd>{{ fmt(item.available, item.available % 1 ? 2 : 0) }} {{ item.unit }}</dd></div>
+            <div><dt>On hand</dt><dd>{{ fmt(item.quantityOnHand, item.quantityOnHand % 1 ? 2 : 0) }} {{ item.unit }}</dd></div>
+            <div><dt>Reserved</dt><dd>{{ fmt(item.reservedQuantity, item.reservedQuantity % 1 ? 2 : 0) }} {{ item.unit }}</dd></div>
+            <div><dt>Reorder point</dt><dd>{{ fmt(item.reorderPoint, item.reorderPoint % 1 ? 2 : 0) }}</dd></div>
+            <div><dt>Batch</dt><dd>{{ item.lotCode || '—' }}</dd></div>
+            <div><dt>Expiry</dt><dd>{{ expiry(item.expiresOn) }}</dd></div>
+            <div><dt>Store</dt><dd>{{ item.storeName || '—' }}</dd></div>
+            <div><dt>Supplier</dt><dd>{{ item.supplierName || '—' }}</dd></div>
+          </dl>
+          @if (canWrite()) {
+            <a class="green-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: item.id }">Adjust this item</a>
+          }
+        } @else {
+          <p class="quiet">No item is at or under its reorder point.</p>
+        }
+      </article>
+    </aside>
+  </div>
+}

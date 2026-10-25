@@ -1,97 +1,236 @@
-<app-page-header title="Inventory" description="Stock on hand, reorder points, and adjustments for farms in your scope.">
-  <a class="green-btn" href="#add">Add item</a>
-</app-page-header>
+<header class="inv-head">
+  <div>
+    <div class="title-row">
+      <h1>Inventory</h1>
+      @if (!store.loading() && !store.loadError()) {
+        <span class="farm-chip">{{ scopeName() }}</span>
+      }
+    </div>
+    <p>Feed, medicine, equipment, and supplies for farms in your scope.</p>
+  </div>
+  @if (!store.loading() && !store.loadError()) {
+    <div class="head-actions">
+      <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
+      @if (canWrite()) {
+        <a class="ghost-btn" routerLink="/inventory/receipts">Receipt</a>
+        <button class="ghost-btn" type="button" (click)="openIssue()">Issue</button>
+        <a class="ghost-btn" routerLink="/inventory/transfers">Transfer</a>
+        <a class="green-btn" routerLink="/inventory/adjustments">Stock adjustment</a>
+      }
+    </div>
+  }
+</header>
 
-@if (loading()) {
-  <div class="skeleton-stack" aria-busy="true" aria-label="Loading inventory"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-} @else if (loadError()) {
+@if (store.loading() && !store.items().length) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading inventory"><div class="skeleton kpi-skel"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+} @else if (store.loadError()) {
   <div class="state">
     <h2>Unable to load data.</h2>
-    <button class="green-btn" type="button" (click)="reload()">Retry</button>
+    <button class="green-btn" type="button" (click)="store.refresh()">Retry</button>
   </div>
 } @else {
-  <article class="card" id="stock">
-    <div class="tabs" role="tablist" aria-label="Stock categories">
-      <button type="button" [class.on]="category() === 'ALL'" (click)="category.set('ALL')">All</button>
-      @for (name of categories(); track name) {
-        <button type="button" [class.on]="category() === name" (click)="category.set(name)">{{ name }}</button>
-      }
-      @if (lowOnly()) { <span class="tag warn">Low stock</span> }
-    </div>
-    <h2>{{ lowOnly() ? 'Low-stock alerts' : 'Stock on hand' }}</h2>
-    <h2 id="adjustments">Adjustments</h2>
-    <p class="muted">Use Adjust on a row to post a quantity change. Available stock cannot go below zero.</p>
-    @if (visibleItems().length === 0) {
-      <p class="empty-state">{{ lowOnly() ? 'No item is at or under its reorder point.' : 'No records found.' }}</p>
-    } @else {
+  <div class="kpi-row">
+    <article class="kpi static">
+      <span class="mark mix" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></span>
+      <span>
+        <small>Stock value · {{ store.currencyCode() }}</small>
+        <strong>{{ valued().length ? money(stockValue()) : '—' }}</strong>
+        <em>{{ valueNote() }}</em>
+      </span>
+    </article>
+    <button type="button" class="kpi" (click)="clearFilters()">
+      <span class="mark items" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 11h16M9 7v12"/></svg></span>
+      <span>
+        <small>Stock items</small>
+        <strong>{{ fmt(scoped().length) }}</strong>
+        <em>Lines in this view</em>
+      </span>
+    </button>
+    <a class="kpi" routerLink="/inventory/low">
+      <span class="mark low" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg></span>
+      <span>
+        <small>Low stock</small>
+        <strong>{{ fmt(lowCount()) }}</strong>
+        <em>At or under the reorder point</em>
+      </span>
+    </a>
+    <button type="button" class="kpi" (click)="setExpiry('SOON'); setStatus('ALL')">
+      <span class="mark soon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 10v4l2 2M9 4h6"/></svg></span>
+      <span>
+        <small>Expiring soon</small>
+        <strong>{{ fmt(expiringCount()) }}</strong>
+        <em>Expiry within 30 days</em>
+      </span>
+    </button>
+  </div>
+
+  <div class="board">
+    <section class="sheet" id="stock">
+      <div class="tabs" role="tablist" aria-label="Stock categories">
+        <button type="button" [class.on]="category() === 'ALL'" (click)="setCategory('ALL')">All items</button>
+        @for (name of groups; track name) {
+          <button type="button" [class.on]="category() === name" (click)="setCategory(name)">{{ label(name) }}</button>
+        }
+      </div>
+      <div class="toolbar">
+        <input [value]="search()" (input)="setSearch($any($event.target).value)" placeholder="Search stock" aria-label="Search stock">
+        <select [value]="farmFilter()" (change)="setFarm($any($event.target).value)" aria-label="Farm">
+          <option value="ALL">All farms</option>
+          @for (farm of farmOptions(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+        <select [value]="statusFilter()" (change)="setStatus($any($event.target).value)" aria-label="Stock status">
+          <option value="ALL">All statuses</option>
+          <option value="IN">In stock</option>
+          <option value="LOW">Low stock</option>
+          <option value="EXPIRING">Expiring</option>
+          <option value="EXPIRED">Expired</option>
+          <option value="OUT">Out of stock</option>
+        </select>
+        <button class="ghost-btn slim" type="button" (click)="clearFilters()">Clear filters</button>
+      </div>
+      <div class="toolbar extra">
+        <select [value]="storeFilter()" (change)="setStore($any($event.target).value)" aria-label="Store">
+          <option value="ALL">All stores</option>
+          @for (name of storeOptions(); track name) { <option [value]="name">{{ name }}</option> }
+        </select>
+        <select [value]="supplierFilter()" (change)="setSupplier($any($event.target).value)" aria-label="Supplier">
+          <option value="ALL">All suppliers</option>
+          @for (name of supplierOptions(); track name) { <option [value]="name">{{ name }}</option> }
+        </select>
+        <select [value]="expiryFilter()" (change)="setExpiry($any($event.target).value)" aria-label="Expiry">
+          <option value="ALL">All expiry dates</option>
+          <option value="SOON">Expiring in 30 days</option>
+          <option value="EXPIRED">Expired</option>
+          <option value="NONE">No expiry date</option>
+        </select>
+      </div>
       <div class="table-wrap">
         <table>
-            <thead><tr><th>Item</th><th>Category</th><th>Farm</th><th>On hand</th><th>Available</th><th>Reorder</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Item</th><th>SKU</th><th>Category</th><th>Farm</th><th>Store</th><th>Quantity</th><th>Reorder</th><th>Batch</th><th>Expiry</th><th>Value</th><th>Status</th>
+              @if (canWrite()) { <th>Actions</th> }
+            </tr>
+          </thead>
           <tbody>
-            @for (item of visibleItems(); track item.id) {
-              <tr>
-                <td>{{ item.name }} <span class="muted">{{ item.sku }}</span></td>
-                <td>{{ item.category }}</td>
-                <td>{{ item.farmName }}</td>
-                <td>{{ fmt(item.quantityOnHand) }} {{ item.unit }}</td>
-                <td>{{ fmt(item.available) }} {{ item.unit }} @if (item.lowStock) { <span class="tag warn">Low</span> }</td>
-                <td>{{ fmt(item.reorderPoint) }}</td>
-                <td><button class="ghost-btn" type="button" (click)="selected.set(item)">Adjust</button></td>
-              </tr>
+            @if (filtered().length === 0) {
+              <tr><td class="blank" [attr.colspan]="canWrite() ? 12 : 11">{{ category() === 'EQUIPMENT' && !search() ? 'No equipment is stored.' : 'No records found.' }}</td></tr>
+            } @else {
+              @for (item of paged(); track item.id) {
+                <tr>
+                  <td><strong>{{ item.name }}</strong><span>{{ item.supplierName || item.farmName }}</span></td>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ label(item.category) }}</td>
+                  <td>{{ item.farmName }}</td>
+                  <td>{{ item.storeName || '—' }}</td>
+                  <td>{{ fmt(item.quantityOnHand, item.quantityOnHand % 1 ? 2 : 0) }} {{ item.unit }}</td>
+                  <td>{{ fmt(item.reorderPoint, item.reorderPoint % 1 ? 2 : 0) }}</td>
+                  <td>{{ item.lotCode || '—' }}</td>
+                  <td>{{ expiry(item.expiresOn) }}</td>
+                  <td>{{ money(item.stockValue) }}</td>
+                  <td><span class="pill" [class.in]="statusClass(item) === 'in'" [class.low]="statusClass(item) === 'low'" [class.soon]="statusClass(item) === 'soon'" [class.out]="statusClass(item) === 'out'">{{ statusOf(item) }}</span></td>
+                  @if (canWrite()) {
+                    <td class="row-actions"><a class="text-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: item.id }">Adjust</a></td>
+                  }
+                </tr>
+              }
             }
           </tbody>
         </table>
       </div>
-    }
-  </article>
-  <form class="entry" id="add" [formGroup]="form" (ngSubmit)="create()">
-    <header class="entry-head">
-      <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg></span>
-      <div>
-        <h2>Stock Receipt</h2>
-        <p>Log incoming stock items to a farm or store.</p>
-      </div>
-    </header>
-    <div class="entry-grid">
-      <label>SKU <em>*</em><input formControlName="sku" placeholder="Stock code"></label>
-      <label>Name <em>*</em><input formControlName="name" placeholder="Item name"></label>
-      <label>Farm <em>*</em>
-        <select formControlName="farmId">
-          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
-        </select>
-      </label>
-      <label>Category <em>*</em>
-        <select formControlName="category"><option>FEED</option><option>MEDICINE</option><option>SUPPLY</option></select>
-      </label>
-      <label>Quantity <em>*</em><input formControlName="quantityOnHand" type="number"></label>
-      <label>Unit <em>*</em><input formControlName="unit"></label>
-      <label>Reorder point <em>*</em><input formControlName="reorderPoint" type="number"></label>
-    </div>
-    @if (error()) { <div class="error">{{ error() }}</div> }
-    <div class="entry-foot">
-      <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Record Stock Receipt' }}</button>
-    </div>
-  </form>
+      <footer class="pager">
+        <span>{{ rangeLabel() }}</span>
+        @if (pageCount() > 1) {
+          <div>
+            <button type="button" (click)="shiftPage(-1)" [disabled]="page() <= 1">Previous</button>
+            <button type="button" (click)="shiftPage(1)" [disabled]="page() >= pageCount()">Next</button>
+          </div>
+        }
+      </footer>
+      <p class="note">Posted movements stay in an append-only ledger. Available quantity cannot go below zero. Unit cost is shown only where it has been recorded, in {{ store.currencyCode() }}.</p>
+    </section>
+
+    <aside class="side">
+      <article class="mix-card">
+        <h2>Stock by category</h2>
+        <div class="mix">
+          <div class="ring" [style.background]="ring()">
+            <span><strong>{{ fmt(scoped().length) }}</strong><small>items</small></span>
+          </div>
+          <ul>
+            @for (part of breakdown(); track part.category) {
+              <li>
+                <button type="button" (click)="setCategory(part.category)">
+                  <i [style.background]="part.color"></i>
+                  {{ part.label }}
+                  <b>{{ part.count }}</b>
+                  <em>{{ part.pct }}%</em>
+                </button>
+              </li>
+            } @empty {
+              <li class="quiet">No stock items in this view.</li>
+            }
+          </ul>
+        </div>
+      </article>
+      <article>
+        <h2>Attention</h2>
+        @if (attention().length === 0 && pendingCount() === 0) {
+          <p class="quiet">No low-stock or expiry warning in this view.</p>
+        } @else {
+          <ul class="alerts">
+            @for (item of attention(); track item.id) {
+              <li>
+                <a class="line" routerLink="/inventory/low">
+                  <i [class.low]="item.lowStock || item.available <= 0" [class.soon]="!item.lowStock && item.available > 0"></i>
+                  <span>
+                    <strong>{{ item.name }}</strong>
+                    <small>{{ statusOf(item) }} · {{ item.farmName }} · {{ fmt(item.available, item.available % 1 ? 2 : 0) }} {{ item.unit }}</small>
+                  </span>
+                </a>
+              </li>
+            }
+            @if (pendingCount()) {
+              <li>
+                <a class="line" routerLink="/inventory/adjustments">
+                  <i class="wait"></i>
+                  <span>
+                    <strong>{{ pendingCount() }} adjustment{{ pendingCount() === 1 ? '' : 's' }} waiting</strong>
+                    <small>Stock stays unchanged until a super admin approves</small>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+        <p class="quiet"><a routerLink="/inventory/low">Open low-stock alerts</a></p>
+      </article>
+    </aside>
+  </div>
 }
 
-@if (selected(); as item) {
-  <div class="modal-back" (click)="closeAdjust()">
-    <form class="entry" role="dialog" aria-modal="true" aria-labelledby="adjust-title" (click)="$event.stopPropagation()" [formGroup]="adjustForm" (ngSubmit)="adjust(item)">
+@if (issueOpen()) {
+  <div class="modal-back" (click)="close()">
+    <form class="entry" role="dialog" aria-modal="true" aria-labelledby="issue-title" (click)="$event.stopPropagation()" [formGroup]="issueForm" (ngSubmit)="issue()">
       <header class="entry-head">
-        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
         <div>
-          <h2 id="adjust-title">Stock Adjustment</h2>
-          <p>Adjust {{ item.name }}. Available stock cannot go below zero. On hand {{ fmt(item.quantityOnHand) }} {{ item.unit }}.</p>
+          <h2 id="issue-title">Stock issue</h2>
+          <p>Take quantity off a stock line. Available stock cannot go below zero.</p>
         </div>
       </header>
       <div class="entry-grid">
-        <label>Change (+/−) <em>*</em><input formControlName="delta" type="number" step="0.01"></label>
-        <label>Reason <em>*</em><input formControlName="reason"></label>
+        <label class="wide">Item <em>*</em>
+          <select formControlName="itemId">
+            @for (item of store.items(); track item.id) { <option [value]="item.id">{{ item.name }} · {{ fmt(item.available, item.available % 1 ? 2 : 0) }} {{ item.unit }} available · {{ item.farmName }}</option> }
+          </select>
+        </label>
+        <label>Quantity <em>*</em><input formControlName="quantity" type="number" min="0.01" step="0.01"></label>
+        <label>Reason <em>*</em><input formControlName="reason" placeholder="Why this stock is leaving"></label>
       </div>
-      @if (adjustError()) { <div class="error">{{ adjustError() }}</div> }
+      @if (error()) { <div class="error">{{ error() }}</div> }
       <div class="entry-foot">
-        <button class="ghost-btn" type="button" (click)="closeAdjust()" [disabled]="adjusting()">Cancel</button>
-        <button class="green-btn" type="submit" [disabled]="adjusting()">{{ adjusting() ? 'Saving…' : 'Record Adjustment' }}</button>
+        <button class="ghost-btn" type="button" (click)="issueOpen.set(false)" [disabled]="busy()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="issueForm.invalid || busy()">{{ busy() ? 'Saving…' : 'Record stock issue' }}</button>
       </div>
     </form>
   </div>

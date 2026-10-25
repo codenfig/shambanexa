@@ -19,6 +19,10 @@ UUID id,
         boolean lowStock,
         String lotCode,
         LocalDate expiresOn,
+        BigDecimal unitCost,
+        BigDecimal stockValue,
+        String supplierName,
+        String storeName,
         long version
 ) {
 }

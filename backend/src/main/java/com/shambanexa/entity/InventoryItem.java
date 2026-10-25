@@ -48,6 +48,15 @@ public class InventoryItem extends BaseEntity {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal reorderPoint;
 
+    @Column(precision = 14, scale = 2)
+    private BigDecimal unitCost;
+
+    @Column(length = 160)
+    private String supplierName;
+
+    @Column(length = 160)
+    private String storeName;
+
     @Column(length = 40)
     private String lotCode;
 

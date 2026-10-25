@@ -284,7 +284,48 @@ export interface InventoryItem {
   lowStock: boolean;
   lotCode: string | null;
   expiresOn: string | null;
+  unitCost: number | null;
+  stockValue: number | null;
+  supplierName: string | null;
+  storeName: string | null;
   version: number;
+}
+
+export interface InventoryMovement {
+  id: string;
+  itemId: string;
+  itemName: string;
+  sku: string;
+  farmId: string;
+  farmName: string;
+  movementType: string;
+  quantityDelta: number;
+  quantityAfter: number;
+  unit: string;
+  reason: string;
+  lotCode: string | null;
+  expiresOn: string | null;
+  supplierName: string | null;
+  storeName: string | null;
+  actorName: string;
+  occurredAt: string;
+}
+
+export interface InventoryAdjustment {
+  id: string;
+  itemId: string;
+  itemName: string;
+  sku: string;
+  farmId: string;
+  farmName: string;
+  delta: number;
+  unit: string;
+  reason: string;
+  status: string;
+  requestedByName: string;
+  requestedAt: string;
+  decidedByName: string | null;
+  decidedAt: string | null;
 }
 
 export interface StaffMember {
@@ -385,6 +426,7 @@ export interface HealthCase {
 
 export interface Settings {
   tenantName: string;
+  code: string;
   currencyCode: string;
   timezone: string;
   seasonLabel: string;
