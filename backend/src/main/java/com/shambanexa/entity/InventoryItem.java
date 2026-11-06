@@ -62,6 +62,69 @@ public class InventoryItem extends BaseEntity {
 
     private LocalDate expiresOn;
 
+    private UUID productTypeId;
+
+    @Column(length = 400)
+    private String description;
+
+    @Column(length = 160)
+    private String brand;
+
+    @Column(precision = 14, scale = 2)
+    private BigDecimal reorderQuantity;
+
+    @Column(precision = 14, scale = 2)
+    private BigDecimal sellingPrice;
+
+    private UUID supplierId;
+
+    @Column(length = 160)
+    private String genericName;
+
+    private UUID medicineClassId;
+
+    @Column(length = 80)
+    private String dosageForm;
+
+    @Column(length = 80)
+    private String strength;
+
+    @Column(length = 160)
+    private String speciesLabel;
+
+    private Boolean prescriptionRequired;
+
+    @Column(length = 240)
+    private String storageNote;
+
+    @Column(length = 80)
+    private String registrationNo;
+
+    private Integer withdrawalDays;
+
+    @Column(length = 400)
+    private String safetyNote;
+
+    private UUID feedTypeId;
+
+    @Column(length = 80)
+    private String growthStage;
+
+    @Column(length = 80)
+    private String packSize;
+
+    @Column(length = 400)
+    private String formulation;
+
+    private LocalDate manufacturedOn;
+
+    private LocalDate bestBeforeOn;
+
+    private Integer openDays;
+
+    @Column(nullable = false)
+    private boolean perishable;
+
     @Column(nullable = false)
     private Instant createdAt;
 

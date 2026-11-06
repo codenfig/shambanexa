@@ -51,6 +51,14 @@ export class StockSuppliersComponent {
   });
   missing = computed(() => this.store.items().filter(item => !item.supplierName));
 
+  directory() {
+    const name = this.chosen()?.name;
+    if (!name) {
+      return null;
+    }
+    return this.store.suppliers().find(row => row.name.toLowerCase() === name.toLowerCase()) || null;
+  }
+
   canWrite(): boolean {
     return !!this.session()?.canWriteOperations;
   }

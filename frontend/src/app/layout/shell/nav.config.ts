@@ -42,6 +42,7 @@ export interface NavItemConfig {
 export interface NavSectionConfig {
   id: string;
   label: string;
+  icon: string;
   items: NavItemConfig[];
 }
 
@@ -53,14 +54,15 @@ const speciesChild = (name: string): NavChildConfig => ({
   id: `animals-${name.toLowerCase()}`,
   label: name,
   species: name,
-  target: { commands: ['/livestock'], query: { species: name } },
-  match: query('/livestock', 'species', name)
+  target: { commands: ['/livestock', 'species', name] },
+  match: page(`/livestock/species/${name}`)
 });
 
 export const NAV_SECTIONS: NavSectionConfig[] = [
   {
     id: 'workspace',
     label: 'Workspace',
+    icon: 'workspace',
     items: [
       {
         id: 'dashboard',
@@ -150,37 +152,62 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
   {
     id: 'livestock',
     label: 'Livestock',
+    icon: 'livestock',
     items: [
       {
         id: 'animals',
         label: 'Animals',
         icon: 'animals',
         target: { commands: ['/livestock'] },
-        match: { path: '/livestock', exact: true, withoutQuery: ['species'] },
+        match: { path: '/livestock' },
         children: [
           {
-            id: 'animals-all',
-            label: 'All Animals',
+            id: 'animals-overview',
+            label: 'Animal Overview',
             target: { commands: ['/livestock'] },
-            match: { path: '/livestock', exact: true, withoutQuery: ['species'] }
+            match: { path: '/livestock', exact: true }
+          },
+          {
+            id: 'animals-registry',
+            label: 'Animal Registry',
+            target: { commands: ['/livestock', 'registry'] },
+            match: page('/livestock/registry')
           },
           speciesChild('Cattle'),
           speciesChild('Goats'),
           speciesChild('Sheep'),
           speciesChild('Poultry'),
           speciesChild('Pigs'),
-          speciesChild('Fish')
+          speciesChild('Fish'),
+          {
+            id: 'animals-herds',
+            label: 'Herd Batches',
+            target: { commands: ['/livestock', 'herds'] },
+            match: page('/livestock/herds')
+          },
+          {
+            id: 'animals-health-center',
+            label: 'Health & Veterinary',
+            target: { commands: ['/health'] },
+            match: page('/health')
+          },
+          {
+            id: 'animals-health',
+            label: 'Health Records',
+            target: { commands: ['/livestock', 'health'] },
+            match: page('/livestock/health')
+          }
         ]
       },
       {
         id: 'movements',
         label: 'Movements',
         icon: 'movements',
-        target: { commands: ['/livestock'], fragment: 'ledger' },
+        target: { commands: ['/livestock', 'registry'] },
         match: {
           any: [
-            section('/livestock', 'ledger'),
-            section('/livestock', 'transfer'),
+            page('/livestock/registry'),
+            page('/livestock/transfers'),
             section('/help', 'movements')
           ]
         },
@@ -188,20 +215,19 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
           {
             id: 'movements-ledger',
             label: 'Movement Ledger',
-            target: { commands: ['/livestock'], fragment: 'ledger' },
-            match: section('/livestock', 'ledger')
+            target: { commands: ['/livestock', 'registry'] },
+            match: page('/livestock/registry')
           },
           {
             id: 'movements-new',
             label: 'New Transfer',
-            target: { commands: ['/livestock'], fragment: 'transfer' },
-            match: section('/livestock', 'transfer')
+            target: { commands: ['/livestock', 'registry'] }
           },
           {
             id: 'movements-history',
             label: 'Transfer History',
-            target: { commands: ['/help'], fragment: 'movements' },
-            match: section('/help', 'movements')
+            target: { commands: ['/livestock', 'transfers'] },
+            match: page('/livestock/transfers')
           }
         ]
       }
@@ -210,6 +236,7 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
   {
     id: 'operations',
     label: 'Operations',
+    icon: 'operations',
     items: [
       {
         id: 'production',
@@ -260,6 +287,13 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
             match: page('/inventory/receipts')
           },
           {
+            id: 'inventory-issues',
+            label: 'Stock Issues',
+            icon: 'issue',
+            target: { commands: ['/inventory', 'issues'] },
+            match: page('/inventory/issues')
+          },
+          {
             id: 'inventory-adjust',
             label: 'Adjustments',
             icon: 'doc',
@@ -286,6 +320,13 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
             icon: 'bell',
             target: { commands: ['/inventory', 'low'] },
             match: page('/inventory/low')
+          },
+          {
+            id: 'inventory-reports',
+            label: 'Reports',
+            icon: 'chart',
+            target: { commands: ['/inventory', 'reports'] },
+            match: page('/inventory/reports')
           }
         ]
       },
@@ -294,19 +335,42 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         label: 'Staff',
         icon: 'staff',
         target: { commands: ['/staff'] },
-        match: page('/staff'),
+        match: { path: '/staff' },
         children: [
+          {
+            id: 'staff-overview',
+            label: 'Staff Overview',
+            icon: 'chart',
+            target: { commands: ['/staff'] },
+            match: { path: '/staff', exact: true }
+          },
           {
             id: 'staff-directory',
             label: 'Staff Directory',
-            target: { commands: ['/staff'], fragment: 'people' },
-            match: { any: [page('/staff'), section('/staff', 'people')] }
+            icon: 'people',
+            target: { commands: ['/staff', 'directory'] },
+            match: { path: '/staff/directory' }
           },
           {
             id: 'staff-assignments',
             label: 'Assignments',
-            target: { commands: ['/staff'], fragment: 'assignments' },
-            match: section('/staff', 'assignments')
+            icon: 'doc',
+            target: { commands: ['/staff', 'assignments'] },
+            match: page('/staff/assignments')
+          },
+          {
+            id: 'staff-attendance',
+            label: 'Attendance & Shifts',
+            icon: 'clock',
+            target: { commands: ['/staff', 'attendance'] },
+            match: page('/staff/attendance')
+          },
+          {
+            id: 'staff-performance',
+            label: 'Performance & Training',
+            icon: 'award',
+            target: { commands: ['/staff', 'performance'] },
+            match: page('/staff/performance')
           }
         ]
       },
@@ -315,40 +379,104 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         label: 'Tasks',
         icon: 'tasks',
         badge: 'tasks',
-        target: { commands: ['/staff'], fragment: 'tasks' },
+        target: { commands: ['/staff', 'assignments'], fragment: 'tasks' },
         match: {
           any: [
-            section('/staff', 'tasks'),
-            section('/staff', 'my-tasks'),
-            section('/staff', 'calendar')
+            section('/staff/assignments', 'tasks'),
+            section('/staff/assignments', 'my-tasks'),
+            section('/staff/assignments', 'calendar')
           ]
         },
         children: [
           {
             id: 'tasks-mine',
             label: 'My Tasks',
-            target: { commands: ['/staff'], fragment: 'my-tasks' },
-            match: section('/staff', 'my-tasks')
+            target: { commands: ['/staff', 'assignments'], fragment: 'my-tasks' },
+            match: section('/staff/assignments', 'my-tasks')
           },
           {
             id: 'tasks-all',
             label: 'All Tasks',
-            target: { commands: ['/staff'], fragment: 'tasks' },
-            match: section('/staff', 'tasks')
+            target: { commands: ['/staff', 'assignments'], fragment: 'tasks' },
+            match: section('/staff/assignments', 'tasks')
           },
           {
             id: 'tasks-calendar',
             label: 'Task Calendar',
-            target: { commands: ['/staff'], fragment: 'calendar' },
-            match: section('/staff', 'calendar')
+            target: { commands: ['/staff', 'assignments'], fragment: 'calendar' },
+            match: section('/staff/assignments', 'calendar')
           }
         ]
       }
     ]
   },
   {
+    id: 'medical',
+    label: 'Medical Suppliers',
+    icon: 'medical',
+    items: [
+      {
+        id: 'medical-suppliers',
+        label: 'Medical Suppliers',
+        icon: 'medical',
+        target: { commands: ['/suppliers'] },
+        match: page('/suppliers')
+      }
+    ]
+  },
+  {
+    id: 'market',
+    label: 'Agricultural Marketplace',
+    icon: 'market',
+    items: [
+      {
+        id: 'market-home',
+        label: 'Overview',
+        icon: 'dashboard',
+        target: { commands: ['/market'] },
+        match: page('/market')
+      },
+      {
+        id: 'market-buy',
+        label: 'Buy Products',
+        icon: 'market',
+        target: { commands: ['/market'], fragment: 'buy' },
+        match: section('/market', 'buy')
+      },
+      {
+        id: 'market-sell',
+        label: 'Sell Products',
+        icon: 'inventory',
+        target: { commands: ['/market'], fragment: 'sell' },
+        match: section('/market', 'sell')
+      },
+      {
+        id: 'market-requests',
+        label: 'Buying Requests',
+        icon: 'requests',
+        target: { commands: ['/market'], fragment: 'requests' },
+        match: section('/market', 'requests')
+      },
+      {
+        id: 'market-orders',
+        label: 'My Orders',
+        icon: 'tasks',
+        target: { commands: ['/market'], fragment: 'orders' },
+        match: section('/market', 'orders')
+      },
+      {
+        id: 'market-messages',
+        label: 'Messages',
+        icon: 'advice',
+        target: { commands: ['/market'], fragment: 'messages' },
+        match: section('/market', 'messages')
+      }
+    ]
+  },
+  {
     id: 'insights',
     label: 'Insights',
+    icon: 'insights',
     items: [
       {
         id: 'reports',
@@ -377,31 +505,31 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         icon: 'alerts',
         badge: 'alerts',
         target: { commands: ['/alerts'] },
-        match: page('/alerts'),
+        match: { path: '/alerts' },
         children: [
           {
             id: 'alerts-active',
             label: 'Active Alerts',
-            target: { commands: ['/alerts'], fragment: 'active' },
-            match: { any: [page('/alerts'), section('/alerts', 'active')] }
+            target: { commands: ['/alerts'] },
+            match: page('/alerts')
           },
           {
             id: 'alerts-history',
             label: 'Alert History',
-            target: { commands: ['/alerts'], fragment: 'history' },
-            match: section('/alerts', 'history')
+            target: { commands: ['/alerts', 'history'] },
+            match: page('/alerts/history')
           },
           {
             id: 'alerts-rules',
             label: 'Alert Rules',
-            target: { commands: ['/alerts'], fragment: 'rules' },
-            match: section('/alerts', 'rules')
+            target: { commands: ['/alerts', 'rules'] },
+            match: page('/alerts/rules')
           },
           {
             id: 'alerts-report',
             label: 'Report health',
-            target: { commands: ['/alerts'], fragment: 'report' },
-            match: section('/alerts', 'report')
+            target: { commands: ['/alerts', 'report'] },
+            match: page('/alerts/report')
           }
         ]
       },
@@ -439,16 +567,17 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
   {
     id: 'system',
     label: 'System',
+    icon: 'system',
     items: [
       {
         id: 'users',
         label: 'Users & Roles',
         icon: 'users',
         permission: 'manageAccess',
-        target: { commands: ['/staff'], fragment: 'people' },
+        target: { commands: ['/staff', 'directory'] },
         match: {
           any: [
-            section('/staff', 'people'),
+            { path: '/staff/directory' },
             page('/access'),
             section('/access', 'permissions'),
             section('/access', 'assigned'),
@@ -460,8 +589,8 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
             id: 'users-list',
             label: 'Users',
             permission: 'allFarms',
-            target: { commands: ['/staff'], fragment: 'people' },
-            match: section('/staff', 'people')
+            target: { commands: ['/staff', 'directory'] },
+            match: page('/staff/directory')
           },
           {
             id: 'users-roles',
@@ -553,6 +682,7 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
   {
     id: 'workspace',
     label: 'Workspace',
+    icon: 'workspace',
     items: [
       {
         id: 'adviser-dashboard',
@@ -579,15 +709,15 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
         id: 'adviser-cases',
         label: 'Advisory Cases',
         icon: 'cases',
-        target: { commands: ['/alerts'], fragment: 'active' },
-        match: { any: [page('/alerts'), section('/alerts', 'active')] }
+        target: { commands: ['/alerts'] },
+        match: page('/alerts')
       },
       {
         id: 'adviser-visits',
         label: 'Farm Visits',
         icon: 'visits',
-        target: { commands: ['/staff'], fragment: 'calendar' },
-        match: section('/staff', 'calendar')
+        target: { commands: ['/staff', 'assignments'], fragment: 'calendar' },
+        match: section('/staff/assignments', 'calendar')
       },
       {
         id: 'adviser-recommendations',
@@ -602,19 +732,34 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
         icon: 'advisers',
         target: { commands: ['/advisers'] },
         match: page('/advisers')
+      },
+      {
+        id: 'adviser-medical',
+        label: 'Medical Suppliers',
+        icon: 'medical',
+        target: { commands: ['/suppliers'] },
+        match: page('/suppliers')
+      },
+      {
+        id: 'adviser-market',
+        label: 'Agricultural Marketplace',
+        icon: 'market',
+        target: { commands: ['/market'] },
+        match: { any: [page('/market'), section('/market', 'buy'), section('/market', 'sell'), section('/market', 'requests'), section('/market', 'orders'), section('/market', 'messages')] }
       }
     ]
   },
   {
     id: 'operations',
     label: 'Operations',
+    icon: 'operations',
     items: [
       {
         id: 'adviser-health',
         label: 'Animal Health',
         icon: 'health',
-        target: { commands: ['/livestock'] },
-        match: { path: '/livestock' }
+        target: { commands: ['/health'] },
+        match: page('/health')
       },
       {
         id: 'adviser-production',
@@ -628,8 +773,8 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
         label: 'Tasks',
         icon: 'tasks',
         badge: 'tasks',
-        target: { commands: ['/staff'], fragment: 'tasks' },
-        match: { any: [page('/staff'), section('/staff', 'tasks')] }
+        target: { commands: ['/staff', 'assignments'], fragment: 'tasks' },
+        match: section('/staff/assignments', 'tasks')
       },
       {
         id: 'adviser-knowledge',
@@ -643,6 +788,7 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
   {
     id: 'insights',
     label: 'Insights',
+    icon: 'insights',
     items: [
       {
         id: 'adviser-reports',
@@ -656,14 +802,15 @@ export const ADVISER_SECTIONS: NavSectionConfig[] = [
         label: 'Notifications',
         icon: 'alerts',
         badge: 'alerts',
-        target: { commands: ['/alerts'], fragment: 'history' },
-        match: section('/alerts', 'history')
+        target: { commands: ['/alerts', 'history'] },
+        match: page('/alerts/history')
       }
     ]
   },
   {
     id: 'support',
     label: 'Support',
+    icon: 'support',
     items: [
       {
         id: 'adviser-help',

@@ -11,4 +11,8 @@ public interface SpeciesRepository extends JpaRepository<Species, UUID> {
     List<Species> findByTenantIdOrderBySortOrderAsc(UUID tenantId);
 
     Optional<Species> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    Optional<Species> findByTenantIdAndCodeIgnoreCase(UUID tenantId, String code);
+
+    Optional<Species> findByTenantIdAndNameIgnoreCase(UUID tenantId, String name);
 }

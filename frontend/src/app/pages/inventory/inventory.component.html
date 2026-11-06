@@ -1,22 +1,17 @@
 <header class="inv-head">
   <div>
     <div class="title-row">
-      <h1>Inventory</h1>
+      <h1>Stock Overview</h1>
       @if (!store.loading() && !store.loadError()) {
         <span class="farm-chip">{{ scopeName() }}</span>
       }
     </div>
-    <p>Feed, medicine, equipment, and supplies for farms in your scope.</p>
+    <p>View and manage all inventory items, batches, and stock status.</p>
   </div>
-  @if (!store.loading() && !store.loadError()) {
+  @if (!store.loading() && !store.loadError() && canWrite()) {
     <div class="head-actions">
-      <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
-      @if (canWrite()) {
-        <a class="ghost-btn" routerLink="/inventory/receipts">Receipt</a>
-        <button class="ghost-btn" type="button" (click)="openIssue()">Issue</button>
-        <a class="ghost-btn" routerLink="/inventory/transfers">Transfer</a>
-        <a class="green-btn" routerLink="/inventory/adjustments">Stock adjustment</a>
-      }
+      <a class="green-btn" routerLink="/inventory/receipts" [queryParams]="{ form: 'receipt' }">+ Add Stock Receipt</a>
+      <a class="green-btn" routerLink="/inventory/receipts" [queryParams]="{ form: 'product' }">+ Add Product</a>
     </div>
   }
 </header>
@@ -29,66 +24,141 @@
     <button class="green-btn" type="button" (click)="store.refresh()">Retry</button>
   </div>
 } @else {
-  <div class="kpi-row">
-    <article class="kpi static">
-      <span class="mark mix" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></span>
-      <span>
-        <small>Stock value · {{ store.currencyCode() }}</small>
-        <strong>{{ valued().length ? money(stockValue()) : '—' }}</strong>
-        <em>{{ valueNote() }}</em>
-      </span>
-    </article>
-    <button type="button" class="kpi" (click)="clearFilters()">
-      <span class="mark items" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 11h16M9 7v12"/></svg></span>
-      <span>
-        <small>Stock items</small>
-        <strong>{{ fmt(scoped().length) }}</strong>
-        <em>Lines in this view</em>
-      </span>
+  <div class="stat-grid">
+    <button type="button" class="stat" (click)="clearFilters()">
+      <span class="mark items" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 16l9 4 9-4"/></svg></span>
+      <span><small>Total Products</small><strong>{{ fmt(scoped().length) }}</strong><em>Products in this view</em></span>
     </button>
-    <a class="kpi" routerLink="/inventory/low">
-      <span class="mark low" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg></span>
-      <span>
-        <small>Low stock</small>
-        <strong>{{ fmt(lowCount()) }}</strong>
-        <em>At or under the reorder point</em>
-      </span>
-    </a>
-    <button type="button" class="kpi" (click)="setExpiry('SOON'); setStatus('ALL')">
-      <span class="mark soon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 10v4l2 2M9 4h6"/></svg></span>
-      <span>
-        <small>Expiring soon</small>
-        <strong>{{ fmt(expiringCount()) }}</strong>
-        <em>Expiry within 30 days</em>
-      </span>
+    <article class="stat">
+      <span class="mark feed" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 11h16M9 7v12"/></svg></span>
+      <span><small>Total Stock Quantity</small><strong>{{ fmt(stockUnits(), stockUnits() % 1 ? 2 : 0) }}</strong><em>Units (various)</em></span>
+    </article>
+    <article class="stat">
+      <span class="mark value" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg></span>
+      <span><small>Total Inventory Value</small><strong>{{ valued().length ? money(stockValue()) : '—' }}</strong><em>{{ valueNote() }}</em></span>
+    </article>
+    <button type="button" class="stat" (click)="setCategory('MEDICINE')">
+      <span class="mark photo" aria-hidden="true"><img [src]="pictures.MEDICINE" alt=""></span>
+      <span><small>Veterinary Medicines</small><strong>{{ fmt(medicineCount()) }}</strong><em>{{ share(medicineCount()) }}% of products</em></span>
+    </button>
+    <button type="button" class="stat" (click)="setCategory('FEED')">
+      <span class="mark photo" aria-hidden="true"><img [src]="pictures.FEED" alt=""></span>
+      <span><small>Animal Feeds</small><strong>{{ fmt(feedCount()) }}</strong><em>{{ share(feedCount()) }}% of products</em></span>
+    </button>
+    <button type="button" class="stat" (click)="setCategory('SUPPLY')">
+      <span class="mark photo" aria-hidden="true"><img [src]="pictures.SUPPLY" alt=""></span>
+      <span><small>Agricultural Supplies</small><strong>{{ fmt(supplyCount()) }}</strong><em>{{ share(supplyCount()) }}% of products</em></span>
     </button>
   </div>
 
-  <div class="board">
-    <section class="sheet" id="stock">
-      <div class="tabs" role="tablist" aria-label="Stock categories">
-        <button type="button" [class.on]="category() === 'ALL'" (click)="setCategory('ALL')">All items</button>
-        @for (name of groups; track name) {
-          <button type="button" [class.on]="category() === name" (click)="setCategory(name)">{{ label(name) }}</button>
+  <div class="insight-row">
+    <article class="panel">
+      <h2>Stock by Category</h2>
+      <div class="donut-wrap">
+        <div class="ring" [style.background]="ring()">
+          <span><strong>{{ fmt(scoped().length) }}</strong><small>Products</small></span>
+        </div>
+        <ul>
+          @for (part of composition(); track part.category) {
+            <li>
+              <button type="button" (click)="setCategory(part.category)">
+                <i [style.background]="part.color"></i>
+                <span>{{ part.label }}</span>
+                <b>{{ part.count }} ({{ part.pct }}%)</b>
+              </button>
+            </li>
+          } @empty {
+            <li class="quiet">No stock items in this view.</li>
+          }
+        </ul>
+      </div>
+    </article>
+    <article class="panel">
+      <h2>Expiry Status (Batches)</h2>
+      <div class="bars" aria-label="Batches by expiry status">
+        @for (bar of expiryBars(); track bar.label) {
+          <div class="bar-col">
+            <strong>{{ bar.count }}</strong>
+            <div class="bar-track"><i [style.height.%]="bar.height" [style.background]="bar.color"></i></div>
+            <small>{{ bar.label }}</small>
+          </div>
         }
       </div>
-      <div class="toolbar">
-        <input [value]="search()" (input)="setSearch($any($event.target).value)" placeholder="Search stock" aria-label="Search stock">
+    </article>
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Stock Alerts</h2>
+        <a routerLink="/inventory/low">View All</a>
+      </div>
+      <ul class="alert-board">
+        <li>
+          <button type="button" (click)="setExpiry('EXPIRED'); setStatus('ALL')">
+            <span class="mark out" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg></span>
+            <span><strong>Expired Stock</strong><small>Batches past expiry date</small></span>
+            <b class="hot">{{ expiryBars()[2].count }}</b>
+          </button>
+        </li>
+        <li>
+          <button type="button" (click)="setExpiry('SOON'); setStatus('ALL')">
+            <span class="mark soon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 10v4l2 2M9 4h6"/></svg></span>
+            <span><strong>Expiring Soon (≤ 30 days)</strong><small>Batches expiring soon</small></span>
+            <b class="warn">{{ expiryBars()[1].count }}</b>
+          </button>
+        </li>
+        <li>
+          <button type="button" (click)="setStatus('LOW'); setExpiry('ALL')">
+            <span class="mark info" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/></svg></span>
+            <span><strong>Low Stock</strong><small>Below minimum level</small></span>
+            <b class="warn">{{ lowCount() }}</b>
+          </button>
+        </li>
+        <li>
+          <button type="button" (click)="setStatus('EXPIRING'); setExpiry('ALL')">
+            <span class="mark supply" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L6 18a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3l-4-9V3"/></svg></span>
+            <span><strong>Best Before Approaching</strong><small>Quality date near</small></span>
+            <b>{{ expiryBars()[3].count }}</b>
+          </button>
+        </li>
+      </ul>
+      @if (pendingCount()) {
+        <p class="quiet"><a routerLink="/inventory/adjustments">{{ pendingCount() }} adjustment{{ pendingCount() === 1 ? '' : 's' }} waiting for approval</a></p>
+      }
+      @if (quarantinedCount()) {
+        <p class="quiet">{{ quarantinedCount() }} batch{{ quarantinedCount() === 1 ? '' : 'es' }} quarantined and held out of usable stock.</p>
+      }
+    </article>
+  </div>
+
+  <section class="sheet catalog">
+    <div class="catalog-head">
+      <div class="tabs" role="tablist" aria-label="Inventory categories">
+        <button type="button" [class.on]="category() === 'ALL'" (click)="setCategory('ALL')">All Inventory</button>
+        <button type="button" [class.on]="category() === 'MEDICINE'" (click)="setCategory('MEDICINE')">Veterinary Medicines</button>
+        <button type="button" [class.on]="category() === 'FEED'" (click)="setCategory('FEED')">Animal Feeds</button>
+        <button type="button" [class.on]="category() === 'SUPPLY'" (click)="setCategory('SUPPLY')">Agricultural Supplies</button>
+        <button type="button" [class.on]="category() === 'EQUIPMENT'" (click)="setCategory('EQUIPMENT')">Equipment</button>
+      </div>
+      <div class="catalog-tools">
+        <input [value]="search()" (input)="setSearch($any($event.target).value)" placeholder="Search products, batches..." aria-label="Search products and batches">
+        <button class="ghost-btn slim" type="button" (click)="filtersOpen.set(!filtersOpen())">Filters</button>
+        <a class="ghost-btn slim" routerLink="/inventory/reports">Reports</a>
+        <button class="ghost-btn slim" type="button" (click)="exportCsv()">Export</button>
+      </div>
+    </div>
+    @if (filtersOpen()) {
+      <div class="toolbar extra">
         <select [value]="farmFilter()" (change)="setFarm($any($event.target).value)" aria-label="Farm">
           <option value="ALL">All farms</option>
           @for (farm of farmOptions(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
         </select>
-        <select [value]="statusFilter()" (change)="setStatus($any($event.target).value)" aria-label="Stock status">
+        <select [value]="statusFilter()" (change)="setStatus($any($event.target).value)" aria-label="Status">
           <option value="ALL">All statuses</option>
-          <option value="IN">In stock</option>
+          <option value="IN">Valid</option>
           <option value="LOW">Low stock</option>
-          <option value="EXPIRING">Expiring</option>
-          <option value="EXPIRED">Expired</option>
           <option value="OUT">Out of stock</option>
+          <option value="EXPIRING">Expiring or best before</option>
+          <option value="EXPIRED">Expired</option>
         </select>
-        <button class="ghost-btn slim" type="button" (click)="clearFilters()">Clear filters</button>
-      </div>
-      <div class="toolbar extra">
         <select [value]="storeFilter()" (change)="setStore($any($event.target).value)" aria-label="Store">
           <option value="ALL">All stores</option>
           @for (name of storeOptions(); track name) { <option [value]="name">{{ name }}</option> }
@@ -98,113 +168,178 @@
           @for (name of supplierOptions(); track name) { <option [value]="name">{{ name }}</option> }
         </select>
         <select [value]="expiryFilter()" (change)="setExpiry($any($event.target).value)" aria-label="Expiry">
-          <option value="ALL">All expiry dates</option>
-          <option value="SOON">Expiring in 30 days</option>
+          <option value="ALL">Any expiry</option>
+          <option value="SOON">Expiring soon</option>
           <option value="EXPIRED">Expired</option>
           <option value="NONE">No expiry date</option>
         </select>
+        <button class="ghost-btn slim" type="button" (click)="clearFilters()">Clear</button>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th><th>SKU</th><th>Category</th><th>Farm</th><th>Store</th><th>Quantity</th><th>Reorder</th><th>Batch</th><th>Expiry</th><th>Value</th><th>Status</th>
-              @if (canWrite()) { <th>Actions</th> }
-            </tr>
-          </thead>
-          <tbody>
-            @if (filtered().length === 0) {
-              <tr><td class="blank" [attr.colspan]="canWrite() ? 12 : 11">{{ category() === 'EQUIPMENT' && !search() ? 'No equipment is stored.' : 'No records found.' }}</td></tr>
-            } @else {
-              @for (item of paged(); track item.id) {
-                <tr>
-                  <td><strong>{{ item.name }}</strong><span>{{ item.supplierName || item.farmName }}</span></td>
-                  <td>{{ item.sku }}</td>
-                  <td>{{ label(item.category) }}</td>
-                  <td>{{ item.farmName }}</td>
-                  <td>{{ item.storeName || '—' }}</td>
-                  <td>{{ fmt(item.quantityOnHand, item.quantityOnHand % 1 ? 2 : 0) }} {{ item.unit }}</td>
-                  <td>{{ fmt(item.reorderPoint, item.reorderPoint % 1 ? 2 : 0) }}</td>
-                  <td>{{ item.lotCode || '—' }}</td>
-                  <td>{{ expiry(item.expiresOn) }}</td>
-                  <td>{{ money(item.stockValue) }}</td>
-                  <td><span class="pill" [class.in]="statusClass(item) === 'in'" [class.low]="statusClass(item) === 'low'" [class.soon]="statusClass(item) === 'soon'" [class.out]="statusClass(item) === 'out'">{{ statusOf(item) }}</span></td>
-                  @if (canWrite()) {
-                    <td class="row-actions"><a class="text-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: item.id }">Adjust</a></td>
+    }
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th><th>Category</th><th>Type</th><th>Batch No.</th><th>Current Stock</th><th>Unit</th>
+            <th>Expiry Date</th><th>Days Left</th><th>Status</th><th>Location</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (paged().length === 0) {
+            <tr><td class="blank" colspan="11">No batches match these filters.</td></tr>
+          } @else {
+            @for (batch of paged(); track batch.id) {
+              <tr>
+                <td>
+                  <div class="prod">
+                    <span class="prod-mark" [class.photo]="productImage(batch)" [style.background]="productImage(batch) ? '#fff' : categoryTint(batch.category)" [style.color]="categoryColor(batch.category)" aria-hidden="true">
+                      @if (productImage(batch); as src) {
+                        <img [src]="src" alt="">
+                      } @else {
+                        <svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M7 8h10"/></svg>
+                      }
+                    </span>
+                    <span>
+                      <strong>{{ batch.productName }}</strong>
+                      <small>{{ batch.sku }} · {{ batch.farmName }}</small>
+                    </span>
+                  </div>
+                </td>
+                <td><span class="tag" [style.background]="categoryTint(batch.category)" [style.color]="categoryColor(batch.category)">{{ categoryTitle(batch.category) }}</span></td>
+                <td><span class="tag type">{{ batch.productType || label(batch.category) }}</span></td>
+                <td>{{ batch.lotCode }}</td>
+                <td>{{ fmt(batch.quantityRemaining, batch.quantityRemaining % 1 ? 2 : 0) }}</td>
+                <td>{{ batch.unit }}</td>
+                <td>{{ expiry(batch.expiresOn) }}</td>
+                <td [class.hot]="batch.daysLeft != null && batch.daysLeft < 0" [class.warn]="batch.daysLeft != null && batch.daysLeft >= 0 && batch.daysLeft <= 30" [class.ok]="batch.daysLeft != null && batch.daysLeft > 30">{{ batch.daysLeft == null ? '—' : batch.daysLeft }}</td>
+                <td>
+                  <span class="pill" [class.in]="batch.status === 'VALID'" [class.soon]="batch.status === 'EXPIRING' || batch.status === 'BEST_BEFORE' || batch.status === 'OPEN_USE'" [class.out]="batch.status === 'EXPIRED' || batch.status === 'QUARANTINED'">{{ batchStatus(batch.status) }}</span>
+                  @if ((itemOf(batch)?.available || 0) <= 0) {
+                    <span class="pill out">Out of stock</span>
+                  } @else if (itemOf(batch)?.lowStock) {
+                    <span class="pill low">Low stock</span>
                   }
-                </tr>
-              }
+                </td>
+                <td>{{ batch.storeName || '—' }}</td>
+                <td class="row-actions">
+                  <button class="icon-btn" type="button" (click)="openBatch(batch)" [attr.aria-label]="'View ' + batch.productName">
+                    <svg viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                  </button>
+                  @if (canWrite()) {
+                    <a class="icon-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: batch.itemId }" [attr.aria-label]="'Adjust ' + batch.productName">
+                      <svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13 7l4 4"/></svg>
+                    </a>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="pager">
+      <span>{{ rangeLabel() }}</span>
+      @if (pageCount() > 1) {
+        <div>
+          <button type="button" (click)="shiftPage(-1)" [disabled]="page() <= 1">Previous</button>
+          <button type="button" (click)="shiftPage(1)" [disabled]="page() >= pageCount()">Next</button>
+        </div>
+      }
+    </footer>
+  </section>
+
+  <div class="strip">
+    <article class="panel">
+      <div class="panel-head"><h2>Recent Stock Receipts</h2><a routerLink="/inventory/receipts">View All</a></div>
+      @if (recentReceipts().length === 0) {
+        <p class="quiet">No receipts are stored in this view.</p>
+      } @else {
+        <table>
+          <thead><tr><th>Date</th><th>Product</th><th>Batch</th><th>Quantity</th><th>Supplier</th></tr></thead>
+          <tbody>
+            @for (row of recentReceipts(); track row.id) {
+              <tr>
+                <td>{{ expiry(row.occurredAt) }}</td>
+                <td>{{ row.itemName }}</td>
+                <td>{{ row.lotCode || '—' }}</td>
+                <td>{{ fmt(row.quantityDelta, row.quantityDelta % 1 ? 2 : 0) }} {{ row.unit }}</td>
+                <td>{{ row.supplierName || '—' }}</td>
+              </tr>
             }
           </tbody>
         </table>
-      </div>
-      <footer class="pager">
-        <span>{{ rangeLabel() }}</span>
-        @if (pageCount() > 1) {
-          <div>
-            <button type="button" (click)="shiftPage(-1)" [disabled]="page() <= 1">Previous</button>
-            <button type="button" (click)="shiftPage(1)" [disabled]="page() >= pageCount()">Next</button>
-          </div>
-        }
-      </footer>
-      <p class="note">Posted movements stay in an append-only ledger. Available quantity cannot go below zero. Unit cost is shown only where it has been recorded, in {{ store.currencyCode() }}.</p>
-    </section>
+      }
+    </article>
+    <article class="panel">
+      <div class="panel-head"><h2>Near Expiry Items (≤ 30 days)</h2><a routerLink="/inventory/low">View All</a></div>
+      @if (nearExpiry().length === 0) {
+        <p class="quiet">No batch expires within 30 days.</p>
+      } @else {
+        <table>
+          <thead><tr><th>Product</th><th>Batch</th><th>Expiry</th><th>Days Left</th></tr></thead>
+          <tbody>
+            @for (batch of nearExpiry(); track batch.id) {
+              <tr>
+                <td>{{ batch.productName }}</td>
+                <td>{{ batch.lotCode }}</td>
+                <td>{{ expiry(batch.expiresOn) }}</td>
+                <td class="warn">{{ batch.daysLeft == null ? '—' : batch.daysLeft }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </article>
+    <article class="panel">
+      <div class="panel-head"><h2>Low Stock Items</h2><a routerLink="/inventory/low">View All</a></div>
+      @if (lowItems().length === 0) {
+        <p class="quiet">No item is at or under its reorder point.</p>
+      } @else {
+        <table>
+          <thead><tr><th>Product</th><th>Current Stock</th><th>Min. Level</th></tr></thead>
+          <tbody>
+            @for (item of lowItems(); track item.id) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td [class.hot]="item.available <= 0" [class.warn]="item.available > 0">{{ fmt(item.quantityOnHand, item.quantityOnHand % 1 ? 2 : 0) }} {{ item.unit }}</td>
+                <td>{{ fmt(item.reorderPoint, item.reorderPoint % 1 ? 2 : 0) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </article>
+  </div>
+}
 
-    <aside class="side">
-      <article class="mix-card">
-        <h2>Stock by category</h2>
-        <div class="mix">
-          <div class="ring" [style.background]="ring()">
-            <span><strong>{{ fmt(scoped().length) }}</strong><small>items</small></span>
-          </div>
-          <ul>
-            @for (part of breakdown(); track part.category) {
-              <li>
-                <button type="button" (click)="setCategory(part.category)">
-                  <i [style.background]="part.color"></i>
-                  {{ part.label }}
-                  <b>{{ part.count }}</b>
-                  <em>{{ part.pct }}%</em>
-                </button>
-              </li>
-            } @empty {
-              <li class="quiet">No stock items in this view.</li>
-            }
-          </ul>
+@if (chosenBatch(); as batch) {
+  <div class="modal-back" (click)="chosenId.set(null)">
+    <aside class="entry" role="dialog" aria-modal="true" aria-labelledby="batch-title" (click)="$event.stopPropagation()">
+      <header class="entry-head">
+        <div>
+          <h2 id="batch-title">{{ batch.productName }}</h2>
+          <p>{{ batch.sku }} · {{ batch.farmName }}</p>
         </div>
-      </article>
-      <article>
-        <h2>Attention</h2>
-        @if (attention().length === 0 && pendingCount() === 0) {
-          <p class="quiet">No low-stock or expiry warning in this view.</p>
-        } @else {
-          <ul class="alerts">
-            @for (item of attention(); track item.id) {
-              <li>
-                <a class="line" routerLink="/inventory/low">
-                  <i [class.low]="item.lowStock || item.available <= 0" [class.soon]="!item.lowStock && item.available > 0"></i>
-                  <span>
-                    <strong>{{ item.name }}</strong>
-                    <small>{{ statusOf(item) }} · {{ item.farmName }} · {{ fmt(item.available, item.available % 1 ? 2 : 0) }} {{ item.unit }}</small>
-                  </span>
-                </a>
-              </li>
-            }
-            @if (pendingCount()) {
-              <li>
-                <a class="line" routerLink="/inventory/adjustments">
-                  <i class="wait"></i>
-                  <span>
-                    <strong>{{ pendingCount() }} adjustment{{ pendingCount() === 1 ? '' : 's' }} waiting</strong>
-                    <small>Stock stays unchanged until a super admin approves</small>
-                  </span>
-                </a>
-              </li>
-            }
-          </ul>
+      </header>
+      <dl class="facts">
+        <div><dt>Category</dt><dd>{{ categoryTitle(batch.category) }}</dd></div>
+        <div><dt>Type</dt><dd>{{ batch.productType || '—' }}</dd></div>
+        <div><dt>Batch</dt><dd>{{ batch.lotCode }}</dd></div>
+        <div><dt>On hand</dt><dd>{{ fmt(batch.quantityRemaining, batch.quantityRemaining % 1 ? 2 : 0) }} {{ batch.unit }}</dd></div>
+        <div><dt>Expiry</dt><dd>{{ expiry(batch.expiresOn) }}</dd></div>
+        <div><dt>Days left</dt><dd>{{ batch.daysLeft == null ? '—' : batch.daysLeft }}</dd></div>
+        <div><dt>Best before</dt><dd>{{ expiry(batch.bestBeforeOn) }}</dd></div>
+        <div><dt>Status</dt><dd>{{ batchStatus(batch.status) }}</dd></div>
+        <div><dt>Location</dt><dd>{{ batch.storeName || '—' }}</dd></div>
+        <div><dt>Supplier</dt><dd>{{ batch.supplierName || '—' }}</dd></div>
+        <div><dt>Unit cost</dt><dd>{{ batch.unitCost == null ? '—' : money(batch.unitCost) }}</dd></div>
+      </dl>
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="chosenId.set(null)">Close</button>
+        @if (canWrite()) {
+          <a class="green-btn" [routerLink]="['/inventory/adjustments']" [queryParams]="{ item: batch.itemId }">Adjust stock</a>
         }
-        <p class="quiet"><a routerLink="/inventory/low">Open low-stock alerts</a></p>
-      </article>
+      </div>
     </aside>
   </div>
 }
@@ -226,6 +361,7 @@
         </label>
         <label>Quantity <em>*</em><input formControlName="quantity" type="number" min="0.01" step="0.01"></label>
         <label>Reason <em>*</em><input formControlName="reason" placeholder="Why this stock is leaving"></label>
+        <p class="note">The earliest eligible batch is issued. Expired and quarantined stock stays on the record.</p>
       </div>
       @if (error()) { <div class="error">{{ error() }}</div> }
       <div class="entry-foot">

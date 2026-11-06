@@ -2,8 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { Settings, Species } from '../../core/models';
+import { Settings } from '../../core/models';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+import { MasterDataComponent } from './master-data.component';
 
 interface WorkspaceDraft {
   name: string;
@@ -18,7 +19,7 @@ type SettingsSection = 'general' | 'master' | 'integrations' | 'security';
 
 @Component({
   selector: 'app-settings',
-  imports: [PageHeaderComponent, RouterLink],
+  imports: [PageHeaderComponent, RouterLink, MasterDataComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css'
 })
@@ -28,7 +29,6 @@ export class SettingsComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   settings = signal<Settings | null>(null);
-  species = signal<Species[]>([]);
   loading = signal(true);
   error = signal('');
   saving = signal(false);
@@ -50,10 +50,6 @@ export class SettingsComponent {
       }
     });
     this.load();
-    this.api.species().subscribe({
-      next: species => this.species.set(species),
-      error: () => this.species.set([])
-    });
   }
 
   load(): void {

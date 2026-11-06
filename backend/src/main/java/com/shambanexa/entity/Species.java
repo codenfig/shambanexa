@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -35,4 +36,20 @@ public class Species extends BaseEntity {
 
     @Column(nullable = false)
     private boolean individualTracking;
+
+    @Column(nullable = false, length = 16)
+    private String status;
+
+    @Column(nullable = false, length = 16)
+    private String origin;
+
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    private UUID createdBy;
+
+    private UUID updatedBy;
 }

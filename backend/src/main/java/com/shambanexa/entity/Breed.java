@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +22,25 @@ public class Breed extends BaseEntity {
     @Column(nullable = false)
     private UUID speciesId;
 
+    @Column(nullable = false, length = 40)
+    private String code;
+
     @Column(nullable = false, length = 120)
     private String name;
+
+    @Column(nullable = false, length = 16)
+    private String status;
+
+    @Column(nullable = false, length = 16)
+    private String origin;
+
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    private UUID createdBy;
+
+    private UUID updatedBy;
 }

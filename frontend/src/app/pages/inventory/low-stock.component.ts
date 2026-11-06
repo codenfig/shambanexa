@@ -1,9 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { InventoryItem } from '../../core/models';
-import { formatNumber } from '../../core/format';
-import { categoryLabel, downloadCsv, expiryLabel, scopeChip, statusClass, statusOf } from './inventory.format';
+import { StockAlert } from '../../core/models';
+import { apiError, formatNumber } from '../../core/format';
+import { ToastService } from '../../core/toast.service';
+import { categoryLabel, downloadCsv, expiryLabel, scopeChip } from './inventory.format';
 import { InventoryStore } from './inventory.store';
 
 @Component({
@@ -13,50 +15,93 @@ import { InventoryStore } from './inventory.store';
   styleUrl: './inventory.component.css'
 })
 export class LowStockComponent {
+  private api = inject(ApiService);
   private auth = inject(AuthService);
+  private toast = inject(ToastService);
   readonly store = inject(InventoryStore);
   readonly fmt = formatNumber;
   readonly label = categoryLabel;
   readonly expiry = expiryLabel;
-  readonly statusOf = statusOf;
-  readonly statusClass = statusClass;
   session = this.auth.session;
   search = signal('');
+  kind = signal('ALL');
   selectedId = signal<string | null>(null);
+  busy = signal(false);
+  readonly kinds = [
+    ['ALL', 'All Alerts'],
+    ['LOW', 'Low Stock'],
+    ['OUT', 'Out of Stock'],
+    ['EXPIRING', 'Expiring Soon'],
+    ['EXPIRED', 'Expired'],
+    ['BEST_BEFORE', 'Best Before'],
+    ['OPEN_USE', 'After opening'],
+    ['QUARANTINED', 'Quarantined']
+  ];
   rows = computed(() => {
     const query = this.search().trim().toLowerCase();
-    return this.store.items().filter(item => {
-      if (!item.lowStock) {
+    const kind = this.kind();
+    return this.store.alerts().filter(row => {
+      if (kind !== 'ALL' && row.kind !== kind) {
         return false;
       }
       if (!query) {
         return true;
       }
-      return `${item.name} ${item.sku} ${item.farmName} ${item.category} ${item.lotCode || ''}`.toLowerCase().includes(query);
+      return `${row.productName} ${row.lotCode || ''} ${row.farmName} ${row.category} ${row.kind}`.toLowerCase().includes(query);
     });
   });
-  outCount = computed(() => this.rows().filter(item => item.available <= 0).length);
-  selected = computed(() => this.rows().find(item => item.id === this.selectedId()) || this.rows()[0] || null);
+  selected = computed(() => this.rows().find(row => this.key(row) === this.selectedId()) || this.rows()[0] || null);
 
   canWrite(): boolean {
     return !!this.session()?.canWriteOperations;
   }
 
   chip(): string {
-    return scopeChip(this.rows().map(item => item.farmName));
+    return scopeChip(this.rows().map(row => row.farmName));
   }
 
-  pick(item: InventoryItem): void {
-    this.selectedId.set(item.id);
+  key(row: StockAlert): string {
+    return `${row.kind}:${row.batchId || row.itemId}`;
+  }
+
+  pick(row: StockAlert): void {
+    this.selectedId.set(this.key(row));
+  }
+
+  kindLabel(code: string): string {
+    return this.kinds.find(item => item[0] === code)?.[1] || code;
+  }
+
+  reorder(itemId: string): string {
+    const point = this.store.items().find(item => item.id === itemId)?.reorderPoint;
+    return point == null ? '—' : this.fmt(point, point % 1 ? 2 : 0);
+  }
+
+  acknowledge(row: StockAlert): void {
+    if (!row.batchId || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.api.acknowledgeInventoryAlert({ batchId: row.batchId, alertKind: row.kind }).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.toast.show('Alert acknowledged.');
+        this.store.refresh();
+      },
+      error: err => {
+        this.busy.set(false);
+        this.toast.show(apiError(err, 'Could not acknowledge the alert'));
+      }
+    });
   }
 
   exportCsv(): void {
-    downloadCsv('shambanexa-low-stock.csv',
-      ['item', 'sku', 'category', 'farm', 'available', 'unit', 'reorder', 'on_hand', 'reserved', 'batch', 'expiry', 'status'],
-      this.rows().map(item => [
-        item.name, item.sku, item.category, item.farmName, String(item.available), item.unit,
-        String(item.reorderPoint), String(item.quantityOnHand), String(item.reservedQuantity),
-        item.lotCode || '', item.expiresOn || '', statusOf(item)
+    downloadCsv('shambanexa-stock-alerts.csv',
+      ['item', 'category', 'farm', 'batch', 'quantity', 'use_by', 'days_left', 'kind', 'severity', 'action'],
+      this.rows().map(row => [
+        row.productName, row.category, row.farmName, row.lotCode || '', String(row.quantity),
+        row.useBy || '', row.daysLeft == null ? '' : String(row.daysLeft), row.kind, row.severity, row.action
       ]));
   }
 }
+

@@ -47,7 +47,7 @@ svg {
 .land, .land-light, .coast { pointer-events: none; }
 .coast { fill: none; stroke: #1a5434; stroke-width: 1.5; stroke-linejoin: round; }
 .boundary, .sketch, .corner { pointer-events: none; }
-.boundary { fill: rgba(22, 101, 52, 0.28); stroke: #14532d; stroke-width: 1.5; stroke-linejoin: round; }
+.boundary { fill: rgba(30, 131, 48, 0.28); stroke: #14532d; stroke-width: 1.5; stroke-linejoin: round; }
 .sketch { fill: rgba(193, 154, 58, 0.34); stroke: #8d6b22; stroke-width: 1.7; stroke-linejoin: round; }
 .corner { fill: #fffef8; stroke: #8d6b22; stroke-width: 1.4; }
 .marker { cursor: pointer; }
@@ -70,14 +70,14 @@ svg {
   font-weight: 800;
   pointer-events: none;
 }
-.marker.tone-warn .ping { stroke: #c4921c; }
-.marker.tone-warn .core { fill: #d4a72c; }
-.marker.tone-alert .ping { stroke: #c2412d; }
-.marker.tone-alert .core { fill: #d64545; }
+.marker.tone-warn .ping { stroke: #e07a12; }
+.marker.tone-warn .core { fill: #e07a12; }
+.marker.tone-alert .ping { stroke: #d23b35; }
+.marker.tone-alert .core { fill: #d23b35; }
 .marker .notice { fill: #b42318; stroke: #fff; stroke-width: 1; pointer-events: none; }
 .marker text.notice-label { fill: #fff; font-size: 10px; font-weight: 800; }
 .marker.selected .core { stroke: #14532d; stroke-width: 2.6; }
-.marker.selected .chip { stroke: #166534; stroke-width: 1.4; }
+.marker.selected .chip { stroke: #1e8330; stroke-width: 1.4; }
 .marker.chosen .core { fill: #c19a3a; }
 .place {
   fill: rgba(28, 68, 74, 0.55);
@@ -89,14 +89,14 @@ svg {
 }
 .compass, .scale { pointer-events: none; }
 .compass circle { fill: rgba(255, 254, 248, 0.88); stroke: rgba(22, 60, 32, 0.12); }
-.compass polygon { fill: #166534; }
+.compass polygon { fill: #1e8330; }
 .compass text { fill: #163024; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; }
 .scale line { stroke: #163024; stroke-width: 1.6; stroke-linecap: round; }
 .scale-label { fill: #163024; font-size: 11px; font-weight: 800; }
 :host.fill svg { width: 100%; max-width: none; }
 .callout { pointer-events: none; }
-.callout rect { fill: rgba(255, 254, 248, 0.96); stroke: rgba(22, 101, 52, 0.12); }
-.callout .accent { fill: #166534; stroke: none; }
+.callout rect { fill: rgba(255, 254, 248, 0.96); stroke: rgba(30, 131, 48, 0.12); }
+.callout .accent { fill: #1e8330; stroke: none; }
 .callout .accent.warn { fill: #c4921c; }
 .callout .accent.alert { fill: #b42318; }
 .callout text { fill: #5d6b63; font-size: 12px; font-weight: 700; }

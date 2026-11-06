@@ -3,13 +3,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { InventoryItem } from '../../core/models';
+import { InventoryItem, StockBatch } from '../../core/models';
 import { apiError, formatNumber } from '../../core/format';
 import { ToastService } from '../../core/toast.service';
-import { STOCK_COLORS, STOCK_GROUPS, categoryLabel, downloadCsv, expired, expiring, expiryLabel, money, statusClass, statusOf } from './inventory.format';
+import { STOCK_GROUPS, batchStatusLabel, categoryLabel, downloadCsv, expired, expiring, expiryLabel, money, statusClass, statusOf, whenLabel } from './inventory.format';
+import { categoryPictures, stockPicture } from '../../core/catalog-images';
 import { InventoryStore } from './inventory.store';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-inventory',
@@ -26,10 +27,12 @@ export class InventoryComponent {
   private router = inject(Router);
   readonly store = inject(InventoryStore);
   readonly groups = STOCK_GROUPS;
-  readonly label = categoryLabel;
+  readonly pictures = categoryPictures;
   readonly expiry = expiryLabel;
+  readonly when = whenLabel;
   readonly statusOf = statusOf;
   readonly statusClass = statusClass;
+  readonly batchStatus = batchStatusLabel;
   readonly fmt = formatNumber;
   session = this.auth.session;
   search = signal('');
@@ -41,6 +44,8 @@ export class InventoryComponent {
   category = signal('ALL');
   page = signal(1);
   issueOpen = signal(false);
+  filtersOpen = signal(false);
+  chosenId = signal<string | null>(null);
   busy = signal(false);
   error = signal('');
   issueForm = this.fb.nonNullable.group({
@@ -100,11 +105,60 @@ export class InventoryComponent {
       return `${item.name} ${item.sku} ${item.lotCode || ''} ${item.supplierName || ''} ${item.storeName || ''}`.toLowerCase().includes(query);
     });
   });
-  pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  pageCount = computed(() => Math.max(1, Math.ceil(this.visibleBatches().length / PAGE_SIZE)));
   paged = computed(() => {
     const page = Math.min(this.page(), this.pageCount());
-    return this.filtered().slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    return this.visibleBatches().slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   });
+  stockUnits = computed(() => this.scoped().reduce((sum, item) => sum + Number(item.quantityOnHand), 0));
+  scopedBatches = computed(() => {
+    const farm = this.farmFilter();
+    return this.store.batches().filter(batch => (farm === 'ALL' || batch.farmId === farm) && batch.status !== 'DISPOSED');
+  });
+  expiryBars = computed(() => {
+    const rows = this.scopedBatches();
+    const count = (codes: string[]) => rows.filter(batch => codes.includes(batch.status)).length;
+    const bars = [
+      { label: 'Valid', count: count(['VALID']), color: '#1e8330' },
+      { label: 'Expiring Soon', count: count(['EXPIRING', 'OPEN_USE']), color: '#e8a317' },
+      { label: 'Expired', count: count(['EXPIRED']), color: '#d23b35' },
+      { label: 'Best Before', count: count(['BEST_BEFORE']), color: '#94a3b8' }
+    ];
+    const max = Math.max(1, ...bars.map(bar => bar.count));
+    return bars.map(bar => ({ ...bar, height: Math.max(bar.count ? 8 : 0, Math.round((bar.count / max) * 100)) }));
+  });
+  medicineCount = computed(() => this.scoped().filter(item => item.category === 'MEDICINE').length);
+  feedCount = computed(() => this.scoped().filter(item => item.category === 'FEED').length);
+  supplyCount = computed(() => this.scoped().filter(item => item.category === 'SUPPLY').length);
+  visibleBatches = computed(() => {
+    const query = this.search().trim().toLowerCase();
+    const category = this.category();
+    const farm = this.farmFilter();
+    const supplier = this.supplierFilter();
+    const store = this.storeFilter();
+    const expiry = this.expiryFilter();
+    const status = this.statusFilter();
+    return this.store.batches().filter(batch => {
+      if (batch.status === 'DISPOSED') return false;
+      if (category !== 'ALL' && batch.category !== category) return false;
+      if (farm !== 'ALL' && batch.farmId !== farm) return false;
+      if (store !== 'ALL' && (batch.storeName || '') !== store) return false;
+      if (supplier !== 'ALL' && (batch.supplierName || '') !== supplier) return false;
+      if (expiry === 'SOON' && batch.status !== 'EXPIRING' && batch.status !== 'BEST_BEFORE' && batch.status !== 'OPEN_USE') return false;
+      if (expiry === 'EXPIRED' && batch.status !== 'EXPIRED') return false;
+      if (expiry === 'NONE' && batch.expiresOn) return false;
+      const item = this.store.items().find(row => row.id === batch.itemId);
+      if (status === 'LOW' && !item?.lowStock) return false;
+      if (status === 'OUT' && (item?.available || 0) > 0 && batch.quantityRemaining > 0) return false;
+      if (status === 'EXPIRING' && batch.status !== 'EXPIRING' && batch.status !== 'BEST_BEFORE' && batch.status !== 'OPEN_USE') return false;
+      if (status === 'EXPIRED' && batch.status !== 'EXPIRED') return false;
+      if (status === 'IN' && batch.status !== 'VALID') return false;
+      if (!query) return true;
+      return `${batch.productName} ${batch.sku} ${batch.lotCode} ${batch.productType || ''}`.toLowerCase().includes(query);
+    });
+  });
+  expiredBatchCount = computed(() => this.visibleBatches().filter(batch => batch.status === 'EXPIRED').length);
+  quarantinedCount = computed(() => this.visibleBatches().filter(batch => batch.status === 'QUARANTINED').length);
   farmOptions = computed(() => {
     const seen = new Map<string, string>();
     for (const item of this.store.items()) {
@@ -118,23 +172,27 @@ export class InventoryComponent {
   expiringCount = computed(() => this.scoped().filter(item => expiring(item)).length);
   valued = computed(() => this.scoped().filter(item => item.stockValue != null));
   stockValue = computed(() => this.valued().reduce((sum, item) => sum + Number(item.stockValue), 0));
+  recentReceipts = computed(() => {
+    const farm = this.farmFilter();
+    return this.store.movements()
+      .filter(row => row.movementType === 'RECEIPT' && (farm === 'ALL' || row.farmId === farm))
+      .slice(0, 4);
+  });
+  nearExpiry = computed(() => this.scopedBatches()
+    .filter(batch => batch.status === 'EXPIRING' || batch.status === 'OPEN_USE' || (batch.daysLeft != null && batch.daysLeft >= 0 && batch.daysLeft <= 30 && batch.status !== 'EXPIRED'))
+    .slice(0, 4));
+  lowItems = computed(() => this.scoped().filter(item => item.lowStock || item.available <= 0).slice(0, 4));
   attention = computed(() => this.scoped().filter(item => item.lowStock || item.available <= 0 || expiring(item) || expired(item)).slice(0, 5));
   pendingCount = computed(() => this.store.adjustments().filter(row => row.status === 'PENDING').length);
-  breakdown = computed(() => {
+  composition = computed(() => {
     const total = this.scoped().length || 1;
-    const counts = new Map<string, number>();
-    for (const item of this.scoped()) {
-      counts.set(item.category, (counts.get(item.category) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([category, count]) => ({
-        category,
-        label: categoryLabel(category),
-        count,
-        pct: Math.round((count / total) * 100),
-        color: STOCK_COLORS[category] || '#64748b'
-      }));
+    const order = ['MEDICINE', 'FEED', 'SUPPLY', 'EQUIPMENT'];
+    return order
+      .map(category => {
+        const count = this.scoped().filter(item => item.category === category).length;
+        return { category, label: this.categoryTitle(category), count, pct: Math.round((count / total) * 100), color: this.categoryColor(category) };
+      })
+      .filter(part => part.count > 0);
   });
 
   constructor() {
@@ -143,6 +201,7 @@ export class InventoryComponent {
     const redirect: Record<string, string> = {
       low: 'low',
       receipts: 'receipts',
+      issues: 'issues',
       transfers: 'transfers',
       suppliers: 'suppliers'
     };
@@ -182,12 +241,62 @@ export class InventoryComponent {
     return 'On-hand quantity × unit cost';
   }
 
+  label(code: string): string {
+    const stored = (this.store.lists()['INV_CATEGORY'] || []).find(row => row.code === code);
+    return stored?.name || categoryLabel(code);
+  }
+
+  categoryTitle(code: string): string {
+    if (code === 'MEDICINE') return 'Veterinary Medicines';
+    if (code === 'FEED') return 'Animal Feeds';
+    if (code === 'SUPPLY') return 'Agricultural Supplies';
+    if (code === 'EQUIPMENT') return 'Equipment';
+    return this.label(code);
+  }
+
+  categoryColor(code: string): string {
+    if (code === 'MEDICINE') return '#1e8330';
+    if (code === 'FEED') return '#e8a317';
+    if (code === 'SUPPLY') return '#3b82f6';
+    if (code === 'EQUIPMENT') return '#64748b';
+    return '#94a3b8';
+  }
+
+  categoryTint(code: string): string {
+    if (code === 'MEDICINE') return '#e7f6ec';
+    if (code === 'FEED') return '#fff6df';
+    if (code === 'SUPPLY') return '#e8f1fb';
+    if (code === 'EQUIPMENT') return '#f1f5f9';
+    return '#f3f6f4';
+  }
+
+  share(count: number): number {
+    const total = this.scoped().length;
+    return total ? Math.round((count / total) * 100) : 0;
+  }
+
+  productImage(batch: StockBatch): string | null {
+    return stockPicture(batch.category, batch.productType);
+  }
+
+  itemOf(batch: StockBatch): InventoryItem | undefined {
+    return this.store.items().find(item => item.id === batch.itemId);
+  }
+
+  chosenBatch(): StockBatch | null {
+    return this.store.batches().find(batch => batch.id === this.chosenId()) || null;
+  }
+
+  openBatch(batch: StockBatch): void {
+    this.chosenId.set(batch.id);
+  }
+
   money(value: number | null): string {
     return money(value, this.store.currencyCode());
   }
 
   ring(): string {
-    const parts = this.breakdown();
+    const parts = this.composition();
     if (!this.scoped().length) {
       return 'conic-gradient(#e7eee9 0 100%)';
     }
@@ -201,7 +310,7 @@ export class InventoryComponent {
   }
 
   rangeLabel(): string {
-    const total = this.filtered().length;
+    const total = this.visibleBatches().length;
     if (!total) {
       return '0 items';
     }
@@ -316,6 +425,7 @@ export class InventoryComponent {
   close(): void {
     if (!this.busy()) {
       this.issueOpen.set(false);
+      this.chosenId.set(null);
     }
   }
 }

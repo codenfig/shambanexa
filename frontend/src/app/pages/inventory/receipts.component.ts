@@ -1,6 +1,6 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { apiError, formatNumber } from '../../core/format';
@@ -10,15 +10,16 @@ import { InventoryStore } from './inventory.store';
 
 @Component({
   selector: 'app-stock-receipts',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './receipts.component.html',
-  styleUrl: './inventory.component.css'
+  styleUrls: ['./inventory.component.css', './receipts.component.css']
 })
 export class StockReceiptsComponent {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
+  private route = inject(ActivatedRoute);
   readonly store = inject(InventoryStore);
   readonly fmt = formatNumber;
   readonly when = whenLabel;
@@ -40,6 +41,11 @@ export class StockReceiptsComponent {
     unit: ['kg', Validators.required],
     lotCode: [''],
     expiresOn: [''],
+    bestBeforeOn: [''],
+    manufacturedOn: [''],
+    openDays: [''],
+    genericName: [''],
+    description: [''],
     unitCost: [''],
     supplierName: [''],
     storeName: ['']
@@ -50,6 +56,11 @@ export class StockReceiptsComponent {
     reason: ['Delivery', Validators.required],
     lotCode: [''],
     expiresOn: [''],
+    bestBeforeOn: [''],
+    manufacturedOn: [''],
+    purchaseOrder: [''],
+    inspection: ['PASSED'],
+    openDays: [''],
     unitCost: [''],
     supplierName: [''],
     storeName: ['']
@@ -70,6 +81,8 @@ export class StockReceiptsComponent {
     });
   });
   farms = computed(() => this.store.farms().map(farm => ({ id: farm.id, name: farm.name })).sort((a, b) => a.name.localeCompare(b.name)));
+  productCount = computed(() => new Set(this.rows().map(row => row.sku)).size);
+  farmCount = computed(() => new Set(this.rows().map(row => row.farmName)).size);
 
   constructor() {
     const first = this.store.farms()[0];
@@ -79,6 +92,13 @@ export class StockReceiptsComponent {
     const item = this.store.items()[0];
     if (item) {
       this.receiptForm.controls.itemId.setValue(item.id);
+    }
+    const requested = this.route.snapshot.queryParamMap.get('form');
+    if (requested === 'product' || requested === 'receipt') {
+      this.showForm();
+      if (requested === 'product') {
+        this.mode.set('new');
+      }
     }
   }
 
@@ -137,6 +157,11 @@ export class StockReceiptsComponent {
       ...raw,
       lotCode: raw.lotCode.trim() || null,
       expiresOn: raw.expiresOn || null,
+      bestBeforeOn: raw.bestBeforeOn || null,
+      manufacturedOn: raw.manufacturedOn || null,
+      openDays: raw.openDays === '' ? null : Number(raw.openDays),
+      genericName: raw.genericName.trim() || null,
+      description: raw.description.trim() || null,
       unitCost: this.cost(raw.unitCost),
       supplierName: raw.supplierName.trim() || null,
       storeName: raw.storeName.trim() || null
@@ -168,6 +193,11 @@ export class StockReceiptsComponent {
       reason: raw.reason,
       lotCode: raw.lotCode.trim() || null,
       expiresOn: raw.expiresOn || null,
+      bestBeforeOn: raw.bestBeforeOn || null,
+      manufacturedOn: raw.manufacturedOn || null,
+      purchaseOrder: raw.purchaseOrder.trim() || null,
+      inspection: raw.inspection || null,
+      openDays: raw.openDays === '' ? null : Number(raw.openDays),
       unitCost: this.cost(raw.unitCost),
       supplierName: raw.supplierName.trim() || null,
       storeName: raw.storeName.trim() || null

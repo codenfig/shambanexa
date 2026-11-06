@@ -1,5 +1,7 @@
-<header class="inv-head">
+<section class="receipts">
+<header class="page">
   <div>
+    <p class="eyebrow">Inventory</p>
     <div class="title-row">
       <h1>Stock receipts</h1>
       @if (!store.loading() && !store.loadError()) {
@@ -8,7 +10,7 @@
     </div>
     <p>Incoming stock posted to the ledger. A medicine receipt keeps its batch code and expiry.</p>
   </div>
-  <div class="head-actions">
+  <div class="actions">
     <a class="ghost-btn" routerLink="/inventory">Stock overview</a>
     <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
     <button class="ghost-btn" type="button" (click)="printPage()">Print</button>
@@ -23,53 +25,72 @@
 } @else if (store.loadError()) {
   <div class="state"><h2>Unable to load data.</h2><button class="green-btn" type="button" (click)="store.refresh()">Retry</button></div>
 } @else {
+  <div class="stats">
+    <article>
+      <span>Receipts</span>
+      <strong>{{ rows().length }}</strong>
+      <small>Posted deliveries in this view</small>
+    </article>
+    <article>
+      <span>Products</span>
+      <strong>{{ productCount() }}</strong>
+      <small>Distinct items received</small>
+    </article>
+    <article>
+      <span>Farms</span>
+      <strong>{{ farmCount() }}</strong>
+      <small>Farms with a receipt here</small>
+    </article>
+  </div>
   <section class="sheet">
-    <div class="toolbar trio">
-      <input [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search item, SKU, supplier, store, or batch" aria-label="Search receipts">
-      <select [value]="farmFilter()" (change)="farmFilter.set($any($event.target).value)" aria-label="Farm">
-        <option value="ALL">All farms</option>
-        @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
-      </select>
-      <button class="ghost-btn slim" type="button" (click)="search.set(''); farmFilter.set('ALL')">Clear filters</button>
+    <div class="toolbar">
+      <label>Search
+        <input [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Item, SKU, supplier, store, or batch" aria-label="Search receipts">
+      </label>
+      <label>Farm
+        <select [value]="farmFilter()" (change)="farmFilter.set($any($event.target).value)" aria-label="Farm">
+          <option value="ALL">All farms</option>
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+      </label>
+      <button class="ghost-btn" type="button" (click)="search.set(''); farmFilter.set('ALL')">Clear filters</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>When</th><th>Item</th><th>Farm</th><th>Store</th><th>Quantity</th><th>Batch</th><th>Expiry</th><th>Supplier</th><th>Recorded by</th></tr>
-        </thead>
-        <tbody>
-          @if (rows().length === 0) {
-            <tr><td class="blank" colspan="9">No stock receipts are stored yet.</td></tr>
-          } @else {
-            @for (row of rows(); track row.id) {
-              <tr>
-                <td>{{ when(row.occurredAt) }}</td>
-                <td><strong>{{ row.itemName }}</strong><span>{{ row.sku }}</span></td>
-                <td>{{ row.farmName }}</td>
-                <td>{{ row.storeName || '—' }}</td>
-                <td>{{ fmt(row.quantityDelta, row.quantityDelta % 1 ? 2 : 0) }} {{ row.unit }}</td>
-                <td>{{ row.lotCode || '—' }}</td>
-                <td>{{ expiry(row.expiresOn) }}</td>
-                <td>{{ row.supplierName || '—' }}</td>
-                <td>{{ row.actorName }}<span>{{ row.reason }}</span></td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
+    @if (rows().length === 0) {
+      <p class="blank">No stock receipts are stored yet.</p>
+    } @else {
+      <div class="cols"><span>When</span><span>Item</span><span>Quantity</span><span>Batch</span><span>Supplier</span></div>
+      @for (row of rows(); track row.id) {
+        <article class="line">
+          <div class="when">{{ when(row.occurredAt) }}</div>
+          <div class="item">
+            <strong>{{ row.itemName }}</strong>
+            <span>{{ row.sku }} · {{ row.farmName }} · {{ row.storeName || '—' }}</span>
+          </div>
+          <div class="qty"><strong>{{ fmt(row.quantityDelta, row.quantityDelta % 1 ? 2 : 0) }} {{ row.unit }}</strong></div>
+          <div class="batch">
+            <span>{{ row.lotCode || '—' }}</span>
+            <span>{{ expiry(row.expiresOn) }}</span>
+          </div>
+          <div class="who">
+            <strong>{{ row.supplierName || '—' }}</strong>
+            <span>{{ row.actorName }} · {{ row.reason }}</span>
+          </div>
+        </article>
+      }
+    }
     <footer class="pager"><span>{{ rows().length }} receipt{{ rows().length === 1 ? '' : 's' }}</span></footer>
     <p class="note">Receipt lines are append-only. Opening balances are the stock already on hand, and they stay on the stock overview.</p>
   </section>
 }
+</section>
 
 @if (open()) {
   <div class="modal-back" (click)="close()">
     <form class="entry" role="dialog" aria-modal="true" aria-labelledby="receipt-title" (click)="$event.stopPropagation()" (ngSubmit)="mode() === 'new' ? create() : receive()">
       <header class="entry-head">
         <div>
-          <h2 id="receipt-title">Stock receipt</h2>
-          <p>Record incoming stock. A medicine needs a batch code and an expiry date.</p>
+          <h2 id="receipt-title">{{ mode() === 'new' ? 'Add Product' : 'New Stock Receipt' }}</h2>
+          <p>{{ mode() === 'new' ? 'Register a product, then record its opening batch.' : 'Record a delivery. Each line keeps its batch, expiry, and unit cost.' }}</p>
         </div>
       </header>
       <div class="tabs">
@@ -86,15 +107,27 @@
           <label>Quantity <em>*</em><input formControlName="quantity" type="number" min="0.01" step="0.01"></label>
           <label>Reason <em>*</em><input formControlName="reason"></label>
           <label>Batch<input formControlName="lotCode" placeholder="Required for medicine"></label>
+          <label>Manufactured<input formControlName="manufacturedOn" type="date"></label>
           <label>Expiry<input formControlName="expiresOn" type="date"></label>
+          <label>Best before<input formControlName="bestBeforeOn" type="date"></label>
+          <label>Days after opening<input formControlName="openDays" type="number" min="0"></label>
+          <label>Purchase order<input formControlName="purchaseOrder"></label>
+          <label>Inspection
+            <select formControlName="inspection">
+              <option value="PASSED">Passed</option>
+              <option value="HOLD">Hold for quarantine</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </label>
           <label>Unit cost<input formControlName="unitCost" type="number" min="0" step="0.01" placeholder="Optional"></label>
           <label>Supplier<input formControlName="supplierName" placeholder="Optional"></label>
           <label class="wide">Store<input formControlName="storeName" placeholder="Optional"></label>
         </div>
       } @else {
         <div class="entry-grid" [formGroup]="form">
-          <label>SKU <em>*</em><input formControlName="sku"></label>
-          <label>Name <em>*</em><input formControlName="name"></label>
+          <h3 class="wide">Product information</h3>
+          <label>Product name <em>*</em><input formControlName="name"></label>
+          <label>Product code (SKU) <em>*</em><input formControlName="sku"></label>
           <label>Farm <em>*</em>
             <select formControlName="farmId">
               @for (farm of store.farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
@@ -107,7 +140,16 @@
           <label>Unit <em>*</em><input formControlName="unit"></label>
           <label>Reorder point <em>*</em><input formControlName="reorderPoint" type="number" min="0"></label>
           <label>Batch<input formControlName="lotCode" placeholder="Required for medicine"></label>
+          <label>Manufactured<input formControlName="manufacturedOn" type="date"></label>
           <label>Expiry<input formControlName="expiresOn" type="date"></label>
+          <label>Best before<input formControlName="bestBeforeOn" type="date"></label>
+          <label>Days after opening<input formControlName="openDays" type="number" min="0"></label>
+          @if (form.controls.category.value === 'MEDICINE') {
+            <label class="wide">Generic name<input formControlName="genericName"></label>
+          }
+          @if (form.controls.category.value === 'FEED' || form.controls.category.value === 'MEDICINE') {
+            <label class="wide">Description<input formControlName="description"></label>
+          }
           <label>Unit cost<input formControlName="unitCost" type="number" min="0" step="0.01" placeholder="Optional"></label>
           <label>Supplier<input formControlName="supplierName" placeholder="Optional"></label>
           <label class="wide">Store<input formControlName="storeName" placeholder="Optional"></label>

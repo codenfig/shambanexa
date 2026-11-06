@@ -6,6 +6,7 @@ import com.shambanexa.service.PopulationService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shambanexa.common.BoundaryGeometry;
 import com.shambanexa.common.RolePermissions;
 import com.shambanexa.dto.FacilityResponse;
 import com.shambanexa.dto.FarmDetail;
@@ -77,9 +78,6 @@ public class FarmServiceImpl implements FarmService {
         if (!access.canManageAccess() && !onboarding) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FARM_FORBIDDEN", "Only an administrator can register another farm");
         }
-        if (request.boundary() == null || request.boundary().size() < 3) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "BOUNDARY_REQUIRED", "Draw at least three corners of the farm boundary");
-        }
         String code = request.code().trim().toUpperCase();
         if (farms.existsByTenantIdAndCodeIgnoreCase(access.tenantId(), code)) {
             throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_FARM_CODE", "That farm code is already used");
@@ -128,6 +126,7 @@ public class FarmServiceImpl implements FarmService {
         apply(farm, request);
         farms.save(farm);
         audit.record("FARM_UPDATED", "FARM", farm.getId(), farm.getName());
+        audit.activity("FARM", "Farm updated", farm.getName(), farm.getId());
         return toResponse(farm, population.byFarm());
     }
 
@@ -156,10 +155,11 @@ public class FarmServiceImpl implements FarmService {
             farm.setTimezone("Africa/Dar_es_Salaam");
         }
         if (request.boundary() != null) {
-            if (request.boundary().size() < 3) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "BOUNDARY_REQUIRED", "Draw at least three corners of the farm boundary");
+            String issue = BoundaryGeometry.problem(request.boundary());
+            if (issue != null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "BOUNDARY_INVALID", issue);
             }
-            farm.setBoundary(writeBoundary(request.boundary()));
+            farm.setBoundary(request.boundary().isEmpty() ? null : writeBoundary(request.boundary()));
         }
     }
 

@@ -14,8 +14,14 @@ import com.shambanexa.dto.AdjustmentDecisionRequest;
 import com.shambanexa.dto.InventoryAdjustmentResponse;
 import com.shambanexa.dto.InventoryMovementResponse;
 import com.shambanexa.dto.InventoryRequest;
+import com.shambanexa.dto.AlertAckBody;
+import com.shambanexa.dto.InventoryReportView;
 import com.shambanexa.dto.InventoryResponse;
+import com.shambanexa.dto.StockAlertView;
+import com.shambanexa.dto.StockBatchView;
 import com.shambanexa.dto.StockIssueRequest;
+import com.shambanexa.dto.SupplierBody;
+import com.shambanexa.dto.SupplierRecord;
 import com.shambanexa.dto.StockReceiptRequest;
 import com.shambanexa.dto.StockTransferRequest;
 import com.shambanexa.dto.ProductionRequest;
@@ -137,6 +143,41 @@ public class CatalogController {
     @PostMapping("/inventory/adjustments/{id}/decision")
     InventoryAdjustmentResponse decideAdjustment(@PathVariable UUID id, @Valid @RequestBody AdjustmentDecisionRequest request) {
         return inventory.decide(id, request);
+    }
+
+    @GetMapping("/inventory/batches")
+    List<StockBatchView> inventoryBatches() {
+        return inventory.batches();
+    }
+
+    @GetMapping("/inventory/{id}/fefo")
+    StockBatchView inventoryFefo(@PathVariable UUID id) {
+        return inventory.fefo(id);
+    }
+
+    @GetMapping("/inventory/alerts")
+    List<StockAlertView> inventoryAlerts() {
+        return inventory.alerts();
+    }
+
+    @PostMapping("/inventory/alerts")
+    StockAlertView acknowledgeAlert(@Valid @RequestBody AlertAckBody body) {
+        return inventory.acknowledge(body);
+    }
+
+    @GetMapping("/inventory/supplier-records")
+    List<SupplierRecord> supplierRecords() {
+        return inventory.supplierRecords();
+    }
+
+    @PostMapping("/inventory/supplier-records")
+    SupplierRecord saveSupplier(@Valid @RequestBody SupplierBody body) {
+        return inventory.saveSupplier(body);
+    }
+
+    @GetMapping("/inventory/reports")
+    InventoryReportView inventoryReport() {
+        return inventory.report();
     }
 
     @GetMapping("/staff")

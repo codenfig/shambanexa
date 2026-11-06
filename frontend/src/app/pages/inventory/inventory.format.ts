@@ -2,12 +2,6 @@ import { InventoryItem } from '../../core/models';
 import { formatNumber } from '../../core/format';
 
 export const STOCK_GROUPS = ['FEED', 'MEDICINE', 'EQUIPMENT', 'SUPPLY'];
-export const STOCK_COLORS: Record<string, string> = {
-  FEED: '#166534',
-  MEDICINE: '#d4a72c',
-  EQUIPMENT: '#0f766e',
-  SUPPLY: '#2f6fd6'
-};
 
 export function categoryLabel(category: string): string {
   if (category === 'FEED') {
@@ -46,11 +40,29 @@ export function expired(item: InventoryItem): boolean {
 }
 
 export function statusOf(item: InventoryItem): string {
+  if (item.expiryStatus === 'EXPIRED') {
+    return 'Expired';
+  }
+  if (item.expiryStatus === 'QUARANTINED') {
+    return 'Quarantined';
+  }
+  if (item.expiryStatus === 'DISPOSED') {
+    return 'Disposed';
+  }
   if (item.available <= 0) {
     return 'Out of stock';
   }
   if (item.lowStock) {
     return 'Low stock';
+  }
+  if (item.expiryStatus === 'EXPIRING') {
+    return 'Expiring soon';
+  }
+  if (item.expiryStatus === 'BEST_BEFORE') {
+    return 'Best before approaching';
+  }
+  if (item.expiryStatus === 'OPEN_USE') {
+    return 'Use soon after opening';
   }
   if (expired(item)) {
     return 'Expired';
@@ -61,15 +73,26 @@ export function statusOf(item: InventoryItem): string {
   return 'In stock';
 }
 
+export function batchStatusLabel(code: string): string {
+  if (code === 'VALID') return 'Valid';
+  if (code === 'EXPIRING') return 'Expiring soon';
+  if (code === 'EXPIRED') return 'Expired';
+  if (code === 'BEST_BEFORE') return 'Best before approaching';
+  if (code === 'OPEN_USE') return 'Use soon after opening';
+  if (code === 'QUARANTINED') return 'Quarantined';
+  if (code === 'DISPOSED') return 'Disposed';
+  return code;
+}
+
 export function statusClass(item: InventoryItem): string {
   const status = statusOf(item);
-  if (status === 'Out of stock' || status === 'Expired') {
+  if (status === 'Out of stock' || status === 'Expired' || status === 'Quarantined' || status === 'Disposed') {
     return 'out';
   }
   if (status === 'Low stock') {
     return 'low';
   }
-  if (status === 'Expiring') {
+  if (status === 'Expiring' || status === 'Expiring soon' || status === 'Best before approaching' || status === 'Use soon after opening') {
     return 'soon';
   }
   return 'in';

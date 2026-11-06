@@ -1,168 +1,245 @@
-<app-page-header title="Alerts" description="Open alerts for farms in your scope.">
-  <a class="green-btn" href="#report">Report health</a>
-</app-page-header>
+<header class="head">
+  <div>
+    <p class="kicker">Alerts</p>
+    @switch (page()) {
+      @case ('history') {
+        <h1>Alert history</h1>
+        <p>Closed alerts returned with the open list.</p>
+      }
+      @case ('rules') {
+        <h1>Alert rules</h1>
+        <p>How these rows are produced.</p>
+      }
+      @case ('report') {
+        <h1>Report health</h1>
+        <p>Record sick animals, deaths, or recovery on a farm you can access.</p>
+      }
+      @default {
+        <h1>Active alerts</h1>
+        <p>Open alerts for farms in your scope.</p>
+      }
+    }
+  </div>
+  <div class="actions">
+    @if (page() !== 'active') {
+      <a class="ghost-btn" routerLink="/alerts">Active alerts</a>
+    }
+    @if (page() !== 'history') {
+      <a class="ghost-btn" routerLink="/alerts/history">History</a>
+    }
+    @if (page() !== 'rules') {
+      <a class="ghost-btn" routerLink="/alerts/rules">Rules</a>
+    }
+    @if (page() !== 'report') {
+      <a class="green-btn" routerLink="/alerts/report">Report health</a>
+    }
+  </div>
+</header>
 
-@if (loading()) {
+@if (page() === 'rules') {
+  <section class="panel">
+    <header class="panel-head">
+      <div>
+        <h2>Alert rules</h2>
+        <p>Stored records, not a separate catalog.</p>
+      </div>
+    </header>
+    <p class="note">Alerts are stored records. This workspace does not keep a separate rules catalog.</p>
+  </section>
+} @else if (page() === 'report') {
+  @if (!farmsReady()) {
+    <div class="skeleton-stack" aria-busy="true" aria-label="Loading the health report"><div class="skeleton"></div></div>
+  } @else {
+    <form class="entry" [formGroup]="form" (ngSubmit)="submit()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0z"/></svg></span>
+        <div>
+          <h2>Report animal health</h2>
+          <p>A death tied to a herd reduces that headcount. Recovery clears open sick and disease alerts on the map. <a routerLink="/advice">Expert advice</a> is visible to every farmer.</p>
+        </div>
+      </header>
+      @if (!canReport()) {
+        <p class="note">Reporting animal health needs permission to update livestock records.</p>
+      } @else if (farms().length === 0) {
+        <p class="note">Register a farm before reporting a disease.</p>
+      } @else {
+        <div class="entry-grid">
+          <label><span>Report <em>*</em></span>
+            <select formControlName="outcome">
+              <option value="SICK">Sick animals</option>
+              <option value="DEATH">Deaths</option>
+              <option value="CURED">Cured</option>
+              <option value="DISEASE">Disease outbreak</option>
+            </select>
+          </label>
+          <label><span>Farm <em>*</em></span>
+            <select formControlName="farmId">
+              @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+            </select>
+          </label>
+          <label><span>{{ outcome() === 'DISEASE' ? 'Disease or condition' : 'Condition' }} @if (outcome() === 'DISEASE') { <em>*</em> }</span>
+            <input formControlName="diseaseName" list="disease-names" placeholder="Name, if you know it">
+            <datalist id="disease-names">
+              @for (name of conditions; track name) { <option [value]="name"></option> }
+            </datalist>
+          </label>
+          <label><span>Species</span>
+            <input formControlName="species" list="species-names" placeholder="Cattle, goats, poultry…">
+            <datalist id="species-names">
+              @for (row of species(); track row.id) { <option [value]="row.name"></option> }
+            </datalist>
+          </label>
+          <label><span>Animals <em>*</em></span>
+            <input formControlName="animalsAffected" type="number" min="1" max="1000000">
+          </label>
+          @if (outcome() === 'DEATH') {
+            <label><span>Herd</span>
+              <select formControlName="batchId">
+                <option value="">Not tied to one herd</option>
+                @for (batch of farmBatches(); track batch.id) {
+                  <option [value]="batch.id">{{ batch.name }} · {{ batch.quantity }} head</option>
+                }
+              </select>
+            </label>
+          }
+          @if (outcome() !== 'DISEASE') {
+            <label><span>Tagged animal</span>
+              <select formControlName="animalId">
+                <option value="">No single animal</option>
+                @for (animal of tagged(); track animal.id) {
+                  <option [value]="animal.id">{{ animal.tag }}{{ animal.name ? ' · ' + animal.name : '' }}</option>
+                }
+              </select>
+            </label>
+          }
+          @if (outcome() === 'DISEASE') {
+            <label><span>How sure <em>*</em></span>
+              <select formControlName="status">
+                <option value="SUSPECTED">Suspected</option>
+                <option value="OUTBREAK">Confirmed outbreak</option>
+              </select>
+            </label>
+          }
+          <label><span>Date</span>
+            <input formControlName="noticedOn" type="date">
+          </label>
+          <label class="wide"><span>{{ outcome() === 'CURED' ? 'What changed' : 'What you noticed' }} <em>*</em></span>
+            <textarea formControlName="signs" rows="3" maxlength="280" [placeholder]="outcome() === 'DEATH' ? 'Choose a herd above to subtract these deaths from the headcount' : 'What you saw in the animals'"></textarea>
+          </label>
+        </div>
+        @if (formError()) { <div class="error">{{ formError() }}</div> }
+        <div class="entry-foot">
+          <a class="ghost-btn" routerLink="/alerts">Cancel</a>
+          <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Save health report' }}</button>
+        </div>
+      }
+    </form>
+  }
+} @else if (loading()) {
   <div class="skeleton-stack" aria-busy="true" aria-label="Loading alerts"><div class="skeleton"></div><div class="skeleton"></div></div>
 } @else if (error()) {
   <div class="state">
     <h2>Unable to load data.</h2>
     <button class="green-btn" type="button" (click)="load()">Retry</button>
   </div>
+} @else if (page() === 'history') {
+  <section class="panel">
+    <header class="panel-head">
+      <div>
+        <h2>Alert history</h2>
+        <p>Closed alerts returned with this list.</p>
+      </div>
+      <span class="count">{{ closedAlerts().length }}</span>
+    </header>
+    @if (closedAlerts().length === 0) {
+      <p class="note">No closed alerts are in this list.</p>
+    } @else {
+      <ul class="rows quiet">
+        @for (alert of closedAlerts(); track alert.id) {
+          <li class="closed">
+            <strong>{{ alert.title }}</strong>
+            <span>{{ alert.farmName || 'All farms' }} · {{ alert.status }} · {{ stamp(alert.occurredAt) }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
 } @else {
-  <section class="stats" aria-label="Alert counts">
-    <article><small>Critical</small><strong>{{ counts().critical }}</strong></article>
-    <article><small>Warning</small><strong>{{ counts().warning }}</strong></article>
-    <article><small>Health alerts</small><strong>{{ counts().disease }}</strong></article>
-    <article><small>Stored</small><strong>{{ counts().stored }}</strong></article>
+  <section class="kpis" aria-label="Alert counts">
+    <article>
+      <span class="bubble red" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0z"/></svg></span>
+      <div><small>Critical</small><strong>{{ counts().critical }}</strong><em>Open</em></div>
+    </article>
+    <article>
+      <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="8"/></svg></span>
+      <div><small>Warning</small><strong>{{ counts().warning }}</strong><em>Open</em></div>
+    </article>
+    <article>
+      <span class="bubble red" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"/><circle cx="12" cy="12" r="8"/></svg></span>
+      <div><small>Health</small><strong>{{ counts().disease }}</strong><em>Disease, sick, or death</em></div>
+    </article>
+    <article>
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></span>
+      <div><small>Open</small><strong>{{ counts().stored }}</strong><em>In this list</em></div>
+    </article>
   </section>
 
   <div class="split">
-    <article class="card" id="active">
-      <h2>Active alerts</h2>
-      @if (openAlerts().length === 0) {
-        <p class="empty-state">No open alerts.</p>
-      } @else {
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Alert</th><th>Farm</th><th>Severity</th><th>When</th></tr></thead>
-            <tbody>
-              @for (alert of openAlerts(); track alert.id) {
-                <tr [class.picked]="selected()?.id === alert.id">
-                  <td><button type="button" class="linkish" (click)="choose(alert)">{{ alert.title }}</button>@if (alert.sourceType === 'DISEASE') { <span class="tag">Disease</span> }@if (alert.sourceType === 'SICK') { <span class="tag">Sick</span> }@if (alert.sourceType === 'DEATH') { <span class="tag">Death</span> }</td>
-                  <td>{{ alert.farmName || 'All farms' }}</td>
-                  <td><span class="status-pill" [class]="severityClass(alert.severity)">{{ alert.severity }}</span></td>
-                  <td>{{ when(alert.occurredAt) }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+    <section class="panel" id="active">
+      <header class="panel-head">
+        <div>
+          <h2>Active alerts</h2>
+          <p>Select a row to read the stored note.</p>
         </div>
-      }
-    </article>
-
-    <aside class="card" id="detail">
-      <h2>Alert details</h2>
-      @if (selected(); as alert) {
-        <p class="status-pill" [class]="severityClass(alert.severity)">{{ alert.severity }}</p>
-        <h3>{{ alert.title }}</h3>
-        <p>{{ alert.body }}</p>
-        <p class="muted">{{ alert.farmName || 'All farms' }} · {{ alert.status }} · {{ when(alert.occurredAt) }}</p>
+        <span class="count">{{ openAlerts().length }}</span>
+      </header>
+      @if (openAlerts().length === 0) {
+        <p class="note">No open alerts.</p>
       } @else {
-        <p class="muted">Select an open alert to read it here.</p>
+        <ul class="rows">
+          @for (alert of openAlerts(); track alert.id) {
+            <li>
+              <button type="button" class="row" [class.picked]="selected()?.id === alert.id" [class.is-critical]="alert.severity === 'CRITICAL'" [class.is-warning]="alert.severity === 'WARNING'" (click)="choose(alert)">
+                <span class="mark" aria-hidden="true"></span>
+                <span class="copy">
+                  <strong>{{ alert.title }}</strong>
+                  <span>{{ alert.farmName || 'All farms' }} · {{ stamp(alert.occurredAt) }}</span>
+                </span>
+                <span class="meta">
+                  @if (sourceLabel(alert.sourceType); as source) {
+                    <span class="chip" [class.health]="alert.sourceType === 'DISEASE' || alert.sourceType === 'SICK' || alert.sourceType === 'DEATH'">{{ source }}</span>
+                  }
+                  <span class="status-pill" [class.is-critical]="alert.severity === 'CRITICAL'" [class.is-other]="alert.severity === 'WARNING'" [class.is-info]="alert.severity !== 'CRITICAL' && alert.severity !== 'WARNING'">{{ severityLabel(alert.severity) }}</span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
       }
+    </section>
+
+    <aside class="panel" id="detail">
+      <header class="panel-head">
+        <div>
+          <h2>Alert details</h2>
+          <p>The note stored with the selected alert.</p>
+        </div>
+      </header>
+      <div class="body">
+        @if (selected(); as alert) {
+          <span class="status-pill" [class.is-critical]="alert.severity === 'CRITICAL'" [class.is-other]="alert.severity === 'WARNING'" [class.is-info]="alert.severity !== 'CRITICAL' && alert.severity !== 'WARNING'">{{ severityLabel(alert.severity) }}</span>
+          <h3>{{ alert.title }}</h3>
+          <p class="body-copy">{{ alert.body }}</p>
+          <ul class="facts">
+            <li><span>Farm</span><strong>{{ alert.farmName || 'All farms' }}</strong></li>
+            <li><span>Status</span><strong>{{ alert.status }}</strong></li>
+            <li><span>Source</span><strong>{{ sourceLabel(alert.sourceType) || 'Not recorded' }}</strong></li>
+            <li><span>When</span><strong>{{ stamp(alert.occurredAt) }}</strong></li>
+          </ul>
+        } @else {
+          <p class="note flat">Select an open alert to read it here.</p>
+        }
+      </div>
     </aside>
   </div>
-
-  <article class="card" id="history">
-    <h2>Alert history</h2>
-    @if (closedAlerts().length === 0) {
-      <p class="empty-state">No closed alerts are stored.</p>
-    } @else {
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Alert</th><th>Status</th><th>When</th></tr></thead>
-          <tbody>
-            @for (alert of closedAlerts(); track alert.id) {
-              <tr>
-                <td>{{ alert.title }}</td>
-                <td>{{ alert.status }}</td>
-                <td>{{ when(alert.occurredAt) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-  </article>
-
-  <form class="entry" id="report" [formGroup]="form" (ngSubmit)="submit()">
-    <header class="entry-head">
-      <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0z"/></svg></span>
-      <div>
-        <h2>Report animal health</h2>
-        <p>Record sick animals, deaths, or recovery. A death tied to a herd reduces that headcount. Recovery clears open sick and disease alerts on the map. <a routerLink="/advice">Expert advice</a> is visible to every farmer.</p>
-      </div>
-    </header>
-    @if (!canReport()) {
-      <p class="muted">Reporting animal health needs permission to update livestock records.</p>
-    } @else if (farms().length === 0) {
-      <p class="muted">Register a farm before reporting a disease.</p>
-    } @else {
-      <div class="entry-grid">
-        <label>Report <em>*</em>
-          <select formControlName="outcome">
-            <option value="SICK">Sick animals</option>
-            <option value="DEATH">Deaths</option>
-            <option value="CURED">Cured</option>
-            <option value="DISEASE">Disease outbreak</option>
-          </select>
-        </label>
-        <label>Farm <em>*</em>
-          <select formControlName="farmId">
-            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
-          </select>
-        </label>
-        <label>{{ outcome() === 'DISEASE' ? 'Disease or condition' : 'Condition' }} @if (outcome() === 'DISEASE') { <em>*</em> }
-          <input formControlName="diseaseName" list="disease-names" placeholder="Name, if you know it">
-          <datalist id="disease-names">
-            @for (name of conditions; track name) { <option [value]="name"></option> }
-          </datalist>
-        </label>
-        <label>Species
-          <input formControlName="species" list="species-names" placeholder="Cattle, goats, poultry…">
-          <datalist id="species-names">
-            @for (row of species(); track row.id) { <option [value]="row.name"></option> }
-          </datalist>
-        </label>
-        <label>Animals <em>*</em>
-          <input formControlName="animalsAffected" type="number" min="1" max="1000000">
-        </label>
-        @if (outcome() === 'DEATH') {
-          <label>Herd
-            <select formControlName="batchId">
-              <option value="">Not tied to one herd</option>
-              @for (batch of farmBatches(); track batch.id) {
-                <option [value]="batch.id">{{ batch.name }} · {{ batch.quantity }} head</option>
-              }
-            </select>
-          </label>
-        }
-        @if (outcome() !== 'DISEASE') {
-          <label>Tagged animal
-            <select formControlName="animalId">
-              <option value="">No single animal</option>
-              @for (animal of tagged(); track animal.id) {
-                <option [value]="animal.id">{{ animal.tag }}{{ animal.name ? ' · ' + animal.name : '' }}</option>
-              }
-            </select>
-          </label>
-        }
-        @if (outcome() === 'DISEASE') {
-          <label>How sure <em>*</em>
-            <select formControlName="status">
-              <option value="SUSPECTED">Suspected</option>
-              <option value="OUTBREAK">Confirmed outbreak</option>
-            </select>
-          </label>
-        }
-        <label>Date
-          <input formControlName="noticedOn" type="date">
-        </label>
-        <label class="wide">{{ outcome() === 'CURED' ? 'What changed' : 'What you noticed' }} <em>*</em>
-          <textarea formControlName="signs" rows="3" maxlength="280" [placeholder]="outcome() === 'DEATH' ? 'Choose a herd above to subtract these deaths from the headcount' : 'What you saw in the animals'"></textarea>
-        </label>
-      </div>
-      @if (formError()) { <div class="error">{{ formError() }}</div> }
-      <div class="entry-foot">
-        <a class="ghost-btn" href="#active">Cancel</a>
-        <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Save health report' }}</button>
-      </div>
-    }
-  </form>
-
-  <article class="card" id="rules">
-    <h2>Alert rules</h2>
-    <p class="muted">Alerts are stored records. This workspace does not keep a separate rules catalog.</p>
-  </article>
 }

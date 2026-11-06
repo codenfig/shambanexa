@@ -77,6 +77,7 @@ public class AdviceServiceImpl implements AdviceService {
         }
         advice.delete(row);
         audit.record("ADVICE_REMOVED", "ADVICE", id, row.getTopic());
+        audit.activity("ADVICE", "Advice removed", row.getTopic(), null);
     }
 
     private AdviceResponse toResponse(ExpertAdvice row, Map<UUID, UserAccount> people, UUID me) {

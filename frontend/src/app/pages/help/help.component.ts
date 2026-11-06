@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { Settings } from '../../core/models';
-import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-help',
-  imports: [PageHeaderComponent],
+  imports: [RouterLink],
   templateUrl: './help.component.html',
   styleUrl: './help.component.css'
 })

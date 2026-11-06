@@ -1,6 +1,7 @@
 package com.shambanexa.controller;
 import com.shambanexa.dto.AnimalRequest;
 import com.shambanexa.dto.AnimalResponse;
+import com.shambanexa.dto.MovementResponse;
 import com.shambanexa.dto.PageResponse;
 import com.shambanexa.dto.TransferRequest;
 import com.shambanexa.service.AnimalService;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +32,11 @@ public class AnimalController {
                                       @RequestParam(defaultValue = "0") int page,
                                       @RequestParam(defaultValue = "20") int size) {
         return animals.list(farmId, speciesId, q, page, size);
+    }
+
+    @GetMapping("/movements")
+    List<MovementResponse> movements() {
+        return animals.movements();
     }
 
     @GetMapping("/{id}")

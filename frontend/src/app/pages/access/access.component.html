@@ -8,7 +8,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M9 13h6M9 17h4"/></svg>
       View Audit Log
     </button>
-    <button class="green-btn" type="button" (click)="explain('create')">
+    <button class="green-btn" type="button" (click)="openCreator()">
       <span aria-hidden="true">+</span> Create Role
     </button>
   </div>
@@ -37,11 +37,10 @@
           <span>{{ person.email }}</span>
         </header>
         <label>Role
-          <select [value]="person.roleCode" (change)="setRole(person.userId, $any($event.target).value)">
-            <option value="TENANT_ADMIN">Super Admin</option>
-            <option value="FARM_MANAGER">Farm Manager</option>
-            <option value="FARM_EXPERT">Farm Adviser</option>
-            <option value="AUDITOR">Auditor</option>
+          <select (change)="setRole(person.userId, $any($event.target).value)">
+            @for (choice of catalog()?.roles ?? []; track choice.code) {
+              <option [attr.value]="choice.code" [selected]="choice.code === person.roleCode">{{ choice.label }}</option>
+            }
           </select>
         </label>
         <div class="scopes" role="radiogroup" [attr.aria-label]="'Access scope for ' + person.fullName">
@@ -209,7 +208,7 @@
                         </td>
                         @for (action of actions; track action.key) {
                           <td>
-                            <input type="checkbox" [checked]="module[action.key] === true" (change)="toggleGrant(module.id, action.key)" [attr.aria-label]="module.label + ' ' + action.label">
+                            <input type="checkbox" [checked]="module[action.key] === true" (change)="toggleGrant(module.id, action.key)" [disabled]="!role.systemRole && (action.key === 'delete' || action.key === 'approve')" [attr.aria-label]="module.label + ' ' + action.label">
                           </td>
                         }
                       </tr>
@@ -241,14 +240,18 @@
               </label>
 
               <label class="switch-row">
-                <input type="checkbox" [checked]="policy().canManageUsers" (change)="togglePolicy('canManageUsers')">
-                <span><strong>Can manage users</strong><small>Opens Users &amp; Roles for this role on this screen.</small></span>
+                <input type="checkbox" [checked]="policy().canManageUsers" [disabled]="!role.systemRole" (change)="togglePolicy('canManageUsers')">
+                <span><strong>Can manage users</strong><small>Stays with Super Admin. A new role cannot open Users &amp; Roles.</small></span>
               </label>
               <label class="switch-row">
-                <input type="checkbox" [checked]="policy().requireApproval" (change)="togglePolicy('requireApproval')">
-                <span><strong>Require approval for sensitive actions</strong><small>Marks the role as needing approval before a sensitive write.</small></span>
+                <input type="checkbox" [checked]="policy().requireApproval" [disabled]="!role.systemRole" (change)="togglePolicy('requireApproval')">
+                <span><strong>Require approval for sensitive actions</strong><small>Approval is not a separate stored permission.</small></span>
               </label>
-              <p class="note"><span aria-hidden="true">i</span> Saved choices stay in this browser. Farm access in the operations API still follows the recorded system grants.</p>
+              @if (role.systemRole) {
+                <p class="note"><span aria-hidden="true">i</span> Saved choices stay in this browser. Farm access in the operations API still follows the recorded system grants.</p>
+              } @else {
+                <p class="note"><span aria-hidden="true">i</span> Saved permissions are stored for this role and checked when that person signs in. User administration stays with Super Admin.</p>
+              }
             </aside>
           </div>
         } @else if (tab() === 'assigned') {
@@ -293,6 +296,7 @@
     }
   </div>
 
+  @if (permError()) { <div class="error">{{ permError() }}</div> }
   <footer class="savebar" [class.dirty]="dirty()">
     @if (dirty()) {
       <span class="clean warn"><i aria-hidden="true">!</i> Unsaved changes</span>
@@ -305,9 +309,9 @@
         Reset changes
       </button>
       <button class="ghost-btn" type="button" (click)="cancel()" [disabled]="!dirty()">Cancel</button>
-      <button class="green-btn" type="button" (click)="save()" [disabled]="!dirty()">
+      <button class="green-btn" type="button" (click)="save()" [disabled]="!dirty() || permBusy()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7M8 20v-6h8v6"/></svg>
-        Save permissions
+        {{ permBusy() ? 'Saving…' : 'Save permissions' }}
       </button>
     </div>
   </footer>
@@ -316,9 +320,52 @@
 @if (notice()) {
   <div class="shade" (click)="closeNotice()">
     <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="role-notice" (click)="$event.stopPropagation()">
-      <h2 id="role-notice">System role</h2>
+      <h2 id="role-notice">Role</h2>
       <p>{{ notice() }}</p>
       <button class="green-btn" type="button" (click)="closeNotice()">Close</button>
     </div>
+  </div>
+}
+
+@if (creatorOpen()) {
+  <div class="modal-back" (click)="closeCreator()">
+    <form class="entry" id="create-role" role="dialog" aria-modal="true" aria-labelledby="create-role-title" (click)="$event.stopPropagation()" (submit)="$event.preventDefault(); submitCreate()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        </span>
+        <div>
+          <h2 id="create-role-title">Create role</h2>
+          <p>Name the role and choose the permissions this workspace checks.</p>
+        </div>
+        <button class="modal-x" type="button" (click)="closeCreator()" [disabled]="createBusy()" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="entry-grid">
+        <label>
+          <span>Role name <em>*</em></span>
+          <input [value]="roleName()" (input)="roleName.set($any($event.target).value)" maxlength="80" placeholder="Store clerk">
+        </label>
+        <label>
+          <span>Description</span>
+          <input [value]="roleDetail()" (input)="roleDetail.set($any($event.target).value)" maxlength="400" placeholder="What this role is for">
+        </label>
+      </div>
+      <fieldset class="perm-picks">
+        <legend>Permissions</legend>
+        @for (permission of catalog()?.permissions ?? []; track permission.code) {
+          <label class="perm-pick">
+            <input type="checkbox" [checked]="permissionOn(permission.code)" (change)="togglePermission(permission.code)">
+            <span><strong>{{ permission.label }}</strong><small>{{ permission.detail }}</small></span>
+          </label>
+        }
+      </fieldset>
+      @if (createError()) { <div class="error">{{ createError() }}</div> }
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="closeCreator()" [disabled]="createBusy()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="roleName().trim().length < 2 || chosen().length === 0 || createBusy()">{{ createBusy() ? 'Saving…' : 'Save role' }}</button>
+      </div>
+    </form>
   </div>
 }

@@ -15,6 +15,10 @@ public interface AnimalRepository extends JpaRepository<Animal, UUID> {
 
     Optional<Animal> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    long countByTenantIdAndSpeciesId(UUID tenantId, UUID speciesId);
+
+    long countByTenantIdAndBreedId(UUID tenantId, UUID breedId);
+
     boolean existsByTenantIdAndTagIgnoreCase(UUID tenantId, String tag);
 
     @Query("""

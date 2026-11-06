@@ -4,6 +4,7 @@ import com.shambanexa.dto.AnimalRequest;
 import com.shambanexa.dto.AnimalResponse;
 import com.shambanexa.dto.BatchQuantityRequest;
 import com.shambanexa.dto.BatchResponse;
+import com.shambanexa.dto.MovementResponse;
 import com.shambanexa.dto.PageResponse;
 import com.shambanexa.dto.TransferRequest;
 
@@ -22,4 +23,6 @@ public interface AnimalService {
     AnimalResponse transfer(UUID id, TransferRequest request);
 
     AnimalResponse get(UUID id);
+
+    List<MovementResponse> movements();
 }

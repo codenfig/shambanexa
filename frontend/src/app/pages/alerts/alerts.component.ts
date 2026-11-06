@@ -1,16 +1,17 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { AlertItem, Animal, Farm, HerdBatch, Species } from '../../core/models';
-import { apiError, relativeTime } from '../../core/format';
+import { apiError } from '../../core/format';
 import { ToastService } from '../../core/toast.service';
-import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+
+type AlertPage = 'active' | 'history' | 'rules' | 'report';
 
 @Component({
   selector: 'app-alerts',
-  imports: [PageHeaderComponent, ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './alerts.component.html',
   styleUrl: './alerts.component.css'
 })
@@ -19,9 +20,12 @@ export class AlertsComponent {
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
+  private router = inject(Router);
 
   alerts = signal<AlertItem[]>([]);
   farms = signal<Farm[]>([]);
+  farmsReady = signal(false);
+  page = signal<AlertPage>('active');
   species = signal<Species[]>([]);
   batches = signal<HerdBatch[]>([]);
   tagged = signal<Animal[]>([]);
@@ -31,7 +35,6 @@ export class AlertsComponent {
   error = signal('');
   busy = signal(false);
   formError = signal('');
-  when = relativeTime;
   canReport = computed(() => this.auth.session()?.canWriteOperations === true);
   openAlerts = computed(() => this.alerts().filter(alert => alert.status === 'OPEN'));
   closedAlerts = computed(() => this.alerts().filter(alert => alert.status !== 'OPEN'));
@@ -73,14 +76,24 @@ export class AlertsComponent {
   });
 
   constructor() {
+    this.applyRoute();
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.applyRoute();
+      }
+    });
     this.api.farms().subscribe({
       next: farms => {
         this.farms.set(farms);
+        this.farmsReady.set(true);
         if (farms[0] && !this.form.controls.farmId.value) {
           this.form.controls.farmId.setValue(farms[0].id);
         }
       },
-      error: () => this.farms.set([])
+      error: () => {
+        this.farms.set([]);
+        this.farmsReady.set(true);
+      }
     });
     this.api.species().subscribe({ next: rows => this.species.set(rows), error: () => this.species.set([]) });
     this.api.batches().subscribe({ next: rows => this.batches.set(rows), error: () => this.batches.set([]) });
@@ -123,6 +136,19 @@ export class AlertsComponent {
       next: page => this.tagged.set(page.items.filter(animal => animal.status !== 'DEAD')),
       error: () => this.tagged.set([])
     });
+  }
+
+  private applyRoute(): void {
+    const path = this.router.url.split(/[?#]/)[0];
+    if (path.endsWith('/history')) {
+      this.page.set('history');
+    } else if (path.endsWith('/rules')) {
+      this.page.set('rules');
+    } else if (path.endsWith('/report')) {
+      this.page.set('report');
+    } else {
+      this.page.set('active');
+    }
   }
 
   choose(alert: AlertItem): void {
@@ -214,13 +240,50 @@ export class AlertsComponent {
     });
   }
 
-  severityClass(severity: string): string {
+  severityLabel(severity: string): string {
     if (severity === 'CRITICAL') {
-      return 'is-critical';
+      return 'Critical';
     }
     if (severity === 'WARNING') {
-      return 'is-other';
+      return 'Warning';
     }
-    return 'is-info';
+    if (severity === 'INFO') {
+      return 'Info';
+    }
+    return severity;
+  }
+
+  sourceLabel(source: string | null | undefined): string {
+    if (source === 'PRODUCTION') {
+      return 'Production';
+    }
+    if (source === 'TASK') {
+      return 'Task';
+    }
+    if (source === 'INVENTORY') {
+      return 'Stock';
+    }
+    if (source === 'DISEASE') {
+      return 'Disease';
+    }
+    if (source === 'SICK') {
+      return 'Sick';
+    }
+    if (source === 'DEATH') {
+      return 'Death';
+    }
+    return source ?? '';
+  }
+
+  stamp(iso: string): string {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'Africa/Dar_es_Salaam'
+    }).format(new Date(iso));
   }
 }

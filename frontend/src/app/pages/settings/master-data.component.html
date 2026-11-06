@@ -1,0 +1,343 @@
+<header class="sheet-head">
+  <div>
+    <h2>Master Data</h2>
+    <p>Species, breeds, and the inventory lists used by stock, medicines, and feed.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <p class="save-error">{{ error() }}</p>
+} @else {
+  <div class="master">
+    <nav class="cats" aria-label="Master data lists">
+      @for (item of categories(); track item.code) {
+        <button type="button" [class.on]="category() === item.code" (click)="pickCategory(item.code)">
+          <strong>{{ item.label }}</strong>
+          <small>{{ item.active }} active · {{ item.total }} stored</small>
+        </button>
+      }
+    </nav>
+
+    <div class="board">
+      <p class="lede">{{ chosen()?.description }}</p>
+      @if (notice()) {
+        <p class="note">{{ notice() }}</p>
+      }
+      <div class="tools">
+        <label class="search">
+          <span>Search</span>
+          <input [value]="query()" (input)="search($any($event.target).value)" placeholder="Name or code">
+        </label>
+        <label>
+          <span>Status</span>
+          <select [value]="status()" (change)="filterStatus($any($event.target).value)">
+            <option value="">All</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </label>
+        @if (category() === 'BREEDS') {
+          <label>
+            <span>Species</span>
+            <select [value]="parentId()" (change)="filterParent($any($event.target).value)">
+              <option value="">All species</option>
+              @for (item of parents(); track item.id) {
+                <option [value]="item.id">{{ item.name }}</option>
+              }
+            </select>
+          </label>
+        }
+        <div class="actions">
+          <button type="button" class="ghost-btn" (click)="export('csv')">Export CSV</button>
+          <button type="button" class="ghost-btn" (click)="export('xlsx')">Export Excel</button>
+          @if (canEdit) {
+            <button type="button" class="green-btn" (click)="startAdd()">Add record</button>
+          }
+        </div>
+      </div>
+
+      @if (loading()) {
+        <p class="empty">Loading records…</p>
+      } @else if (!rows().length) {
+        <p class="empty">No records match this filter.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" (click)="toggleSort('code')">Code</button></th>
+                <th><button type="button" (click)="toggleSort('name')">Name</button></th>
+                <th><button type="button" (click)="toggleSort('group')">{{ category() === 'SPECIES' ? 'Category' : inventoryList() ? 'Detail' : 'Species' }}</button></th>
+                <th><button type="button" (click)="toggleSort('status')">Status</button></th>
+                <th>Source</th>
+                <th><button type="button" (click)="toggleSort('updated')">Updated</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.id) {
+                <tr (click)="open(row)" [class.on]="detail()?.record?.id === row.id">
+                  <td>{{ row.code }}</td>
+                  <td>
+                    @if (row.chartColor) { <i class="swatch" [style.background]="row.chartColor"></i> }
+                    {{ row.name }}
+                  </td>
+                  <td>{{ row.groupLabel }}</td>
+                  <td><span class="pill" [class.off]="row.status !== 'ACTIVE'">{{ row.status === 'ACTIVE' ? 'Active' : 'Inactive' }}</span></td>
+                  <td>{{ source(row) }}</td>
+                  <td>{{ when(row.updatedAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <span>{{ range() }}</span>
+          <button type="button" (click)="go(page() - 1)" [disabled]="page() === 0">Previous</button>
+          <button type="button" (click)="go(page() + 1)" [disabled]="page() + 1 >= pageCount()">Next</button>
+        </div>
+      }
+
+      @if (canEdit && !inventoryList()) {
+        <section class="import">
+          <h3>Import</h3>
+          <p>CSV or Excel .xlsx. The first row must name the columns. Nothing is saved until you confirm the preview.</p>
+          <label class="check"><input type="checkbox" [checked]="updateExisting()" (change)="updateExisting.set($any($event.target).checked)"> Update records that already use the same code</label>
+          <input type="file" accept=".csv,.txt,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="chooseFile($event)">
+          @if (preview(); as result) {
+            <p class="note">{{ result.created }} to add · {{ result.updated }} to update · {{ result.skipped }} skipped · {{ result.failed }} failed</p>
+            <ul class="preview">
+              @for (row of result.rows; track row.line) {
+                <li [class.fail]="row.action === 'FAIL'"><strong>{{ row.action }}</strong> line {{ row.line }} · {{ row.code || 'No code' }} · {{ row.message }}</li>
+              }
+            </ul>
+            <div class="actions">
+              <button type="button" class="green-btn" (click)="runImport(true)" [disabled]="importing() || (!result.created && !result.updated)">{{ importing() ? 'Saving…' : 'Save import' }}</button>
+              @if (result.failed) {
+                <button type="button" class="ghost-btn" (click)="downloadErrors()">Download errors</button>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (detail()) {
+        <section class="panel" aria-label="Record">
+          <header>
+            <h3>{{ editing() ? 'Edit record' : detail()?.record?.name }}</h3>
+            <button type="button" class="ghost-btn" (click)="close()">Close</button>
+          </header>
+          @if (formError() && editing()) {
+            <p class="save-error">{{ formError() }}</p>
+          }
+          @if (!editing() && detail(); as opened) {
+            <dl>
+              <div><dt>Code</dt><dd>{{ opened.record.code }}</dd></div>
+              <div><dt>Status</dt><dd>{{ opened.record.status === 'ACTIVE' ? 'Active' : 'Inactive' }}</dd></div>
+              <div><dt>Source</dt><dd>{{ source(opened.record) }}</dd></div>
+              <div><dt>Used by</dt><dd>{{ opened.record.usageLabel }}</dd></div>
+              <div><dt>Created</dt><dd>{{ when(opened.record.createdAt) }} · {{ opened.record.createdByName }}</dd></div>
+              <div><dt>Updated</dt><dd>{{ when(opened.record.updatedAt) }} · {{ opened.record.updatedByName }}</dd></div>
+            </dl>
+            <h4>History</h4>
+            @if (!opened.history.length) {
+              <p class="empty">No changes have been recorded for this row yet.</p>
+            } @else {
+              <ul class="history-list">
+                @for (line of opened.history; track line.recordedAt + line.action) {
+                  <li><strong>{{ line.action }}</strong><span>{{ line.detail }}</span><em>{{ when(line.recordedAt) }} · {{ line.actorName }}</em></li>
+                }
+              </ul>
+            }
+            @if (canEdit) {
+              <div class="actions">
+                <button type="button" class="green-btn" (click)="edit()">Edit</button>
+                <button type="button" class="ghost-btn" (click)="askStatus(opened.record)">{{ opened.record.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}</button>
+                @if (opened.record.origin !== 'SYSTEM' && opened.record.usage === 0) {
+                  <button type="button" class="ghost-btn danger" (click)="askRemove(opened.record)">Remove</button>
+                }
+              </div>
+            }
+          } @else if (editing()) {
+            <div class="fields">
+              @if (category() === 'BREEDS' || category() === 'INV_TYPE') {
+                <label class="field"><span>{{ category() === 'INV_TYPE' ? 'Category' : 'Species' }}</span>
+                  <select [value]="breedSpecies()" (change)="breedSpecies.set($any($event.target).value)">
+                    @for (item of parents(); track item.id) {
+                      <option [value]="item.id">{{ item.name }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              <label class="field"><span>Code</span>
+                <input [value]="code()" (input)="code.set($any($event.target).value)" [readonly]="!!detail()?.record?.codeLocked" maxlength="40">
+                @if (detail()?.record?.codeLocked) { <small>This code stays fixed because the record is system-managed or already used.</small> }
+              </label>
+              <label class="field"><span>Name</span>
+                <input [value]="name()" (input)="name.set($any($event.target).value)" maxlength="120">
+              </label>
+              @if (inventoryList()) {
+                <label class="field"><span>Note</span>
+                  <input [value]="note()" (input)="note.set($any($event.target).value)" maxlength="400">
+                </label>
+                @if (category() === 'INV_WINDOW') {
+                  <label class="field"><span>Days</span>
+                    <input [value]="numericValue()" (input)="numericValue.set($any($event.target).value)" inputmode="numeric">
+                  </label>
+                }
+                <label class="field"><span>Sort order</span>
+                  <input [value]="sortOrder()" (input)="sortOrder.set($any($event.target).value)" inputmode="numeric">
+                </label>
+              }
+              @if (category() === 'SPECIES') {
+                <label class="field"><span>Category</span>
+                  <select [value]="group()" (change)="group.set($any($event.target).value)">
+                    @for (item of groupOptions(); track item) {
+                      <option [value]="item">{{ item }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="field"><span>Chart color</span>
+                  <input [value]="color()" (input)="color.set($any($event.target).value)" maxlength="7">
+                </label>
+                <label class="field"><span>Sort order</span>
+                  <input [value]="sortOrder()" (input)="sortOrder.set($any($event.target).value)" inputmode="numeric">
+                </label>
+                <label class="check"><input type="checkbox" [checked]="tracking()" (change)="tracking.set($any($event.target).checked)"> Track individual animals</label>
+              }
+            </div>
+            <div class="actions">
+              <button type="button" class="green-btn" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save record' }}</button>
+              <button type="button" class="ghost-btn" (click)="close()">Cancel</button>
+            </div>
+          }
+        </section>
+      }
+    </div>
+  </div>
+}
+
+@if (editing() && !detail()) {
+  <div class="dialog composer" (click)="close()">
+    <div class="form-card" role="dialog" aria-modal="true" aria-labelledby="add-title" (click)="$event.stopPropagation()">
+      <header class="composer-head">
+        <span class="composer-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5c2.2 2.4 3.2 4.6 3.2 6.8a3.2 3.2 0 0 1-6.4 0c0-2.2 1-4.4 3.2-6.8Z"/><path d="M6.5 14.5c1.6 1.2 3.4 1.8 5.5 1.8s3.9-.6 5.5-1.8"/><path d="M5 19.5h14"/></svg>
+        </span>
+        <div>
+          <h3 id="add-title">Add {{ category() === 'BREEDS' ? 'breed' : inventoryList() ? 'record' : 'species' }}</h3>
+          <p>{{ category() === 'BREEDS' ? 'A breed belongs to one species already stored here.' : 'Used when animals, herds, and charts are recorded.' }}</p>
+        </div>
+        <button class="modal-x" type="button" (click)="close()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="composer-body">
+        @if (formError()) {
+          <p class="save-error">{{ formError() }}</p>
+        }
+        @if (category() === 'SPECIES') {
+          <div class="preview-chip">
+            <i [style.background]="swatch()"></i>
+            <div>
+              <strong>{{ name().trim() || 'Species name' }}</strong>
+              <small>{{ code().trim() || 'CODE' }} · {{ labelFor(group()) || 'Category' }}</small>
+            </div>
+          </div>
+        }
+        <div class="fields">
+          @if (category() === 'BREEDS' || category() === 'INV_TYPE') {
+            <label class="field span"><span>{{ category() === 'INV_TYPE' ? 'Category' : 'Species' }}</span>
+              <select [value]="breedSpecies()" (change)="breedSpecies.set($any($event.target).value)">
+                @for (item of parents(); track item.id) {
+                  <option [value]="item.id">{{ item.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          <label class="field"><span>Code</span>
+            <input [value]="code()" (input)="code.set($any($event.target).value)" maxlength="40" placeholder="CATTLE">
+          </label>
+          <label class="field"><span>Name</span>
+            <input [value]="name()" (input)="name.set($any($event.target).value)" maxlength="120" [placeholder]="category() === 'BREEDS' ? 'Boran' : 'Cattle'">
+          </label>
+          @if (inventoryList()) {
+            <label class="field"><span>Note</span>
+              <input [value]="note()" (input)="note.set($any($event.target).value)" maxlength="400">
+            </label>
+            @if (category() === 'INV_WINDOW') {
+              <label class="field"><span>Days</span>
+                <input [value]="numericValue()" (input)="numericValue.set($any($event.target).value)" inputmode="numeric">
+              </label>
+            }
+            <label class="field"><span>Sort order</span>
+              <input [value]="sortOrder()" (input)="sortOrder.set($any($event.target).value)" inputmode="numeric">
+            </label>
+          }
+          @if (category() === 'SPECIES') {
+            <label class="field"><span>Category</span>
+              <select [value]="group()" (change)="group.set($any($event.target).value)">
+                @for (item of groupOptions(); track item) {
+                  <option [value]="item">{{ labelFor(item) }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Sort order</span>
+              <input [value]="sortOrder()" (input)="sortOrder.set($any($event.target).value)" inputmode="numeric" placeholder="1">
+            </label>
+            <label class="field span"><span>Chart color</span>
+              <div class="color-row">
+                <input class="picker" type="color" [value]="swatch()" (input)="color.set($any($event.target).value)" aria-label="Pick a chart color">
+                <input [value]="color()" (input)="color.set($any($event.target).value)" maxlength="7" placeholder="#1E8330">
+              </div>
+            </label>
+          }
+        </div>
+        @if (category() === 'SPECIES') {
+          <div class="track-block">
+            <span class="track-label">Track individual animals</span>
+            <button type="button" class="follow" [class.on]="tracking()" (click)="tracking.set(!tracking())" [attr.aria-pressed]="tracking()">
+              <span class="switch" aria-hidden="true"></span>
+              <span class="track-copy">
+                <strong>{{ tracking() ? 'On' : 'Off' }}</strong>
+                <small>{{ tracking() ? 'Each animal can be tagged and followed on its own.' : 'Animals stay in a group, such as a fish cycle.' }}</small>
+              </span>
+            </button>
+          </div>
+        }
+      </div>
+      <footer class="composer-foot">
+        <button type="button" class="ghost-btn" (click)="close()">Cancel</button>
+        <button type="button" class="green-btn" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : (category() === 'BREEDS' ? 'Save breed' : inventoryList() ? 'Save record' : 'Save species') }}</button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (confirm(); as pending) {
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="status-title">
+    <div>
+      <h3 id="status-title">{{ pending.active ? 'Activate' : 'Deactivate' }} {{ pending.name }}?</h3>
+      <p>{{ pending.active ? 'It will be offered again on livestock forms.' : 'It stays stored and linked. New livestock forms will not offer it.' }}</p>
+      @if (!pending.active && pending.usage) {
+        <p>{{ pending.usage }} livestock record{{ pending.usage === 1 ? '' : 's' }} still use it.</p>
+      }
+      <div class="actions">
+        <button type="button" class="green-btn" (click)="applyStatus()" [disabled]="saving()">{{ pending.active ? 'Activate' : 'Deactivate' }}</button>
+        <button type="button" class="ghost-btn" (click)="confirm.set(null)">Cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (removing(); as row) {
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="remove-title">
+    <div>
+      <h3 id="remove-title">Remove {{ row.name }}?</h3>
+      <p>This record is not used by livestock. System records and records already in use cannot be removed.</p>
+      <div class="actions">
+        <button type="button" class="green-btn" (click)="applyRemove()" [disabled]="saving()">Remove</button>
+        <button type="button" class="ghost-btn" (click)="removing.set(null)">Cancel</button>
+      </div>
+    </div>
+  </div>
+}

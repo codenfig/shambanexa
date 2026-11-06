@@ -39,9 +39,14 @@ public class AuditTrailImpl implements AuditTrail {
         ActivityEvent event = new ActivityEvent();
         event.setTenantId(user.tenantId());
         event.setFarmId(farmId);
-        event.setEventType(type);
-        event.setTitle(title);
-        event.setDetail(detail);
+        event.setEventType(clip(type, 40));
+        event.setTitle(clip(title == null || title.isBlank() ? "Activity" : title, 160));
+        event.setDetail(clip(detail == null ? "" : detail, 300));
         activity.save(event);
+    }
+
+    private String clip(String value, int max) {
+        String trimmed = value == null ? "" : value.trim();
+        return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 }

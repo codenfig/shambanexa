@@ -12,6 +12,8 @@ public record StockTransferRequest(
         @NotNull UUID destinationFarmId,
         @NotNull @Positive BigDecimal quantity,
         @NotBlank @Size(max = 300) String reason,
-        @Size(max = 160) String destinationStore
+        @Size(max = 160) String destinationStore,
+        UUID batchId,
+        @Size(max = 300) String overrideReason
 ) {
 }

@@ -175,6 +175,7 @@ public class OperationsServiceImpl implements OperationsService {
         member.setStatus("ACTIVE");
         staff.save(member);
         audit.record("STAFF_CREATED", "STAFF", member.getId(), member.getFullName());
+        audit.activity("STAFF", "Staff added", member.getFullName() + " · " + member.getRoleTitle(), member.getFarmId());
         return new StaffResponse(member.getId(), member.getFullName(), member.getRoleTitle(), member.getFarmId(),
                 farms.load(member.getFarmId()).getName(), member.getPhone(), member.getStatus(), member.getHiredOn());
     }
@@ -182,6 +183,7 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional(readOnly = true)
     public List<SpeciesResponse> species() {
         return species.findByTenantIdOrderBySortOrderAsc(access.tenantId()).stream()
+                .filter(item -> "ACTIVE".equals(item.getStatus()))
                 .map(item -> new SpeciesResponse(item.getId(), item.getCode(), item.getName(), item.getCategory(), item.getChartColor()))
                 .toList();
     }
@@ -189,6 +191,7 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional(readOnly = true)
     public List<BreedResponse> breeds(UUID speciesId) {
         return breeds.findByTenantIdAndSpeciesIdOrderByNameAsc(access.tenantId(), speciesId).stream()
+                .filter(breed -> "ACTIVE".equals(breed.getStatus()))
                 .map(breed -> new BreedResponse(breed.getId(), breed.getName(), breed.getSpeciesId()))
                 .toList();
     }
@@ -510,6 +513,7 @@ public class OperationsServiceImpl implements OperationsService {
         tenants.save(tenant);
         if (!changes.isEmpty()) {
             audit.record("SETTINGS_UPDATED", "TENANT", tenant.getId(), String.join(", ", changes));
+            audit.activity("SETTINGS", "Workspace settings updated", String.join(", ", changes), null);
         }
         return settings();
     }

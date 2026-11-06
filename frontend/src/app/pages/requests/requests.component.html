@@ -1,0 +1,56 @@
+<app-page-header title="Farmer requests" description="Questions sent from a farm to the people who can answer them." />
+
+@if (loading()) {
+  <p class="muted">Loading requests…</p>
+} @else {
+  @if (error()) { <p class="error">{{ error() }}</p> }
+  <div class="request-layout">
+    <section class="stack">
+      @if (requests().length === 0) {
+        <article class="card">
+          <h2>No requests yet</h2>
+          <p class="muted">A request appears here after someone on a farm sends one.</p>
+        </article>
+      }
+      @for (item of requests(); track item.id) {
+        <article class="card request">
+          <header>
+            <h2>{{ item.subject }}</h2>
+            <span [class.answered]="item.status === 'ANSWERED'">{{ item.status === 'ANSWERED' ? 'Answered' : 'Open' }}</span>
+          </header>
+          <p class="meta">{{ item.authorName }} · {{ item.farmName }} · {{ when(item.createdAt) }}</p>
+          <p>{{ item.message }}</p>
+          @if (item.reply) {
+            <blockquote>
+              <strong>{{ item.repliedBy }}</strong>
+              <span>{{ item.reply }}</span>
+            </blockquote>
+          } @else if (canReply()) {
+            @if (replyFor() === item.id) {
+              <form (ngSubmit)="sendReply(item.id)">
+                <label>Reply<textarea [value]="replyText()" (input)="replyText.set($any($event.target).value)" rows="3" maxlength="2000"></textarea></label>
+                <button class="green-btn" type="submit" [disabled]="busy() || !replyText().trim()">Send reply</button>
+              </form>
+            } @else {
+              <button class="ghost-btn" type="button" (click)="replyFor.set(item.id); replyText.set('')">Reply</button>
+            }
+          }
+        </article>
+      }
+    </section>
+
+    @if (canWrite()) {
+      <form class="card composer" [formGroup]="form" (ngSubmit)="submit()">
+        <h2>Send a request</h2>
+        <label>Farm
+          <select formControlName="farmId">
+            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+          </select>
+        </label>
+        <label>Subject<input formControlName="subject" maxlength="160" placeholder="What you need"></label>
+        <label>Message<textarea formControlName="message" rows="5" maxlength="2000" placeholder="The question for the farm adviser"></textarea></label>
+        <button class="green-btn" type="submit" [disabled]="busy() || form.invalid">Send request</button>
+      </form>
+    }
+  </div>
+}

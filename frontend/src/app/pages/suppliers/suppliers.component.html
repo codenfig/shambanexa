@@ -1,0 +1,456 @@
+<section class="suppliers-page">
+  <header class="sup-head">
+    <div>
+      <h1>Medical Suppliers</h1>
+      <p>Find veterinary medicines from shops that have registered and been approved. Search by medicine, animal, treatment, region, or district, and send a request.</p>
+    </div>
+    <div class="head-actions">
+      <button type="button" class="ghost-btn" (click)="sheet.set('requests')">Your requests</button>
+      @if (administrator()) {
+        <button type="button" class="ghost-btn" (click)="sheet.set('review')">Verification{{ pending().length ? ' (' + pending().length + ')' : '' }}</button>
+      }
+      @if (ownShop()) {
+        <button type="button" class="ghost-btn" (click)="sheet.set('desk')">Shop desk</button>
+      }
+      <button type="button" class="green-btn" (click)="openRegister()">{{ ownShop() ? 'Update shop' : 'Register as Supplier' }}</button>
+    </div>
+  </header>
+
+  @if (ownShop(); as shop) {
+    @if (shop.approval !== 'APPROVED') {
+      <p class="banner">{{ shop.approval === 'REJECTED' ? 'The licence was not approved. Update the shop and send it again.' : 'Your shop is waiting for an administrator to check the licence. It stays out of search until then.' }}</p>
+    }
+  }
+
+  <form class="filters" (submit)="search($event)">
+    <label>Search medicine or supplier
+      <input [value]="draftQ()" (input)="draftQ.set(text($event))" placeholder="Medicine or shop name">
+    </label>
+    <label>Animal type
+      <select [value]="draftAnimal()" (change)="draftAnimal.set(text($event))">
+        <option value="">Any animal</option>
+        @for (name of species(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    <label>Category
+      <select [value]="draftCategory()" (change)="draftCategory.set(text($event))">
+        <option value="">Any category</option>
+        @for (name of categories; track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    <label>Region
+      <select [value]="draftRegion()" (change)="draftRegion.set(text($event))">
+        <option value="">Any region</option>
+        @for (name of regions; track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    <label>District
+      <select [value]="draftDistrict()" (change)="draftDistrict.set(text($event))">
+        <option value="">Any district</option>
+        @for (name of districts(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    <button class="green-btn search" type="submit">Search</button>
+  </form>
+
+  @if (error()) {
+    <p class="form-error">{{ error() }}</p>
+  }
+
+  <div class="board">
+    <article class="card map-card">
+      <header class="card-head">
+        <h2>Suppliers near you</h2>
+        <button type="button" class="area-btn" (click)="searchArea()">Search this area</button>
+      </header>
+      <div class="map-stage">
+        <app-tanzania-map
+          [pins]="pins()"
+          [zoom]="zoom()"
+          [places]="true"
+          [regions]="true"
+          [selectedId]="pickedId() || areaFarmId()"
+          (pinPicked)="pickPin($event)"
+          ariaLabel="Veterinary shops and your farms in Tanzania" />
+        <div class="legend">
+          <span><i class="farm"></i> Your farm</span>
+          <span><i class="shop"></i> Medical supplier</span>
+        </div>
+        <div class="zoom-dock" aria-label="Map view">
+          <button type="button" (click)="zoomIn()" aria-label="Zoom in">+</button>
+          <button type="button" (click)="zoomOut()" aria-label="Zoom out">−</button>
+          <button type="button" (click)="zoom.set(1)" aria-label="Show the full map">⤢</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="card list-card">
+      <header class="card-head">
+        <h2>Available suppliers</h2>
+        <span>{{ loading() ? '…' : suppliers().length + ' suppliers found' }}</span>
+      </header>
+      @if (loading()) {
+        <p class="empty">Loading suppliers…</p>
+      } @else if (!suppliers().length) {
+        <p class="empty">No approved shop matches this search. A shop appears here after it registers and an administrator approves the licence.</p>
+      } @else {
+        <ul class="shop-list">
+          @for (shop of suppliers(); track shop.id) {
+            <li [class.on]="chosen()?.id === shop.id">
+              <img [src]="markFor(shop.mark).src" [alt]="markFor(shop.mark).label + ' mark'">
+              <div>
+                <div class="name-row">
+                  <strong>{{ shop.name }}</strong>
+                  <span class="pill ok">Verified</span>
+                  <span class="pill" [class.ok]="shop.shopState === 'OPEN'" [class.warn]="shop.shopState === 'LIMITED'" [class.bad]="shop.shopState === 'CLOSED'">{{ shopText(shop.shopState) }}</span>
+                </div>
+                @if (shortDistance(shop)) {
+                  <p>{{ shortDistance(shop) }} · {{ shop.district }}</p>
+                } @else {
+                  <p>{{ shop.district }} · {{ shop.region }}</p>
+                }
+                <p class="summary">{{ shop.summary }}</p>
+              </div>
+              <button type="button" class="view" (click)="select(shop.id)">View</button>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="card detail-card">
+      @if (chosen(); as shop) {
+        <header class="detail-head">
+          <img [src]="markFor(shop.mark).src" [alt]="markFor(shop.mark).label + ' mark'">
+          <div>
+            <div class="name-row">
+              <h2>{{ shop.name }}</h2>
+              <span class="pill ok">Verified</span>
+            </div>
+            <p class="shop-state" [class.warn]="shop.shopState === 'LIMITED'" [class.bad]="shop.shopState === 'CLOSED'">{{ shopText(shop.shopState) }}</p>
+            @if (fromFarm(shop)) {
+              <p>{{ fromFarm(shop) }}</p>
+            }
+            <p class="contact">{{ shop.address }}</p>
+            <p class="contact">{{ shop.phone }}</p>
+            <p class="contact">{{ shop.hours }}</p>
+          </div>
+          <button type="button" class="close" (click)="pickedId.set('')" aria-label="Close supplier">×</button>
+        </header>
+        <div class="tabs">
+          <button type="button" [class.on]="tab() === 'medicines'" (click)="tab.set('medicines')">Medicines</button>
+          <button type="button" [class.on]="tab() === 'about'" (click)="tab.set('about')">About</button>
+          <button type="button" [class.on]="tab() === 'reviews'" (click)="tab.set('reviews')">Reviews</button>
+        </div>
+        @if (tab() === 'medicines') {
+          @if (shop.shopState === 'CLOSED') {
+            <p class="empty">This shop is closed, so a request cannot be sent.</p>
+          }
+          @if (!shop.medicines.length) {
+            <p class="empty">No medicine is listed in stock for this shop.</p>
+          } @else {
+            <ul class="meds">
+              @for (item of shop.medicines; track item.id) {
+                <li>
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <p>{{ medicineLine(item) }}</p>
+                    <span class="pill" [class.ok]="item.stock === 'IN_STOCK'" [class.warn]="item.stock === 'LIMITED'" [class.bad]="item.stock === 'OUT'">{{ stockText(item.stock) }}</span>
+                    @if (item.prescriptionRequired) {
+                      <span class="pill warn">Prescription</span>
+                    }
+                  </div>
+                  <div class="price">
+                    <strong>{{ money(item.priceAmount, item.currency) }}</strong>
+                    <button type="button" class="green-btn" [disabled]="shop.shopState === 'CLOSED'" (click)="openRequest(item)">Request</button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+          <button type="button" class="custom" [disabled]="shop.shopState === 'CLOSED'" (click)="openRequest(null)">Request Custom Medicine</button>
+        } @else if (tab() === 'about') {
+          <dl class="about">
+            <div><dt>Address</dt><dd>{{ shop.address }}</dd></div>
+            <div><dt>District</dt><dd>{{ shop.district }}, {{ shop.region }}</dd></div>
+            <div><dt>Phone</dt><dd>{{ shop.phone }}</dd></div>
+            <div><dt>Hours</dt><dd>{{ shop.hours }}</dd></div>
+            <div><dt>Licence</dt><dd>{{ shop.licenseNumber }}</dd></div>
+            <div><dt>Issuing authority</dt><dd>{{ shop.licenseAuthority || 'Not recorded' }}</dd></div>
+            <div><dt>Licence expiry</dt><dd>{{ shop.licenseExpiresOn || 'Not recorded' }}</dd></div>
+            <div><dt>Products offered</dt><dd>{{ shop.productsOffered || 'Listed with this shop' }}</dd></div>
+            <div><dt>About</dt><dd>{{ shop.summary }}</dd></div>
+          </dl>
+          <p class="fine">An administrator checked this licence before the shop appeared in search. Prices use the currency the shop stored, usually TZS.</p>
+        } @else {
+          <p class="empty">No reviews are stored for this shop.</p>
+        }
+      } @else {
+        <header class="card-head">
+          <h2>Shop marks</h2>
+        </header>
+        <p class="empty">Select a supplier to see medicines, prices, and send a request. A shop chooses one of these marks when it registers.</p>
+        <ul class="mark-grid">
+          @for (mark of marks; track mark.id) {
+            <li>
+              <img [src]="mark.src" [alt]="mark.caption">
+              <strong>{{ mark.label }}</strong>
+              <span>{{ mark.caption }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+  </div>
+</section>
+
+@if (sheet()) {
+  <div class="sheet-back" (click)="closeSheet()">
+    <section class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="sheet()" (click)="$event.stopPropagation()">
+      <button type="button" class="close" (click)="closeSheet()" aria-label="Close">×</button>
+
+      @if (sheet() === 'register') {
+        <h2>{{ ownShop() ? 'Update shop' : 'Register as Supplier' }}</h2>
+        <p class="lead">Registration does not replace your Farm Manager or Farm Adviser role. An administrator verifies the licence, and only an approved shop appears in search.</p>
+        <form (submit)="saveShop($event)">
+          <label>Shop name <input [value]="shopName()" (input)="shopName.set(text($event))"></label>
+          <p class="mark-label">Shop mark</p>
+          <div class="mark-pick">
+            @for (item of marks; track item.id) {
+              <button type="button" [class.on]="mark() === item.id" (click)="mark.set(item.id)">
+                <img [src]="item.src" [alt]="item.caption">
+                <span>{{ item.label }}</span>
+              </button>
+            }
+          </div>
+          <div class="split">
+            <label>Region
+              <select [value]="shopRegion()" (change)="shopRegion.set(text($event))">
+                <option value="">Choose a region</option>
+                @for (name of regions; track name) {
+                  <option [value]="name">{{ name }}</option>
+                }
+              </select>
+            </label>
+            <label>District <input [value]="shopDistrict()" (input)="shopDistrict.set(text($event))"></label>
+          </div>
+          <label>Address <input [value]="address()" (input)="address.set(text($event))"></label>
+          <div class="split">
+            <label>Phone <input [value]="phone()" (input)="phone.set(text($event))"></label>
+            <label>Hours <input [value]="hours()" (input)="hours.set(text($event))"></label>
+          </div>
+          <label>Licence number <input [value]="license()" (input)="license.set(text($event))"></label>
+          <div class="split">
+            <label>Issuing authority <input [value]="licenseAuthority()" (input)="licenseAuthority.set(text($event))" placeholder="Optional"></label>
+            <label>Licence expiry <input type="date" [value]="licenseExpiresOn()" (input)="licenseExpiresOn.set(text($event))"></label>
+          </div>
+          <label>Products offered <input [value]="productsOffered()" (input)="productsOffered.set(text($event))" placeholder="Optional. Shop medicines stay on the medicine list."></label>
+          <label>Description <textarea rows="3" [value]="summary()" (input)="summary.set(text($event))"></textarea></label>
+          @if (ownShop()) {
+            <label>Shop state
+              <select [value]="shopState()" (change)="shopState.set(text($event))">
+                <option value="OPEN">Open</option>
+                <option value="LIMITED">Limited stock</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </label>
+          }
+          <p class="mark-label">Place the shop on the map</p>
+          <app-tanzania-map [selectable]="true" [markerLatitude]="draftLat()" [markerLongitude]="draftLon()" markerLabel="Shop" ariaLabel="Place the shop in Tanzania" (picked)="placeShop($event)" />
+          @if (placeError()) { <p class="form-error">{{ placeError() }}</p> }
+          @if (formError()) { <p class="form-error">{{ formError() }}</p> }
+          <button class="green-btn" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : (ownShop() ? 'Save shop' : 'Submit registration') }}</button>
+        </form>
+      }
+
+      @if (sheet() === 'request' && chosen(); as shop) {
+        <h2>{{ customRequest() ? 'Request custom medicine' : 'Request ' + (requestMedicine()?.name || 'medicine') }}</h2>
+        <p class="lead">{{ shop.name }}. The shop checks availability before confirming collection or delivery.</p>
+        <form (submit)="sendRequest($event)">
+          @if (customRequest()) {
+            <label>Medicine <input [value]="reqName()" (input)="reqName.set(text($event))"></label>
+            <label class="check"><input type="checkbox" [checked]="reqRx()" (change)="reqRx.set(checked($event))"> This medicine needs a veterinary prescription</label>
+          } @else if (requestMedicine()?.prescriptionRequired) {
+            <p class="banner">A Farm Adviser has to approve the prescription before this shop can supply it.</p>
+          }
+          <div class="split">
+            <label>Quantity <input [value]="reqQty()" (input)="reqQty.set(text($event))" inputmode="decimal"></label>
+            <label>Unit <input [value]="reqUnit()" (input)="reqUnit.set(text($event))" [disabled]="!customRequest()"></label>
+          </div>
+          <label>Collection or delivery
+            <select [value]="reqFulfillment()" (change)="reqFulfillment.set(text($event))">
+              <option value="COLLECTION">Collection</option>
+              <option value="DELIVERY">Delivery</option>
+            </select>
+          </label>
+          <label>Farm
+            <select [value]="reqFarm()" (change)="reqFarm.set(text($event))">
+              @if (!farms().length) {
+                <option value="">No farm is on your account</option>
+              }
+              @for (farm of farms(); track farm.id) {
+                <option [value]="farm.id">{{ farm.name }}</option>
+              }
+            </select>
+          </label>
+          <label>Note <textarea rows="2" [value]="reqNote()" (input)="reqNote.set(text($event))"></textarea></label>
+          @if (formError()) { <p class="form-error">{{ formError() }}</p> }
+          <button class="green-btn" type="submit" [disabled]="saving() || !farms().length">{{ saving() ? 'Sending…' : 'Submit request' }}</button>
+        </form>
+      }
+
+      @if (sheet() === 'requests') {
+        <h2>Request tracking</h2>
+        <p class="lead">From submission through confirmation, collection, or delivery. A prescription-required medicine waits for a Farm Adviser.</p>
+        <label>Note for the next decision <input [value]="decisionNote()" (input)="decisionNote.set(text($event))"></label>
+        @if (!requests().length) {
+          <p class="empty">No medicine requests are stored.</p>
+        } @else {
+          <ul class="orders">
+            @for (order of requests(); track order.id) {
+              <li>
+                <div class="name-row">
+                  <strong>{{ order.medicineName }}</strong>
+                  <span class="pill" [class.bad]="order.status === 'REJECTED'" [class.ok]="order.status === 'DELIVERED' || order.status === 'COLLECTED'">{{ statusText(order.status) }}</span>
+                </div>
+                <p>{{ order.supplierName }} · {{ order.quantity }} {{ order.unit }} · {{ order.fulfillment === 'DELIVERY' ? 'Delivery' : 'Collection' }} · {{ order.farmName }} · {{ when(order.createdAt) }}</p>
+                @if (order.status !== 'REJECTED') {
+                  <ol class="track">
+                    @for (step of path(order); track step) {
+                      <li [class.done]="reached(order, step)" [class.now]="statusText(order.status) === step">{{ step }}</li>
+                    }
+                  </ol>
+                }
+                @if (order.requesterNote) { <p>Request: {{ order.requesterNote }}</p> }
+                @if (order.adviserNote) { <p>Farm Adviser: {{ order.adviserNote }}</p> }
+                @if (order.supplierNote) { <p>Shop: {{ order.supplierNote }}</p> }
+                @if (adviser() && order.status === 'AWAITING_PRESCRIPTION' && !order.ownedShop) {
+                  <div class="row-actions">
+                    <button type="button" class="green-btn" [disabled]="saving()" (click)="prescribe(order.id, true)">Approve prescription</button>
+                    <button type="button" class="ghost-btn" [disabled]="saving()" (click)="prescribe(order.id, false)">Decline</button>
+                  </div>
+                }
+                @if (actions(order).length) {
+                  <div class="row-actions">
+                    @for (action of actions(order); track action.action) {
+                      <button type="button" [class.green-btn]="action.action !== 'REJECT'" [class.ghost-btn]="action.action === 'REJECT'" [disabled]="saving()" (click)="decide(order.id, action.action)">{{ action.label }}</button>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+
+      @if (sheet() === 'desk') {
+        <h2>Shop desk</h2>
+        @if (ownShop(); as shop) {
+          <p class="lead">{{ shop.name }} · {{ shopText(shop.shopState) }} · {{ shop.approval === 'APPROVED' ? 'Approved' : shop.approval === 'REJECTED' ? 'Rejected' : 'Waiting for licence approval' }}</p>
+          <button type="button" class="green-btn" (click)="openMedicine()">Add medicine</button>
+          @if (!shop.medicines.length) {
+            <p class="empty">No medicine is stored for this shop yet.</p>
+          } @else {
+            <ul class="orders">
+              @for (item of shop.medicines; track item.id) {
+                <li>
+                  <div class="name-row">
+                    <strong>{{ item.name }}</strong>
+                    <span class="pill" [class.ok]="item.stock === 'IN_STOCK'" [class.warn]="item.stock === 'LIMITED'" [class.bad]="item.stock === 'OUT'">{{ stockText(item.stock) }}</span>
+                  </div>
+                  <p>{{ item.category }} · {{ item.animalTypes }} · {{ item.quantity }} {{ item.unit }} · {{ money(item.priceAmount, item.currency) }}</p>
+                  <button type="button" class="ghost-btn" (click)="openMedicine(item)">Update stock</button>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <p class="empty">Register a shop before stocking medicine.</p>
+          <button type="button" class="green-btn" (click)="openRegister()">Register as Supplier</button>
+        }
+      }
+
+      @if (sheet() === 'review') {
+        <h2>Licence verification</h2>
+        @if (!administrator()) {
+          <p class="empty">An administrator checks shop licences.</p>
+        } @else if (!pending().length) {
+          <p class="empty">No shop is waiting for a licence check.</p>
+        } @else {
+          <ul class="orders">
+            @for (shop of pending(); track shop.id) {
+              <li>
+                <div class="name-row">
+                  <img [src]="markFor(shop.mark).src" [alt]="markFor(shop.mark).label + ' mark'">
+                  <strong>{{ shop.name }}</strong>
+                  <span class="pill" [class.bad]="shop.approval === 'REJECTED'" [class.warn]="shop.approval === 'PENDING'">{{ shop.approval === 'REJECTED' ? 'Rejected' : 'Waiting' }}</span>
+                </div>
+                <p>{{ shop.address }}, {{ shop.district }}, {{ shop.region }}</p>
+                <p>Licence {{ shop.licenseNumber }} · {{ shop.phone }} · {{ shop.hours }}</p>
+                <p>{{ shop.summary }}</p>
+                @if (shop.approval === 'PENDING') {
+                  <div class="row-actions">
+                    <button type="button" class="green-btn" [disabled]="saving()" (click)="verify(shop.id, true)">Approve</button>
+                    <button type="button" class="ghost-btn" [disabled]="saving()" (click)="verify(shop.id, false)">Reject</button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+
+      @if (sheet() === 'medicine') {
+        <h2>{{ editingId() ? 'Update medicine' : 'Add medicine' }}</h2>
+        <form (submit)="saveMedicine($event)">
+          <label>Medicine <input [value]="medName()" (input)="medName.set(text($event))"></label>
+          <p class="mark-label">Animal type</p>
+          <div class="animals">
+            <button type="button" [class.on]="animalOn('Any')" (click)="toggleAnimal('Any')">Any</button>
+            @for (name of species(); track name) {
+              <button type="button" [class.on]="animalOn(name)" (click)="toggleAnimal(name)">{{ name }}</button>
+            }
+          </div>
+          <label>Category
+            <select [value]="medCategory()" (change)="medCategory.set(text($event))">
+              @for (name of categories; track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          </label>
+          <div class="split">
+            <label>Price <input [value]="medPrice()" (input)="medPrice.set(text($event))" inputmode="decimal"></label>
+            <label>Currency
+              <select [value]="medCurrency()" (change)="medCurrency.set(text($event))">
+                <option value="TZS">TZS</option>
+                <option value="USD">USD</option>
+              </select>
+            </label>
+          </div>
+          <div class="split">
+            <label>Quantity <input [value]="medQty()" (input)="medQty.set(text($event))" inputmode="decimal"></label>
+            <label>Unit <input [value]="medUnit()" (input)="medUnit.set(text($event))"></label>
+          </div>
+          <label>Stock
+            <select [value]="medStock()" (change)="medStock.set(text($event))">
+              <option value="IN_STOCK">In stock</option>
+              <option value="LIMITED">Limited stock</option>
+              <option value="OUT">Out of stock</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" [checked]="medRx()" (change)="medRx.set(checked($event))"> Prescription required before supply</label>
+          @if (formError()) { <p class="form-error">{{ formError() }}</p> }
+          <button class="green-btn" type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save medicine' }}</button>
+        </form>
+      }
+    </section>
+  </div>
+}

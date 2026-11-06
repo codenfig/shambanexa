@@ -134,7 +134,7 @@ export class ActivityBoardComponent {
     }
     return [...buckets.entries()].map(([key, items]) => ({
       key,
-      label: key === today ? 'Today' : key === yesterday ? 'Yesterday' : 'Earlier',
+      label: key === today ? 'Today' : key === yesterday ? 'Yesterday' : this.weekday(items[0].occurredAt),
       date: this.longDate(items[0].occurredAt),
       items
     }));
@@ -171,7 +171,12 @@ export class ActivityBoardComponent {
       FARM: 'Farms',
       FINANCE: 'Finance',
       STAFF: 'Staff',
-      ADVICE: 'Advice'
+      ADVICE: 'Advice',
+      MEDICAL: 'Medical Suppliers',
+      MARKET: 'Marketplace',
+      ACCESS: 'Access',
+      SETTINGS: 'Settings',
+      ADVISER: 'Farm Advisers'
     };
     return labels[type] ?? type.charAt(0) + type.slice(1).toLowerCase();
   }
@@ -215,13 +220,13 @@ export class ActivityBoardComponent {
     if (item.eventType === 'PRODUCTION') {
       return 'milk';
     }
-    if (item.eventType === 'INVENTORY') {
+    if (item.eventType === 'INVENTORY' || item.eventType === 'MEDICAL') {
       return 'stock';
     }
-    if (item.eventType === 'FARM') {
+    if (item.eventType === 'FARM' || item.eventType === 'SETTINGS') {
       return 'farm';
     }
-    if (item.eventType === 'FINANCE') {
+    if (item.eventType === 'FINANCE' || item.eventType === 'MARKET') {
       return 'money';
     }
     if (item.eventType === 'STAFF' || /task|completed/.test(text)) {
@@ -245,6 +250,21 @@ export class ActivityBoardComponent {
     }
     if (item.eventType === 'ADVICE') {
       return { commands: ['/advice'], label: 'Open advice' };
+    }
+    if (item.eventType === 'ADVISER') {
+      return { commands: ['/advisers'], label: 'Open farm advisers' };
+    }
+    if (item.eventType === 'MEDICAL') {
+      return { commands: ['/suppliers'], label: 'Open medical suppliers' };
+    }
+    if (item.eventType === 'MARKET') {
+      return { commands: ['/market'], label: 'Open marketplace' };
+    }
+    if (item.eventType === 'ACCESS') {
+      return { commands: ['/access'], label: 'Open access' };
+    }
+    if (item.eventType === 'SETTINGS') {
+      return { commands: ['/settings'], label: 'Open settings' };
     }
     if (item.eventType === 'FINANCE') {
       return { commands: ['/analytics'], label: 'Open reports' };
@@ -335,6 +355,10 @@ export class ActivityBoardComponent {
         tone: this.kind({ eventType: key, title: '', detail: '' } as ActivityItem)
       }))
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }
+
+  private weekday(iso: string): string {
+    return new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Africa/Dar_es_Salaam' }).format(new Date(iso));
   }
 
   private dayKey(iso: string): string {

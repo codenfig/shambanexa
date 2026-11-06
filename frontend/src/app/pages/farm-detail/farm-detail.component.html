@@ -160,14 +160,14 @@
                 <div class="gauges">
                   @if (report.averageSurfaceWetness != null) {
                     <div class="gauge" role="img" [attr.aria-label]="'Surface wetness ' + report.averageSurfaceWetness + ' percent, top 5 cm'">
-                      <div class="ring" [style.background]="ring(report.averageSurfaceWetness, '#2f6fd6')"><span>{{ report.averageSurfaceWetness }}%</span></div>
+                      <div class="ring" [style.background]="ring(report.averageSurfaceWetness, '#1e8330')"><span>{{ report.averageSurfaceWetness }}%</span></div>
                       <strong>Surface</strong>
                       <em>Top 5 cm</em>
                     </div>
                   }
                   @if (report.averageRootWetness != null) {
                     <div class="gauge" role="img" [attr.aria-label]="'Root-zone wetness ' + report.averageRootWetness + ' percent'">
-                      <div class="ring" [style.background]="ring(report.averageRootWetness, '#166534')"><span>{{ report.averageRootWetness }}%</span></div>
+                      <div class="ring" [style.background]="ring(report.averageRootWetness, '#1e8330')"><span>{{ report.averageRootWetness }}%</span></div>
                       <strong>Root zone</strong>
                       <em>Top 1 m</em>
                     </div>
@@ -308,6 +308,11 @@
         </dl>
       </div>
       <app-tanzania-map [pins]="locationPin()" [rings]="boundaryRing()" ariaLabel="Farm location in Tanzania" />
+      @if (selected.boundary.length >= 3) {
+        <app-farm-diagram class="span" [points]="selected.boundary" [latitude]="selected.latitude" [longitude]="selected.longitude" [note]="selected.boundary.length + ' stored corners outline this farm.'" />
+      } @else {
+        <p class="muted span">No property boundary is stored. Edit the farm to add corners around the land.</p>
+      }
     </article>
   }
 

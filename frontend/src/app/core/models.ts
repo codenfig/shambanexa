@@ -225,6 +225,26 @@ export interface Animal {
   version: number;
 }
 
+export interface MovementRecord {
+  id: string;
+  eventType: string;
+  subjectType: string;
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  speciesName: string;
+  quantity: number;
+  farmId: string;
+  farmName: string;
+  sourceFarmId: string | null;
+  sourceFarmName: string | null;
+  destinationFarmId: string | null;
+  destinationFarmName: string | null;
+  effectiveAt: string;
+  reason: string | null;
+  actorName: string | null;
+}
+
 export interface Page<T> {
   items: T[];
   total: number;
@@ -258,6 +278,74 @@ export interface Breed {
   speciesId: string;
 }
 
+export interface MasterCategory {
+  code: string;
+  label: string;
+  description: string;
+  total: number;
+  active: number;
+}
+
+export interface MasterRecord {
+  id: string;
+  code: string;
+  name: string;
+  status: 'ACTIVE' | 'INACTIVE' | string;
+  origin: 'SYSTEM' | 'ADMIN' | string;
+  groupLabel: string;
+  parentId: string | null;
+  chartColor: string | null;
+  sortOrder: number | null;
+  individualTracking: boolean | null;
+  usage: number;
+  usageLabel: string;
+  codeLocked: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdByName: string;
+  updatedByName: string;
+  detail?: string | null;
+  numericValue?: number | null;
+}
+
+export interface MasterPage {
+  category: string;
+  label: string;
+  total: number;
+  page: number;
+  size: number;
+  canEdit: boolean;
+  records: MasterRecord[];
+}
+
+export interface MasterHistory {
+  action: string;
+  detail: string;
+  recordedAt: string;
+  actorName: string;
+}
+
+export interface MasterDetail {
+  record: MasterRecord;
+  history: MasterHistory[];
+}
+
+export interface MasterImportRow {
+  line: number;
+  code: string;
+  name: string;
+  action: 'CREATE' | 'UPDATE' | 'SKIP' | 'FAIL' | string;
+  message: string;
+}
+
+export interface MasterImport {
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  rows: MasterImportRow[];
+}
+
 export interface ProductionRecord {
   id: string;
   farmId: string;
@@ -285,10 +373,84 @@ export interface InventoryItem {
   lotCode: string | null;
   expiresOn: string | null;
   unitCost: number | null;
+  withdrawalDays?: number | null;
   stockValue: number | null;
   supplierName: string | null;
   storeName: string | null;
   version: number;
+  usable?: number;
+  batchCount?: number;
+  daysLeft?: number | null;
+  expiryStatus?: string | null;
+  productType?: string | null;
+}
+
+export interface StockBatch {
+  id: string;
+  itemId: string;
+  productName: string;
+  sku: string;
+  category: string;
+  productType: string | null;
+  farmId: string;
+  farmName: string;
+  lotCode: string;
+  quantityReceived: number;
+  quantityRemaining: number;
+  manufacturedOn: string | null;
+  receivedOn: string;
+  expiresOn: string | null;
+  bestBeforeOn: string | null;
+  openedOn: string | null;
+  openDays: number | null;
+  useBy: string | null;
+  daysLeft: number | null;
+  status: string;
+  storeName: string | null;
+  supplierName: string | null;
+  unitCost: number | null;
+  unit: string;
+}
+
+export interface StockAlert {
+  batchId: string | null;
+  itemId: string;
+  kind: string;
+  severity: string;
+  productName: string;
+  category: string;
+  lotCode: string | null;
+  quantity: number;
+  useBy: string | null;
+  daysLeft: number | null;
+  action: string;
+  assigneeName: string | null;
+  acknowledged: boolean;
+  farmName: string;
+}
+
+export interface SupplierRecord {
+  id: string;
+  name: string;
+  supplierType: string;
+  phone: string | null;
+  location: string | null;
+  registrationNo: string | null;
+  licenseNo: string | null;
+  leadDays: number | null;
+  status: string;
+  productCount: number;
+}
+
+export interface InventoryReport {
+  totalValue: number;
+  currency: string;
+  byCategory: { category: string; products: number; value: number }[];
+  expiring: { days: number; batches: number }[];
+  expiredValue: number;
+  expiredBatches: number;
+  nearExpiry: number;
+  quarantined: number;
 }
 
 export interface InventoryMovement {
@@ -337,6 +499,105 @@ export interface StaffMember {
   phone: string | null;
   status: string;
   hiredOn: string | null;
+}
+
+export interface FarmerRequest {
+  id: string;
+  farmId: string;
+  farmName: string;
+  authorName: string;
+  subject: string;
+  message: string;
+  status: string;
+  reply: string | null;
+  repliedBy: string | null;
+  createdAt: string;
+  answeredAt: string | null;
+}
+
+export interface AttendanceMark {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  workDate: string;
+  mark: string;
+}
+
+export interface StaffShift {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  weekday: number;
+  starts: string;
+  ends: string;
+}
+
+export interface StaffTimesheet {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  workDate: string;
+  hours: number;
+  note: string | null;
+}
+
+export interface StaffReview {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  score: number;
+  reviewedOn: string;
+  notes: string | null;
+  reviewerName: string;
+}
+
+export interface StaffTraining {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  title: string;
+  completedOn: string | null;
+}
+
+export interface StaffGoal {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  title: string;
+  status: string;
+}
+
+export interface StaffCompetency {
+  id: string;
+  staffId: string;
+  staffName: string;
+  farmId: string;
+  farmName: string;
+  skill: string;
+  level: string;
+}
+
+export interface WorkforceBundle {
+  requests: FarmerRequest[];
+  attendance: AttendanceMark[];
+  shifts: StaffShift[];
+  timesheets: StaffTimesheet[];
+  reviews: StaffReview[];
+  training: StaffTraining[];
+  goals: StaffGoal[];
+  competencies: StaffCompetency[];
 }
 
 export interface WorkTask {
@@ -424,6 +685,119 @@ export interface HealthCase {
   farmName: string;
 }
 
+export interface HealthDose {
+  itemId: string;
+  itemName: string;
+  unit: string;
+  batchId: string | null;
+  lotCode: string | null;
+  quantity: number;
+  withdrawalDays: number | null;
+  withdrawalEndsOn: string | null;
+  issued: boolean;
+  knownCost: number | null;
+}
+
+export interface HealthTreatment {
+  id: string;
+  farmId: string;
+  farmName: string;
+  animalId: string | null;
+  herdId: string | null;
+  subject: string;
+  speciesName: string;
+  symptoms: string;
+  diagnosis: string;
+  description: string;
+  veterinarianName: string;
+  status: string;
+  startedOn: string;
+  outcome: string | null;
+  followUpOn: string | null;
+  dose: HealthDose | null;
+}
+
+export interface HealthProtocol {
+  id: string;
+  speciesName: string;
+  name: string;
+  ageGroup: string;
+  intervalDays: number;
+  itemId: string | null;
+  itemName: string | null;
+  notes: string | null;
+  approvedByName: string;
+  active: boolean;
+  approvedOn: string;
+}
+
+export interface HealthVaccination {
+  id: string;
+  farmId: string;
+  farmName: string;
+  animalId: string | null;
+  herdId: string | null;
+  subject: string;
+  protocolId: string | null;
+  protocolName: string | null;
+  speciesName: string;
+  ageGroup: string | null;
+  vaccineName: string;
+  itemId: string | null;
+  itemName: string | null;
+  batchId: string | null;
+  lotCode: string | null;
+  quantity: number | null;
+  unit: string | null;
+  withdrawalDays: number | null;
+  withdrawalEndsOn: string | null;
+  doseIssued: boolean;
+  knownCost: number | null;
+  administeredOn: string | null;
+  nextDueOn: string | null;
+  veterinarianName: string;
+  notes: string | null;
+  status: string;
+  displayStatus: string;
+}
+
+export interface HealthNamedCount {
+  name: string;
+  count: number;
+}
+
+export interface HealthMedicineUse {
+  name: string;
+  unit: string;
+  quantity: number;
+  knownCost: number | null;
+}
+
+export interface HealthReport {
+  inProgress: number;
+  completedTreatments: number;
+  plannedVaccinations: number;
+  dueSoon: number;
+  overdue: number;
+  missed: number;
+  completedVaccinations: number;
+  knownCost: number | null;
+  dosesWithoutCost: number;
+  conditions: HealthNamedCount[];
+  medicines: HealthMedicineUse[];
+  veterinarians: HealthNamedCount[];
+  reminderNote: string;
+}
+
+export interface HealthBoard {
+  treatments: HealthTreatment[];
+  vaccinations: HealthVaccination[];
+  protocols: HealthProtocol[];
+  report: HealthReport;
+  canRecord: boolean;
+  canApproveProtocols: boolean;
+}
+
 export interface Settings {
   tenantName: string;
   code: string;
@@ -445,6 +819,13 @@ export interface SearchHit {
 export interface AccessCatalog {
   roles: AccessRole[];
   activity: AccessAudit[];
+  permissions: AccessPermission[];
+}
+
+export interface AccessPermission {
+  code: string;
+  label: string;
+  detail: string;
 }
 
 export interface AccessRole {
@@ -489,4 +870,212 @@ export interface AccessAudit {
   detail: string;
   actorName: string;
   recordedAt: string;
+}
+
+export interface SupplierMedicine {
+  id: string;
+  name: string;
+  animalTypes: string;
+  category: string;
+  priceAmount: number;
+  currency: string;
+  quantity: number;
+  unit: string;
+  stock: string;
+  prescriptionRequired: boolean;
+  summary: string;
+}
+
+export interface MedicalSupplier {
+  id: string;
+  name: string;
+  mark: string;
+  region: string;
+  district: string;
+  address: string;
+  phone: string;
+  hours: string;
+  latitude: number;
+  longitude: number;
+  licenseNumber: string;
+  licenseAuthority: string;
+  licenseExpiresOn: string | null;
+  productsOffered: string;
+  summary: string;
+  approval: string;
+  shopState: string;
+  owned: boolean;
+  medicines: SupplierMedicine[];
+}
+
+export interface MedicineOrder {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  medicineId: string | null;
+  medicineName: string;
+  quantity: number;
+  unit: string;
+  fulfillment: string;
+  status: string;
+  prescriptionRequired: boolean;
+  requesterName: string;
+  farmId: string | null;
+  farmName: string;
+  requesterNote: string;
+  adviserName: string;
+  adviserNote: string;
+  supplierNote: string;
+  ownedShop: boolean;
+  ownRequest: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicalBoard {
+  suppliers: MedicalSupplier[];
+  regions: string[];
+  districts: string[];
+  ownShop: MedicalSupplier | null;
+  pendingReview: MedicalSupplier[];
+  requests: MedicineOrder[];
+  administrator: boolean;
+  adviser: boolean;
+}
+
+export interface MarketStats {
+  products: number;
+  buyers: number;
+  sellers: number;
+  openRequests: number;
+  pendingOffers: number;
+  completed: number;
+}
+
+export interface MarketSeller {
+  id: string;
+  name: string;
+  region: string;
+  district: string;
+  phone: string;
+  latitude: number;
+  longitude: number;
+  summary: string;
+  approval: string;
+  owned: boolean;
+  rating: number | null;
+  reviews: number;
+}
+
+export interface MarketProduct {
+  id: string;
+  name: string;
+  category: string;
+  imageKey: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  priceAmount: number;
+  currency: string;
+  minOrder: number;
+  grade: string;
+  region: string;
+  district: string;
+  latitude: number;
+  longitude: number;
+  fulfillment: string;
+  status: string;
+  sellerName: string;
+  verified: boolean;
+  owned: boolean;
+  rating: number | null;
+}
+
+export interface MarketDemand {
+  id: string;
+  productId: string | null;
+  productName: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  grade: string;
+  targetPrice: number;
+  currency: string;
+  region: string;
+  district: string;
+  latitude: number | null;
+  longitude: number | null;
+  neededOn: string;
+  note: string;
+  status: string;
+  buyerName: string;
+  ownRequest: boolean;
+  createdAt: string;
+}
+
+export interface MarketOffer {
+  id: string;
+  requestId: string;
+  sellerId: string;
+  sellerName: string;
+  productId: string | null;
+  quantity: number;
+  unit: string;
+  priceAmount: number;
+  currency: string;
+  terms: string;
+  status: string;
+  ownOffer: boolean;
+  createdAt: string;
+}
+
+export interface MarketOrder {
+  id: string;
+  requestId: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+  priceAmount: number;
+  currency: string;
+  fulfillment: string;
+  status: string;
+  buyerName: string;
+  sellerName: string;
+  sellerPhone: string;
+  ownPurchase: boolean;
+  ownSale: boolean;
+  reviewed: boolean;
+  createdAt: string;
+}
+
+export interface MarketMessage {
+  id: string;
+  requestId: string | null;
+  orderId: string | null;
+  senderName: string;
+  body: string;
+  own: boolean;
+  createdAt: string;
+}
+
+export interface MarketNotice {
+  id: string;
+  title: string;
+  detail: string;
+  createdAt: string;
+}
+
+export interface MarketBoard {
+  stats: MarketStats;
+  products: MarketProduct[];
+  listings: MarketProduct[];
+  reviewListings: MarketProduct[];
+  requests: MarketDemand[];
+  offers: MarketOffer[];
+  orders: MarketOrder[];
+  messages: MarketMessage[];
+  notices: MarketNotice[];
+  ownSeller: MarketSeller | null;
+  pendingSellers: MarketSeller[];
+  administrator: boolean;
 }

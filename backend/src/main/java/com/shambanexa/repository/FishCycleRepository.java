@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface FishCycleRepository extends JpaRepository<FishCycle, UUID> {
     List<FishCycle> findByTenantIdOrderByStartedOnDesc(UUID tenantId);
+
+    long countByTenantIdAndSpeciesId(UUID tenantId, UUID speciesId);
 }

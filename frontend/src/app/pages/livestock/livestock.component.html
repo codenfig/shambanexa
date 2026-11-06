@@ -2,14 +2,16 @@
   <header class="ls-head">
     <div>
       <div class="title-row">
-        <h1>Animals</h1>
-        <span class="date-chip">{{ today() }}</span>
+        <h1>{{ pageTitle() }}</h1>
+        <span class="farm-chip">{{ chip() }}</span>
       </div>
-      <p>Manage your livestock across all farms.</p>
+      <p>{{ pageBlurb() }}</p>
     </div>
     <div class="ls-actions">
-      <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">Export</button>
-      <a class="green-btn" routerLink="/livestock/new">Register animal +</a>
+      <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">Export CSV</button>
+      @if (canWrite()) {
+        <a class="green-btn" routerLink="/livestock/new">Register animal</a>
+      }
     </div>
   </header>
 
@@ -21,15 +23,14 @@
       <button class="green-btn" type="button" (click)="load()">Try again</button>
     </div>
   } @else {
+    @if (screen() === 'overview') {
     <section class="kpis" aria-label="Livestock summary">
       <article>
         <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/><path d="M4 16h16v3H4z"/></svg></span>
         <div>
           <small>Total livestock</small>
           <strong>{{ fmt(summary().total) }}</strong>
-          @if (summary().change !== null) {
-            <em class="up">{{ signed(summary().change) }} from last month</em>
-          }
+          <em>{{ summary().change !== null ? signed(summary().change) + ' from last month' : 'Tagged animals plus herd headcount' }}</em>
         </div>
       </article>
       <article>
@@ -56,23 +57,469 @@
           <em>Active herd batches</em>
         </div>
       </article>
-      <article>
-        <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l1 6H7z"/><path d="M9 9v11h6V9"/></svg></span>
-        <div>
-          <small>Due treatments</small>
-          <strong>{{ fmt(summary().due) }}</strong>
-          <em>Open vaccination tasks</em>
-        </div>
-      </article>
     </section>
+    }
 
-    <div class="stage">
-      <article class="board" id="ledger">
-        <div class="filters">
+    @if (screen() === 'herds') {
+      <section class="kpis species-kpis herd-kpis" aria-label="Herd summary">
+        <article>
+          <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/><path d="M4 16h16v3H4z"/></svg></span>
+          <div>
+            <small>Headcount</small>
+            <strong>{{ fmt(herdStats().heads) }}</strong>
+            <em>On active batches</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>
+          <div>
+            <small>Herds</small>
+            <strong>{{ fmt(herdStats().batches) }}</strong>
+            <em>Active batches</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg></span>
+          <div>
+            <small>Species</small>
+            <strong>{{ fmt(herdStats().species) }}</strong>
+            <em>With a herd batch</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
+          <div>
+            <small>Farms</small>
+            <strong>{{ fmt(herdStats().farms) }}</strong>
+            <em>With a herd batch</em>
+          </div>
+        </article>
+      </section>
+      <section class="species-stage">
+        <article class="card sheet">
+          <header class="panel-head">
+            <h2>Headcount by species</h2>
+            <span class="count">{{ fmt(herdStats().heads) }}</span>
+          </header>
+          @if (herdSpecies().length === 0) {
+            <p class="meta">No active herd is stored.</p>
+          } @else {
+            <div class="breed-layout">
+              <div class="donut" [style.background]="herdDonut()" role="img" aria-label="Herd headcount by species">
+                <span>{{ fmt(herdStats().heads) }}<small>head</small></span>
+              </div>
+              <ul class="breed-tiles herd-species-tiles">
+                @for (item of herdSpecies(); track item.name) {
+                  <li>
+                    <div class="breed-top">
+                      <span>
+                        @if (speciesPhoto(item.name); as src) {
+                          <img class="species-photo" [src]="src" alt="">
+                        } @else {
+                          <i [style.background]="item.color"></i>
+                        }
+                        {{ item.name }}
+                      </span>
+                      <strong>{{ fmt(item.count) }}</strong>
+                    </div>
+                    <span class="bar" aria-hidden="true"><i [style.width.%]="item.share" [style.background]="item.color"></i></span>
+                    <em>{{ item.share }}% of herd headcount</em>
+                  </li>
+                }
+              </ul>
+            </div>
+            <p class="meta note">Tagged animals are not included in these counts.</p>
+          }
+        </article>
+      </section>
+    } @else if (screen() === 'species' && namedSpecies()) {
+      <section class="kpis species-kpis" aria-label="Species summary">
+        <article>
+          <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/><path d="M4 16h16v3H4z"/></svg></span>
+          <div>
+            <small>Headcount</small>
+            <strong>{{ fmt(speciesFocus().count) }}</strong>
+            <em>{{ speciesFocus().share }}% of livestock</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
+          <div>
+            <small>Herd headcount</small>
+            <strong>{{ fmt(speciesFocus().heads) }}</strong>
+            <em>{{ fmt(speciesFocus().herds) }} active herds</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 13l-7 7-9-9V4h7z"/><circle cx="9" cy="9" r="1.2"/></svg></span>
+          <div>
+            <small>Tagged animals</small>
+            <strong>{{ fmt(speciesFocus().tagged) }}</strong>
+            <em>Individual records</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg></span>
+          <div>
+            <small>Breeds recorded</small>
+            <strong>{{ fmt(speciesFocus().breeds) }}</strong>
+            <em>On tagged animals</em>
+          </div>
+        </article>
+      </section>
+      <section class="species-stage">
+        <article class="card sheet">
+          <header class="panel-head">
+            <h2>Tagged by breed</h2>
+            <span class="count">{{ fmt(speciesFocus().tagged) }}</span>
+          </header>
+          @if (breedMix().length === 0) {
+            <p class="meta">No tagged {{ speciesTab().toLowerCase() }} are stored. Herd headcount is on the batches.</p>
+          } @else {
+            <div class="breed-layout">
+              <div class="donut" [style.background]="breedDonut()" role="img" [attr.aria-label]="'Tagged ' + speciesTab() + ' by breed'">
+                <span>{{ fmt(speciesFocus().tagged) }}<small>tagged</small></span>
+              </div>
+              <ul class="breed-tiles">
+                @for (item of breedMix(); track item.name) {
+                  <li>
+                    <div class="breed-top">
+                      <span><i [style.background]="item.color"></i>{{ item.name }}</span>
+                      <strong>{{ fmt(item.count) }}</strong>
+                    </div>
+                    <span class="bar" aria-hidden="true"><i [style.width.%]="item.share" [style.background]="item.color"></i></span>
+                    <em>{{ item.share }}% of tagged</em>
+                  </li>
+                }
+              </ul>
+            </div>
+            <p class="meta note">Herd batches are not split by breed.</p>
+          }
+        </article>
+        <article class="card sheet">
+          <header class="panel-head">
+            <h2>Herds</h2>
+            <span class="count">{{ fmt(speciesFocus().herds) }}</span>
+          </header>
+          @if (herdBars().length === 0) {
+            <p class="meta">No active {{ speciesTab().toLowerCase() }} herd is stored.</p>
+          } @else {
+            <ul class="herd-grid">
+              @for (batch of herdBars(); track batch.id) {
+                <li>
+                  <div class="herd-top">
+                    <strong>{{ batch.name }}</strong>
+                    <b>{{ fmt(batch.quantity) }}</b>
+                  </div>
+                  <span class="farm-line">{{ batch.farmName }}</span>
+                  <span class="bar" aria-hidden="true"><i [style.width.%]="batch.share" [style.background]="speciesFocus().color"></i></span>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      </section>
+    } @else if (screen() === 'overview') {
+      <section class="insights pair">
+        <article class="card">
+          <h2>Animals by species</h2>
+          @if (distribution().length === 0) {
+            <p class="meta">No species counts recorded.</p>
+          } @else {
+            <div class="chart-row">
+              <div class="donut" [style.background]="donut()" role="img" aria-label="Species distribution">
+                <span>{{ fmt(summary().total) }}<small>head</small></span>
+              </div>
+              <ul>
+                @for (item of distribution(); track item.name) {
+                  <li>
+                    @if (speciesPhoto(item.name); as src) {
+                      <img class="species-photo" [src]="src" alt="">
+                    } @else {
+                      <i [style.background]="item.color"></i>
+                    }
+                    {{ item.name }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(0) }}%</em>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </article>
+        <article class="card">
+          <h2>Health status</h2>
+          <p class="meta">Tagged animals only. Herd batches are not health-scored individually.</p>
+          @if (healthMix().length === 0) {
+            <p class="meta">No tagged animals recorded.</p>
+          } @else {
+            <div class="chart-row">
+              <div class="donut" [style.background]="healthDonut()" role="img" aria-label="Health overview">
+                <span>{{ fmt(summary().tagged) }}<small>tagged</small></span>
+              </div>
+              <ul>
+                @for (item of healthMix(); track item.status) {
+                  <li><i [style.background]="healthColor(item.status)"></i>{{ label(item.status) }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(0) }}%</em></li>
+                }
+              </ul>
+            </div>
+          }
+        </article>
+      </section>
+    }
+
+    @if (screen() === 'overview') {
+      <div class="stage">
+        <article class="board">
+          <div class="tab-row">
+            <h2>Tagged animals</h2>
+            <a class="text-btn" routerLink="/livestock/registry">Open registry</a>
+          </div>
+          @if (preview().length === 0) {
+            <div class="empty"><h2>No tagged animals recorded.</h2></div>
+          } @else {
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Animal</th><th>Species</th><th>Farm</th><th>Health</th><th></th></tr></thead>
+                <tbody>
+                  @for (animal of preview(); track animal.id) {
+                    <tr>
+                      <td><button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button><span class="meta">{{ animal.tag }}</span></td>
+                      <td>{{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</td>
+                      <td>{{ animal.farmName }}</td>
+                      <td><span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span></td>
+                      <td><button class="text-btn" type="button" (click)="open(animal)">View</button></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </article>
+        <aside class="rail">
+          <article class="card">
+            <h2>Alerts</h2>
+            @if (openCaseRows().length === 0 && dueTasks().length === 0) {
+              <p class="meta">No open health case or due treatment is stored.</p>
+            }
+            @for (item of openCaseRows(); track item.id) {
+              <div class="task"><strong>{{ item.title }}</strong><span>{{ item.farmName }} · {{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span></div>
+            }
+            @for (task of dueTasks(); track task.id) {
+              <div class="task"><strong>{{ task.title }}</strong><span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span></div>
+            }
+            <p class="quiet"><a routerLink="/livestock/health">Open health records</a></p>
+          </article>
+        </aside>
+      </div>
+    }
+
+    @if (screen() === 'health') {
+      <section class="kpis species-kpis health-kpis" aria-label="Health summary">
+        <article>
+          <span class="bubble red" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10z"/></svg></span>
+          <div>
+            <small>Open cases</small>
+            <strong>{{ fmt(summary().openCases) }}</strong>
+            <em>Still open</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble caution" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>
+          <div>
+            <small>Due treatments</small>
+            <strong>{{ fmt(summary().due) }}</strong>
+            <em>{{ overdueTreatments() ? fmt(overdueTreatments()) + ' past due date' : 'Open treatment tasks' }}</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.5 11 15l4.5-5"/></svg></span>
+          <div>
+            <small>Healthy tagged</small>
+            <strong>{{ fmt(summary().healthy) }}</strong>
+            <em>of {{ fmt(summary().tagged) }} tagged records</em>
+          </div>
+        </article>
+        <article>
+          <span class="bubble caution" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v5"/><circle cx="12" cy="16.5" r="0.8" fill="currentColor"/><circle cx="12" cy="12" r="8"/></svg></span>
+          <div>
+            <small>Need attention</small>
+            <strong>{{ fmt(summary().attention) }}</strong>
+            <em>Tagged, not healthy</em>
+          </div>
+        </article>
+      </section>
+      <section class="health-page">
+        <article class="card sheet">
+          <header class="panel-head">
+            <h2>Tagged health</h2>
+            <span class="count">{{ fmt(summary().tagged) }}</span>
+          </header>
+          @if (healthMix().length === 0) {
+            <p class="meta">No tagged animals recorded.</p>
+          } @else {
+            <div class="breed-layout">
+              <div class="donut" [style.background]="healthDonut()" role="img" aria-label="Tagged animal health">
+                <span>{{ fmt(summary().tagged) }}<small>tagged</small></span>
+              </div>
+              <ul class="breed-tiles">
+                @for (item of healthMix(); track item.status) {
+                  <li>
+                    <div class="breed-top">
+                      <span><i [style.background]="healthColor(item.status)"></i>{{ label(item.status) }}</span>
+                      <strong>{{ fmt(item.count) }}</strong>
+                    </div>
+                    <span class="bar" aria-hidden="true"><i [style.width.%]="item.share" [style.background]="healthColor(item.status)"></i></span>
+                    <em>{{ item.share.toFixed(0) }}% of tagged</em>
+                  </li>
+                }
+              </ul>
+            </div>
+            <p class="meta note">Herd batches are not health-scored individually.</p>
+          }
+        </article>
+        <div class="health-split">
+          <article class="card sheet">
+            <header class="panel-head">
+              <h2>Open health cases</h2>
+              <span class="count">{{ fmt(openCaseRows().length) }}</span>
+            </header>
+            @if (openCaseRows().length === 0) {
+              <p class="meta">No open health case is stored.</p>
+            } @else {
+              <div class="case-list">
+                @for (item of openCaseRows(); track item.id) {
+                  <article class="case-card">
+                    <div class="case-top">
+                      <strong>{{ item.title }}</strong>
+                      <span class="status-pill" [class]="'status-pill ' + severityClass(item.severity)">{{ label(item.severity) }}</span>
+                    </div>
+                    <span class="meta">{{ item.farmName }} · opened {{ dateLabel(item.openedOn) }}</span>
+                    @if (item.notes) { <p>{{ item.notes }}</p> }
+                  </article>
+                }
+              </div>
+            }
+          </article>
+          <article class="card sheet">
+            <header class="panel-head">
+              <h2>Due treatments</h2>
+              @if (canWrite()) {
+                <a routerLink="/alerts/report">Report health</a>
+              } @else {
+                <span class="count">{{ fmt(dueTasks().length) }}</span>
+              }
+            </header>
+            @if (dueTasks().length === 0) {
+              <p class="meta">No treatment task is open.</p>
+            } @else {
+              <div class="case-list">
+                @for (task of dueTasks(); track task.id) {
+                  <article class="case-card" [class.late]="treatmentLate(task)">
+                    <div class="case-top">
+                      <strong>{{ task.title }}</strong>
+                      @if (treatmentLate(task)) { <em class="overdue">Overdue</em> }
+                    </div>
+                    <span class="meta">{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}@if (task.assigneeName) { · {{ task.assigneeName }} }</span>
+                  </article>
+                }
+              </div>
+            }
+            <p class="meta note">Breeding events are not stored.</p>
+          </article>
+        </div>
+        <article class="card sheet">
+          <header class="panel-head">
+            <h2>Needs attention</h2>
+            <span class="count">{{ fmt(attentionAnimals().length) }}</span>
+          </header>
+          @if (attentionAnimals().length === 0) {
+            <p class="meta">No tagged animal needs attention.</p>
+          } @else {
+            <ul class="watch-list">
+              @for (animal of attentionAnimals(); track animal.id) {
+                <li>
+                  @if (speciesPhoto(animal.speciesName); as src) {
+                    <img class="avatar photo" [src]="src" alt="">
+                  } @else {
+                    <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                  }
+                  <div>
+                    <button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button>
+                    <span class="meta">{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} } · {{ animal.farmName }}</span>
+                  </div>
+                  <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
+                  <button class="text-btn" type="button" (click)="open(animal)">View</button>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      </section>
+    }
+
+    @if (screen() === 'detail') {
+      @if (selected(); as animal) {
+        <article class="drawer wide" aria-label="Animal profile">
+          <header>
+            <div class="who">
+              <span class="avatar lg" aria-hidden="true">{{ initial(animal) }}</span>
+              <div>
+                <h2>{{ animal.name || animal.tag }}</h2>
+                <p>{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</p>
+              </div>
+            </div>
+            <a class="text-btn" routerLink="/livestock/registry">Back to registry</a>
+          </header>
+          <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
+          <div class="drawer-tabs">
+            <button type="button" [class.on]="drawerTab() === 'overview'" (click)="drawerTab.set('overview')">Overview</button>
+            <button type="button" [class.on]="drawerTab() === 'health'" (click)="drawerTab.set('health')">Health</button>
+          </div>
+          @if (drawerTab() === 'overview') {
+            <dl>
+              <div><dt>Tag</dt><dd>{{ animal.tag }}</dd></div>
+              <div><dt>Sex</dt><dd>{{ label(animal.sex) }}</dd></div>
+              <div><dt>Species</dt><dd>{{ animal.speciesName }}</dd></div>
+              <div><dt>Breed</dt><dd>{{ animal.breedName || '—' }}</dd></div>
+              <div><dt>Farm</dt><dd><a [routerLink]="['/farms', animal.farmId]">{{ animal.farmName }}</a></dd></div>
+              <div><dt>Birth</dt><dd>{{ dateLabel(animal.birthDate) }}</dd></div>
+              <div><dt>Age</dt><dd>{{ ageLabel(animal.birthDate) }}</dd></div>
+              <div><dt>Color</dt><dd>{{ animal.color || '—' }}</dd></div>
+              <div><dt>Status</dt><dd>{{ label(animal.status) }}</dd></div>
+            </dl>
+          } @else {
+            <dl><div><dt>Health</dt><dd>{{ label(animal.healthStatus) }}</dd></div></dl>
+            <h3>Open cases on {{ animal.farmName }}</h3>
+            @if (farmCases().length === 0) {
+              <p class="meta">No open health case is recorded for this farm.</p>
+            }
+            @for (item of farmCases(); track item.id) {
+              <article class="case">
+                <strong>{{ item.title }}</strong>
+                <span class="meta">{{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span>
+                @if (item.notes) { <p>{{ item.notes }}</p> }
+              </article>
+            }
+          }
+          <p class="meta profile-note">Weight, milk yield, and breeding events are not stored on this animal.</p>
+          <div class="sheet-actions">
+            @if (animal.status === 'ACTIVE') {
+              <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer animal</button>
+            }
+          </div>
+        </article>
+      } @else if (!loading()) {
+        <div class="empty"><h2>That animal is not in your scope.</h2><a class="green-btn" routerLink="/livestock/registry">Back to registry</a></div>
+      }
+    }
+
+    @if (screen() === 'registry' || screen() === 'species' || screen() === 'herds') {
+    <div class="stage" [class.solo]="screen() !== 'registry'">
+      <article class="board" id="ledger" [class.species-ledger]="(screen() === 'species' && namedSpecies()) || screen() === 'herds'">
+        <div class="filters" [class.species-filters]="screen() === 'species'" [class.herd-filters]="screen() === 'herds'">
           <label class="search-field">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
             <span class="sr">Search livestock</span>
-            <input [ngModel]="query()" (ngModelChange)="setQuery($event)" placeholder="Search tag, animal name, breed or batch…" type="search">
+            <input [ngModel]="query()" (ngModelChange)="setQuery($event)" [placeholder]="screen() === 'herds' ? 'Search herd, code, or farm' : 'Search tag, animal name, breed or batch…'" type="search">
           </label>
           <label>
             <span class="sr">Farm</span>
@@ -81,6 +528,7 @@
               @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
             </select>
           </label>
+          @if (screen() !== 'herds') {
           <label>
             <span class="sr">Breed</span>
             <select [ngModel]="breed()" (ngModelChange)="setBreed($event)">
@@ -102,12 +550,24 @@
               @for (item of healthOptions; track item) { <option [value]="item">{{ label(item) }}</option> }
             </select>
           </label>
+          }
           @if (filtersActive()) {
             <button class="text-btn" type="button" (click)="reset()">Clear filters</button>
           }
         </div>
 
         <div class="tab-row" id="transfer">
+          @if (screen() === 'herds') {
+            <div class="ledger-title">
+              <h2>Batches</h2>
+              <span class="count">{{ fmt(filteredBatches().length) }}</span>
+            </div>
+          } @else if (screen() === 'species' && namedSpecies()) {
+            <div class="ledger-title">
+              <h2>Tagged {{ speciesTab() }}</h2>
+              <span class="count">{{ fmt(filteredAnimals().length) }}</span>
+            </div>
+          } @else {
           <div class="tabs" role="tablist">
             <button type="button" [class.on]="speciesTab() === 'all'" (click)="chooseTab('all')">All animals</button>
             @for (item of speciesTabs(); track item.name) {
@@ -119,11 +579,14 @@
             }
             <button type="button" [class.on]="speciesTab() === 'archived'" (click)="chooseTab('archived')">Archived ({{ archivedCount() }})</button>
           </div>
+          }
+          @if (screen() !== 'herds') {
           <div class="views" role="group" aria-label="Layout">
             <button type="button" [class.on]="view() === 'list'" (click)="setView('list')">List</button>
             <button type="button" [class.on]="view() === 'cards'" (click)="setView('cards')">Cards</button>
             <button type="button" [class.on]="view() === 'herds'" (click)="setView('herds')">Herd view</button>
           </div>
+          }
         </div>
 
         @if (speciesTab() === 'fish') {
@@ -158,10 +621,17 @@
               <table>
                 <thead><tr><th>Herd</th><th>Species</th><th>Farm</th><th>Purpose</th><th>Head</th><th>Status</th></tr></thead>
                 <tbody>
-                  @for (batch of filteredBatches(); track batch.id) {
+                  @for (batch of pagedBatches(); track batch.id) {
                     <tr>
                       <td><strong>{{ batch.name }}</strong><span class="meta">{{ batch.code }}</span></td>
-                      <td>{{ batch.speciesName }}</td>
+                      <td><span class="species-name">
+                        @if (speciesPhoto(batch.speciesName); as src) {
+                          <img class="species-photo" [src]="src" alt="">
+                        } @else {
+                          <i [style.background]="herdColor(batch.speciesName)"></i>
+                        }
+                        {{ batch.speciesName }}
+                      </span></td>
                       <td>{{ batch.farmName }}</td>
                       <td>{{ batch.purpose }}</td>
                       <td>
@@ -174,12 +644,32 @@
                           {{ fmt(batch.quantity) }}
                         }
                       </td>
-                      <td><span class="status-pill is-active">{{ batch.status }}</span></td>
+                      <td><span class="status-pill is-active">{{ label(batch.status) }}</span></td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
+            <footer class="pager" aria-label="Herd pages">
+              <span>{{ batchRangeLabel() }}</span>
+              @if (batchPageCount() > 1) {
+                <div class="pager-controls">
+                  <button type="button" class="pager-step" (click)="goBatches(batchVisiblePage() - 1)" [disabled]="batchVisiblePage() === 0" aria-label="Previous page">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                  </button>
+                  @for (item of batchPages(); track $index) {
+                    @if (item === 'gap') {
+                      <span class="pager-gap" aria-hidden="true">…</span>
+                    } @else {
+                      <button type="button" [class.current]="item === batchVisiblePage()" [attr.aria-current]="item === batchVisiblePage() ? 'page' : null" [attr.aria-label]="'Page ' + (item + 1)" (click)="goBatches(item)">{{ item + 1 }}</button>
+                    }
+                  }
+                  <button type="button" class="pager-step" (click)="goBatches(batchVisiblePage() + 1)" [disabled]="batchVisiblePage() >= batchPageCount() - 1" aria-label="Next page">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                  </button>
+                </div>
+              }
+            </footer>
           }
         } @else if (filteredAnimals().length === 0) {
           <div class="empty">
@@ -191,7 +681,11 @@
             @for (animal of pagedAnimals(); track animal.id) {
               <article class="tile" [class.picked]="selected()?.id === animal.id">
                 <div class="who">
-                  <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                  @if (speciesPhoto(animal.speciesName); as src) {
+                    <img class="avatar photo" [src]="src" alt="">
+                  } @else {
+                    <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                  }
                   <button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button>
                   <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
                 </div>
@@ -207,15 +701,25 @@
               </article>
             }
           </div>
-          <footer class="pager">
+          <footer class="pager" aria-label="Animal pages">
             <span>{{ rangeLabel() }}</span>
-            <div>
-              <button type="button" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0">Previous</button>
-              @for (index of pages(); track index) {
-                <button type="button" [class.current]="index === visiblePage()" (click)="go(index)">{{ index + 1 }}</button>
-              }
-              <button type="button" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1">Next</button>
-            </div>
+            @if (pageCount() > 1) {
+              <div class="pager-controls">
+                <button type="button" class="pager-step" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0" aria-label="Previous page">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                </button>
+                @for (item of pages(); track $index) {
+                  @if (item === 'gap') {
+                    <span class="pager-gap" aria-hidden="true">…</span>
+                  } @else {
+                    <button type="button" [class.current]="item === visiblePage()" [attr.aria-current]="item === visiblePage() ? 'page' : null" [attr.aria-label]="'Page ' + (item + 1)" (click)="go(item)">{{ item + 1 }}</button>
+                  }
+                }
+                <button type="button" class="pager-step" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1" aria-label="Next page">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+              </div>
+            }
           </footer>
         } @else {
           <div class="table-scroll">
@@ -236,7 +740,11 @@
                   <tr [class.picked]="selected()?.id === animal.id">
                     <td>
                       <div class="who">
-                        <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                        @if (speciesPhoto(animal.speciesName); as src) {
+                    <img class="avatar photo" [src]="src" alt="">
+                  } @else {
+                    <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
+                  }
                         <span>
                           <button class="name" type="button" (click)="open(animal)">{{ animal.name || 'Unnamed' }}</button>
                           <span class="meta">{{ animal.tag }}</span>
@@ -259,21 +767,33 @@
               </tbody>
             </table>
           </div>
-          <footer class="pager">
+          <footer class="pager" aria-label="Animal pages">
             <span>{{ rangeLabel() }}</span>
-            <div>
-              <button type="button" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0">Previous</button>
-              @for (index of pages(); track index) {
-                <button type="button" [class.current]="index === visiblePage()" (click)="go(index)">{{ index + 1 }}</button>
-              }
-              <button type="button" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1">Next</button>
-            </div>
+            @if (pageCount() > 1) {
+              <div class="pager-controls">
+                <button type="button" class="pager-step" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0" aria-label="Previous page">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                </button>
+                @for (item of pages(); track $index) {
+                  @if (item === 'gap') {
+                    <span class="pager-gap" aria-hidden="true">…</span>
+                  } @else {
+                    <button type="button" [class.current]="item === visiblePage()" [attr.aria-current]="item === visiblePage() ? 'page' : null" [attr.aria-label]="'Page ' + (item + 1)" (click)="go(item)">{{ item + 1 }}</button>
+                  }
+                }
+                <button type="button" class="pager-step" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1" aria-label="Next page">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+              </div>
+            }
           </footer>
         }
       </article>
 
+      @if (screen() === 'registry') {
+      <aside class="rail">
       @if (selected(); as animal) {
-        <aside class="drawer" aria-label="Animal profile">
+        <article class="drawer" aria-label="Animal profile">
           <header>
             <div class="who">
               <span class="avatar lg" aria-hidden="true">{{ initial(animal) }}</span>
@@ -319,65 +839,45 @@
           }
           <div class="sheet-actions">
             @if (animal.status === 'ACTIVE') {
-              <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer</button>
+              <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer animal</button>
             }
           </div>
-        </aside>
+          <p class="meta profile-note">Weight, milk yield, and breeding events are not stored on this animal.</p>
+        </article>
+      } @else {
+        <article class="card">
+          <h2>Alerts</h2>
+          @if (openCaseRows().length === 0 && dueTasks().length === 0) {
+            <p class="meta">No open health case or due treatment is stored.</p>
+          }
+          @for (item of openCaseRows(); track item.id) {
+            <div class="task">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.farmName }} · {{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span>
+            </div>
+          }
+          @for (task of dueTasks(); track task.id) {
+            <div class="task">
+              <strong>{{ task.title }}</strong>
+              <span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span>
+            </div>
+          }
+        </article>
+        <article class="card">
+          <h2>Quick actions</h2>
+          <div class="actions">
+            @if (canWrite()) {
+              <a class="green-btn" routerLink="/livestock/new">Register animal</a>
+              <a class="ghost-btn" routerLink="/alerts/report">Report health</a>
+            }
+            <button class="ghost-btn" type="button" (click)="chooseTab('herds')">Herd batches</button>
+          </div>
+        </article>
+      }
+      </aside>
       }
     </div>
-
-    <section class="insights">
-      <article class="card">
-        <h2>Animal distribution by species</h2>
-        @if (distribution().length === 0) {
-          <p class="meta">No species counts recorded.</p>
-        } @else {
-          <div class="chart-row">
-            <div class="donut" [style.background]="donut()" role="img" aria-label="Species distribution">
-              <span>{{ fmt(summary().total) }}</span>
-            </div>
-            <ul>
-              @for (item of distribution(); track item.name) {
-                <li><i [style.background]="item.color"></i>{{ item.name }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(0) }}%</em></li>
-              }
-            </ul>
-          </div>
-        }
-      </article>
-      <article class="card">
-        <h2>Health overview</h2>
-        <p class="meta">Tagged animals only. Herd batches are not health-scored individually.</p>
-        @if (canWrite()) {
-          <a class="green-btn report-link" routerLink="/alerts" fragment="report">Report sick animals, deaths, or recovery</a>
-        }
-        @if (healthMix().length === 0) {
-          <p class="meta">No tagged animals recorded.</p>
-        } @else {
-          <div class="chart-row">
-            <div class="donut" [style.background]="healthDonut()" role="img" aria-label="Health overview">
-              <span>{{ fmt(summary().tagged) }}</span>
-            </div>
-            <ul>
-              @for (item of healthMix(); track item.status) {
-                <li>{{ label(item.status) }} <strong>{{ fmt(item.count) }}</strong> <em>{{ item.share.toFixed(1) }}%</em></li>
-              }
-            </ul>
-          </div>
-        }
-      </article>
-      <article class="card">
-        <h2>Upcoming livestock activities</h2>
-        @if (upcoming().length === 0) {
-          <p class="meta">No open tasks recorded.</p>
-        }
-        @for (task of upcoming(); track task.id) {
-          <div class="task">
-            <strong>{{ task.title }}</strong>
-            <span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span>
-          </div>
-        }
-      </article>
-    </section>
+    }
     <p class="audit">All changes are recorded in the audit trail.</p>
   }
 </section>

@@ -1,0 +1,25 @@
+<figure class="diagram">
+  <figcaption>Farm diagram</figcaption>
+  @if (view(); as drawn) {
+    <svg [attr.viewBox]="'0 0 ' + drawn.width + ' ' + drawn.height" role="img" aria-label="Farm boundary diagram">
+      <rect class="sheet" x="0" y="0" [attr.width]="drawn.width" [attr.height]="drawn.height" rx="16" />
+      @if (drawn.closed) {
+        <polygon [attr.points]="drawn.chain" />
+      } @else {
+        <polyline [attr.points]="drawn.chain" />
+      }
+      @for (dot of drawn.dots; track dot.label) {
+        <circle [attr.cx]="dot.x" [attr.cy]="dot.y" r="8" />
+        <text [attr.x]="dot.x" [attr.y]="dot.y + 3.2">{{ dot.label }}</text>
+      }
+      @if (drawn.pin; as pin) {
+        <circle class="pin" [attr.cx]="pin.x" [attr.cy]="pin.y" r="5" />
+      }
+    </svg>
+  } @else {
+    <p class="empty">The diagram is drawn from the boundary corners.</p>
+  }
+  @if (note()) {
+    <p>{{ note() }}</p>
+  }
+</figure>

@@ -1,0 +1,203 @@
+<header class="head">
+  <div>
+    <div class="title-row">
+      <h1>Transfer history</h1>
+      <span class="farm-chip">{{ farms().length ? fmt(farms().length) + ' farms' : 'Farms in scope' }}</span>
+    </div>
+    <p>{{ summary() }}</p>
+  </div>
+  <div class="actions">
+    <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || filtered().length === 0">Export CSV</button>
+    <button class="ghost-btn" type="button" (click)="print()" [disabled]="loading() || rows().length === 0">Print</button>
+    @if (canWrite()) {
+      <a class="green-btn" routerLink="/livestock/registry">Record a transfer</a>
+    }
+  </div>
+</header>
+
+@if (loadError()) {
+  <div class="state">
+    <h2>Unable to load movements.</h2>
+    <button class="green-btn" type="button" (click)="reload()">Retry</button>
+  </div>
+} @else {
+  <section class="kpis" aria-label="Movement totals">
+    <article>
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h11l-2-2M17 7l-2 2"/><path d="M17 17H6l2 2M7 17l2-2"/></svg></span>
+      <div><small>Recorded lines</small><strong>{{ loading() && rows().length === 0 ? '—' : fmt(rows().length) }}</strong><em>Stored movement events</em></div>
+    </article>
+    <article>
+      <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M6 19c1-3 3-4.5 6-4.5s5 1.5 6 4.5"/></svg></span>
+      <div><small>Animal registrations</small><strong>{{ loading() && rows().length === 0 ? '—' : fmt(animalRegistrations()) }}</strong><em>Tagged animals</em></div>
+    </article>
+    <article>
+      <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg></span>
+      <div><small>Herd registrations</small><strong>{{ loading() && rows().length === 0 ? '—' : fmt(herdRegistrations()) }}</strong><em>Opening herd balances</em></div>
+    </article>
+    <article>
+      <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h12M13 8l4 4-4 4"/></svg></span>
+      <div><small>Transfers</small><strong>{{ loading() && rows().length === 0 ? '—' : fmt(transfers()) }}</strong><em>{{ transfers() === 0 ? 'None stored' : 'Out and in lines' }}</em></div>
+    </article>
+  </section>
+
+  <article class="panel spread">
+    <header class="panel-head">
+      <div class="titles">
+        <h2>Records by farm</h2>
+        <p>Each stored line is counted once.</p>
+      </div>
+      <span class="count">{{ loading() && rows().length === 0 ? '—' : fmt(rows().length) }}</span>
+    </header>
+    @if (loading() && rows().length === 0) {
+      <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
+    } @else if (byFarm().length === 0) {
+      <p class="empty">No movement is stored.</p>
+    } @else {
+      <div class="spread-body">
+        <div class="ribbon" role="img" [attr.aria-label]="ribbonLabel()">
+          @for (item of byFarm(); track item.name) {
+            <i [style.flex-grow]="item.count" [style.background]="item.color"></i>
+          }
+        </div>
+        <ul class="farms">
+          @for (item of byFarm(); track item.name) {
+            <li>
+              <i [style.background]="item.color"></i>
+              <span>{{ item.name }}</span>
+              <strong>{{ fmt(item.count) }}</strong>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </article>
+
+  <section class="stage">
+    <article class="panel">
+      <header class="panel-head">
+        <div class="titles">
+          <h2>Ledger</h2>
+          <p>Registrations and transfers in your scope.</p>
+        </div>
+        <span class="count">{{ fmt(filtered().length) }}</span>
+      </header>
+      @if (selected(); as row) {
+        <div class="picked-card">
+          <div class="picked-main">
+            <div class="picked-kicker">
+              <p class="code">{{ row.subjectCode || 'Record' }}</p>
+              <span class="pill" [class.out]="row.eventType === 'TRANSFER_OUT'" [class.in]="row.eventType === 'TRANSFER_IN'">{{ eventLabel(row.eventType) }}</span>
+            </div>
+            <h3>{{ row.subjectName || subjectLabel(row.subjectType) }}</h3>
+            <p class="meta">{{ subjectLabel(row.subjectType) }} · {{ row.speciesName || 'Species not stored' }}</p>
+          </div>
+          <dl>
+            <div><dt>Farm</dt><dd>{{ row.farmName || '—' }}</dd></div>
+            <div><dt>Quantity</dt><dd>{{ fmt(row.quantity) }}</dd></div>
+            <div><dt>Date</dt><dd>{{ dateLabel(row.effectiveAt) }}</dd></div>
+            <div><dt>Recorded by</dt><dd>{{ row.actorName || '—' }}</dd></div>
+            @if (row.sourceFarmName || row.destinationFarmName) {
+              <div><dt>From</dt><dd>{{ row.sourceFarmName || '—' }}</dd></div>
+              <div><dt>To</dt><dd>{{ row.destinationFarmName || '—' }}</dd></div>
+            }
+            <div class="wide"><dt>Reason</dt><dd>{{ row.reason || '—' }}</dd></div>
+          </dl>
+          <div class="picked-actions">
+            @if (row.subjectType === 'ANIMAL') {
+              <a class="green-btn" [routerLink]="['/livestock', row.subjectId]">Open animal</a>
+            } @else if (row.subjectType === 'BATCH') {
+              <a class="green-btn" routerLink="/livestock/herds">Open herds</a>
+            }
+            <button class="ghost-btn" type="button" (click)="selectedId.set('')">Close</button>
+          </div>
+        </div>
+      }
+      <div class="filters">
+        <label class="search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+          <input [value]="query()" (input)="setQuery($event)" placeholder="Search code, name, farm, or reason" aria-label="Search movements">
+        </label>
+        <select [value]="farmId()" (change)="setFarm($event)" aria-label="Farm">
+          <option value="">All farms</option>
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+        <select [value]="species()" (change)="setSpecies($event)" aria-label="Species">
+          <option value="">All species</option>
+          @for (name of speciesChoices(); track name) { <option [value]="name">{{ name }}</option> }
+        </select>
+        <select [value]="kind()" (change)="setKind($event)" aria-label="Record type">
+          <option value="">All records</option>
+          <option value="REGISTRATION">Registration</option>
+          <option value="TRANSFER">Transfer</option>
+        </select>
+        <select [value]="subject()" (change)="setSubject($event)" aria-label="Subject">
+          <option value="">All subjects</option>
+          <option value="ANIMAL">Animals</option>
+          <option value="BATCH">Herd batches</option>
+        </select>
+        @if (filtersActive()) {
+          <button class="ghost-btn" type="button" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+      @if (loading()) {
+        <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
+      } @else if (filtered().length === 0) {
+        <p class="empty">{{ filtersActive() ? 'No records match these filters.' : 'No movement is stored.' }}</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Species</th>
+                <th class="num">Qty</th>
+                <th>Farm</th>
+                <th>Record</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of paged(); track row.id) {
+                <tr [class.picked]="selectedId() === row.id" (click)="pick(row)" (keydown.enter)="pick(row)" tabindex="0">
+                  <td class="when">
+                    <strong>{{ dayMonth(row.effectiveAt) }}</strong>
+                    <span>{{ yearOf(row.effectiveAt) }}</span>
+                  </td>
+                  <td class="subject">
+                    <strong>{{ row.subjectName || row.subjectCode || 'Record' }}</strong>
+                    <span>{{ lineMeta(row) }}</span>
+                  </td>
+                  <td>
+                    <span class="species"><i [attr.data-species]="speciesMark(row.speciesName)"></i>{{ row.speciesName || '—' }}</span>
+                  </td>
+                  <td class="num">{{ fmt(row.quantity) }}</td>
+                  <td>{{ row.farmName || '—' }}</td>
+                  <td><span class="pill" [class.out]="row.eventType === 'TRANSFER_OUT'" [class.in]="row.eventType === 'TRANSFER_IN'">{{ eventLabel(row.eventType) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="pager" aria-label="Movement pages">
+          <span>{{ rangeLabel() }}</span>
+          @if (pageCount() > 1) {
+            <div class="pager-controls">
+              <button type="button" class="pager-step" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0" aria-label="Previous page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+              </button>
+              @for (item of pages(); track item) {
+                <button type="button" [class.current]="item === visiblePage()" [attr.aria-current]="item === visiblePage() ? 'page' : null" [attr.aria-label]="'Page ' + (item + 1)" (click)="go(item)">{{ item + 1 }}</button>
+              }
+              <button type="button" class="pager-step" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1" aria-label="Next page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+              </button>
+            </div>
+          }
+        </footer>
+      }
+      @if (footerNote()) {
+        <p class="note">{{ footerNote() }}</p>
+      }
+    </article>
+  </section>
+}

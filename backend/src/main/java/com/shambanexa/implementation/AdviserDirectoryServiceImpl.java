@@ -134,6 +134,7 @@ public class AdviserDirectoryServiceImpl implements AdviserDirectoryService {
         profile.setAvailabilityNote(note);
         profiles.save(profile);
         audit.record("ADVISER_PROFILE_UPDATED", "ADVISER", adviser.getId(), adviser.getFullName());
+        audit.activity("ADVISER", "Adviser profile updated", adviser.getFullName(), null);
         return card(adviser.getId());
     }
 
@@ -160,6 +161,7 @@ public class AdviserDirectoryServiceImpl implements AdviserDirectoryService {
         rating.setCreatedAt(Instant.now());
         ratings.save(rating);
         audit.record("ADVISER_RATED", "ADVISER", adviser.getId(), adviser.getFullName() + " · " + score);
+        audit.activity("ADVISER", "Adviser rated", adviser.getFullName() + " · " + score, null);
         return card(adviser.getId());
     }
 
@@ -183,6 +185,7 @@ public class AdviserDirectoryServiceImpl implements AdviserDirectoryService {
         }
         recommendations.save(row);
         audit.record("ADVISER_RECOMMENDED", "ADVISER", adviser.getId(), adviser.getFullName());
+        audit.activity("ADVISER", "Adviser recommended", adviser.getFullName(), null);
         return card(adviser.getId());
     }
 
@@ -195,6 +198,7 @@ public class AdviserDirectoryServiceImpl implements AdviserDirectoryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RECOMMENDATION_NOT_FOUND", "You have not recommended this adviser"));
         recommendations.delete(row);
         audit.record("ADVISER_RECOMMENDATION_WITHDRAWN", "ADVISER", adviser.getId(), adviser.getFullName());
+        audit.activity("ADVISER", "Recommendation withdrawn", adviser.getFullName(), null);
         return card(adviser.getId());
     }
 

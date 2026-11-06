@@ -35,7 +35,9 @@ export class StockAdjustmentsComponent {
   form = this.fb.nonNullable.group({
     itemId: ['', Validators.required],
     delta: [0, Validators.required],
-    reason: ['Physical count', Validators.required]
+    reason: ['Physical count', Validators.required],
+    reasonCode: [''],
+    notes: ['']
   });
   pending = computed(() => this.store.adjustments().filter(row => row.status === 'PENDING'));
   filtered = computed(() => {
@@ -120,7 +122,7 @@ export class StockAdjustmentsComponent {
     const raw = this.form.getRawValue();
     this.busy.set(true);
     this.error.set('');
-    this.api.adjustInventory(raw.itemId, { delta: raw.delta, reason: raw.reason }).subscribe({
+    this.api.adjustInventory(raw.itemId, { delta: raw.delta, reason: raw.reason, reasonCode: raw.reasonCode || null, notes: raw.notes.trim() || null }).subscribe({
       next: () => {
         this.busy.set(false);
         this.open.set(false);

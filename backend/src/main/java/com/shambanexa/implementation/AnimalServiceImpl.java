@@ -8,6 +8,7 @@ import com.shambanexa.dto.AnimalRequest;
 import com.shambanexa.dto.AnimalResponse;
 import com.shambanexa.dto.BatchQuantityRequest;
 import com.shambanexa.dto.BatchResponse;
+import com.shambanexa.dto.MovementResponse;
 import com.shambanexa.dto.PageResponse;
 import com.shambanexa.dto.TransferRequest;
 import com.shambanexa.common.ApiException;
@@ -17,11 +18,13 @@ import com.shambanexa.entity.Farm;
 import com.shambanexa.entity.HerdBatch;
 import com.shambanexa.entity.MovementEvent;
 import com.shambanexa.entity.Species;
+import com.shambanexa.entity.UserAccount;
 import com.shambanexa.repository.AnimalRepository;
 import com.shambanexa.repository.BreedRepository;
 import com.shambanexa.repository.HerdBatchRepository;
 import com.shambanexa.repository.MovementEventRepository;
 import com.shambanexa.repository.SpeciesRepository;
+import com.shambanexa.repository.UserAccountRepository;
 import com.shambanexa.security.AccessGuard;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -48,18 +52,20 @@ public class AnimalServiceImpl implements AnimalService {
     private final SpeciesRepository species;
     private final BreedRepository breeds;
     private final MovementEventRepository movements;
+    private final UserAccountRepository users;
     private final FarmService farms;
     private final AccessGuard access;
     private final AuditTrail audit;
 
     public AnimalServiceImpl(AnimalRepository animals, HerdBatchRepository batches, SpeciesRepository species,
-                         BreedRepository breeds, MovementEventRepository movements, FarmService farms,
-                         AccessGuard access, AuditTrail audit) {
+                         BreedRepository breeds, MovementEventRepository movements, UserAccountRepository users,
+                         FarmService farms, AccessGuard access, AuditTrail audit) {
         this.animals = animals;
         this.batches = batches;
         this.species = species;
         this.breeds = breeds;
         this.movements = movements;
+        this.users = users;
         this.farms = farms;
         this.access = access;
         this.audit = audit;
@@ -237,6 +243,36 @@ public class AnimalServiceImpl implements AnimalService {
     }
 
     @Transactional(readOnly = true)
+    public List<MovementResponse> movements() {
+        List<MovementEvent> rows = movements.findByTenantIdOrderByEffectiveAtDesc(access.tenantId()).stream()
+                .filter(row -> access.canReadFarm(row.getFarmId()))
+                .toList();
+        Map<UUID, Farm> farmMap = farms.visibleFarms().stream()
+                .collect(Collectors.toMap(Farm::getId, Function.identity()));
+        Map<UUID, Species> speciesMap = species.findByTenantIdOrderBySortOrderAsc(access.tenantId()).stream()
+                .collect(Collectors.toMap(Species::getId, Function.identity()));
+        Set<UUID> animalIds = rows.stream()
+                .filter(row -> "ANIMAL".equals(row.getSubjectType()))
+                .map(MovementEvent::getSubjectId)
+                .collect(Collectors.toSet());
+        Set<UUID> batchIds = rows.stream()
+                .filter(row -> "BATCH".equals(row.getSubjectType()))
+                .map(MovementEvent::getSubjectId)
+                .collect(Collectors.toSet());
+        Set<UUID> actorIds = rows.stream().map(MovementEvent::getActorId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<UUID, Animal> animalMap = animals.findAllById(animalIds).stream()
+                .filter(animal -> access.tenantId().equals(animal.getTenantId()))
+                .collect(Collectors.toMap(Animal::getId, Function.identity()));
+        Map<UUID, HerdBatch> batchMap = batches.findAllById(batchIds).stream()
+                .filter(batch -> access.tenantId().equals(batch.getTenantId()))
+                .collect(Collectors.toMap(HerdBatch::getId, Function.identity()));
+        Map<UUID, UserAccount> userMap = users.findAllById(actorIds).stream()
+                .filter(user -> access.tenantId().equals(user.getTenantId()))
+                .collect(Collectors.toMap(UserAccount::getId, Function.identity()));
+        return rows.stream().map(row -> toMovement(row, farmMap, speciesMap, animalMap, batchMap, userMap)).toList();
+    }
+
+    @Transactional(readOnly = true)
     public AnimalResponse get(UUID id) {
         Animal animal = animals.findByIdAndTenantId(id, access.tenantId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ANIMAL_NOT_FOUND", "Animal not found"));
@@ -263,6 +299,59 @@ public class AnimalServiceImpl implements AnimalService {
         event.setReason(reason.trim());
         event.setIdempotencyKey(key);
         movements.save(event);
+    }
+
+    private MovementResponse toMovement(MovementEvent row, Map<UUID, Farm> farmMap, Map<UUID, Species> speciesMap,
+                                        Map<UUID, Animal> animalMap, Map<UUID, HerdBatch> batchMap,
+                                        Map<UUID, UserAccount> userMap) {
+        String code = "";
+        String name = "";
+        String speciesName = "";
+        if ("ANIMAL".equals(row.getSubjectType())) {
+            Animal animal = animalMap.get(row.getSubjectId());
+            if (animal != null) {
+                code = animal.getTag();
+                name = animal.getName() == null ? "" : animal.getName();
+                Species kind = speciesMap.get(animal.getSpeciesId());
+                speciesName = kind == null ? "" : kind.getName();
+            }
+        } else if ("BATCH".equals(row.getSubjectType())) {
+            HerdBatch batch = batchMap.get(row.getSubjectId());
+            if (batch != null) {
+                code = batch.getCode();
+                name = batch.getName();
+                Species kind = speciesMap.get(batch.getSpeciesId());
+                speciesName = kind == null ? "" : kind.getName();
+            }
+        }
+        UserAccount actor = row.getActorId() == null ? null : userMap.get(row.getActorId());
+        return new MovementResponse(
+                row.getId(),
+                row.getEventType(),
+                row.getSubjectType(),
+                row.getSubjectId(),
+                code,
+                name,
+                speciesName,
+                row.getQuantity(),
+                row.getFarmId(),
+                farmName(farmMap, row.getFarmId()),
+                row.getSourceFarmId(),
+                farmName(farmMap, row.getSourceFarmId()),
+                row.getDestinationFarmId(),
+                farmName(farmMap, row.getDestinationFarmId()),
+                row.getEffectiveAt(),
+                row.getReason(),
+                actor == null ? "" : actor.getFullName()
+        );
+    }
+
+    private String farmName(Map<UUID, Farm> farmMap, UUID farmId) {
+        if (farmId == null) {
+            return "";
+        }
+        Farm farm = farmMap.get(farmId);
+        return farm == null ? "" : farm.getName();
     }
 
     private AnimalResponse toResponse(Animal animal, Map<UUID, Farm> farmsById,

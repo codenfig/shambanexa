@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
@@ -50,6 +50,14 @@ export class AccessComponent {
   notice = signal('');
   applied = signal<Record<string, RoleDraft>>({});
   pending = signal<Record<string, RoleDraft>>({});
+  creatorOpen = signal(false);
+  roleName = signal('');
+  roleDetail = signal('');
+  chosen = signal<string[]>([]);
+  createBusy = signal(false);
+  createError = signal('');
+  permBusy = signal(false);
+  permError = signal('');
 
   readonly actions: { key: GrantKey; label: string }[] = [
     { key: 'view', label: 'View' },
@@ -240,7 +248,33 @@ export class AccessComponent {
   save(): void {
     const role = this.selected();
     const draft = role ? this.pending()[role.code] : undefined;
-    if (!role || !draft || !this.dirty()) {
+    if (!role || !draft || !this.dirty() || this.permBusy()) {
+      return;
+    }
+    if (!role.systemRole) {
+      const permissions = this.codesFrom(draft.modules);
+      if (permissions.length === 0) {
+        this.permError.set('Choose at least one permission the operations API checks.');
+        return;
+      }
+      this.permBusy.set(true);
+      this.permError.set('');
+      this.api.updateRolePermissions(role.code, permissions).subscribe({
+        next: () => {
+          this.permBusy.set(false);
+          this.pending.update(current => {
+            const next = { ...current };
+            delete next[role.code];
+            return next;
+          });
+          this.toast.show('Permissions saved.');
+          this.load();
+        },
+        error: err => {
+          this.permBusy.set(false);
+          this.permError.set(apiError(err, 'Unable to save permissions.'));
+        }
+      });
       return;
     }
     const applied = { ...this.applied(), [role.code]: this.copy(draft) };
@@ -262,13 +296,148 @@ export class AccessComponent {
     this.discard();
   }
 
-  explain(kind: 'create' | 'edit' | 'duplicate', role?: AccessRole | null): void {
-    if (kind === 'create') {
-      this.notice.set('Super Admin, Farm Manager, Farm Adviser, and Auditor are the system roles. A new role is not stored.');
+  openCreator(source?: AccessRole | null): void {
+    this.createError.set('');
+    this.roleName.set('');
+    this.roleDetail.set('');
+    this.chosen.set(source ? this.codesFrom(source.modules) : []);
+    this.creatorOpen.set(true);
+  }
+
+  closeCreator(): void {
+    if (this.createBusy()) {
+      return;
+    }
+    this.creatorOpen.set(false);
+  }
+
+  togglePermission(code: string): void {
+    const selected = new Set(this.chosen());
+    if (selected.has(code)) {
+      selected.delete(code);
+      const paired = this.writeOf(code);
+      if (paired) {
+        selected.delete(paired);
+      }
+    } else {
+      selected.add(code);
+      const paired = this.readOf(code);
+      if (paired) {
+        selected.add(paired);
+      }
+    }
+    this.chosen.set([...selected]);
+  }
+
+  permissionOn(code: string): boolean {
+    return this.chosen().includes(code);
+  }
+
+  submitCreate(): void {
+    const label = this.roleName().trim();
+    if (label.length < 2 || this.chosen().length === 0 || this.createBusy()) {
+      return;
+    }
+    this.createBusy.set(true);
+    this.createError.set('');
+    this.api.createRole({
+      label,
+      description: this.roleDetail().trim(),
+      permissions: this.chosen()
+    }).subscribe({
+      next: created => {
+        this.createBusy.set(false);
+        this.creatorOpen.set(false);
+        this.selectedCode.set(created.code);
+        this.toast.show('Role saved.');
+        this.load();
+      },
+      error: err => {
+        this.createBusy.set(false);
+        this.createError.set(apiError(err, 'Unable to save the role.'));
+      }
+    });
+  }
+
+  explain(kind: 'edit' | 'duplicate', role?: AccessRole | null): void {
+    if (kind === 'duplicate' && role) {
+      this.openCreator(role);
       return;
     }
     const name = role?.label ?? 'This role';
-    this.notice.set(`${name} keeps its recorded name and farm scope. Check or clear permissions in the matrix, then save.`);
+    if (role && !role.systemRole) {
+      this.notice.set(`${name} is stored for this workspace. Check or clear permissions in the matrix, then save. User administration stays with Super Admin.`);
+      return;
+    }
+    this.notice.set(`${name} keeps its recorded permissions. Create a new role to choose a different set.`);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeOnEscape(): void {
+    if (this.creatorOpen()) {
+      this.closeCreator();
+      return;
+    }
+    if (this.notice()) {
+      this.closeNotice();
+    }
+  }
+
+  private readOf(code: string): string | null {
+    const pair: Record<string, string> = {
+      FARM_WRITE: 'FARM_READ',
+      ANIMAL_WRITE: 'ANIMAL_READ',
+      INVENTORY_WRITE: 'INVENTORY_READ',
+      STAFF_WRITE: 'STAFF_READ'
+    };
+    return pair[code] ?? null;
+  }
+
+  private writeOf(code: string): string | null {
+    const pair: Record<string, string> = {
+      FARM_READ: 'FARM_WRITE',
+      ANIMAL_READ: 'ANIMAL_WRITE',
+      INVENTORY_READ: 'INVENTORY_WRITE',
+      STAFF_READ: 'STAFF_WRITE'
+    };
+    return pair[code] ?? null;
+  }
+
+  private codesFrom(modules: AccessModule[]): string[] {
+    const byId = (id: string) => modules.find(module => module.id === id);
+    const codes = new Set<string>();
+    const grant = (module: AccessModule | undefined, read: string, write: string) => {
+      if (!module) {
+        return;
+      }
+      if (module.view) {
+        codes.add(read);
+      }
+      if (module.create || module.edit) {
+        codes.add(read);
+        codes.add(write);
+      }
+    };
+    grant(byId('farms'), 'FARM_READ', 'FARM_WRITE');
+    const livestock = byId('livestock');
+    const production = byId('production');
+    if (livestock?.view || production?.view) {
+      codes.add('ANIMAL_READ');
+    }
+    if (livestock?.create || livestock?.edit || production?.create || production?.edit) {
+      codes.add('ANIMAL_READ');
+      codes.add('ANIMAL_WRITE');
+    }
+    grant(byId('inventory'), 'INVENTORY_READ', 'INVENTORY_WRITE');
+    grant(byId('staff'), 'STAFF_READ', 'STAFF_WRITE');
+    if (byId('dashboard')?.export || byId('reports')?.export) {
+      codes.add('REPORT_EXPORT');
+    }
+    const advice = byId('advice');
+    if (advice?.create || advice?.edit) {
+      codes.add('ADVICE_WRITE');
+    }
+    return [...codes];
   }
 
   private discard(): void {

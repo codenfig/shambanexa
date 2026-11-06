@@ -1,6 +1,6 @@
-<app-page-header title="Production" description="Milk, eggs, and fish recorded for farms in your scope.">
-  <a class="ghost-btn" href="#records">Records</a>
-  <a class="green-btn" href="#record">Add record</a>
+<app-page-header title="Production" [description]="summaryLine()">
+  <a class="ghost-btn" routerLink="/production" fragment="records">Records</a>
+  <button class="green-btn" type="button" (click)="openForm()">Add record</button>
 </app-page-header>
 
 @if (loadError()) {
@@ -9,82 +9,113 @@
     <button class="green-btn" type="button" (click)="reload()">Retry</button>
   </div>
 } @else {
-  <section class="stats" id="overview" aria-label="Production totals">
-    <article><small>Milk</small><strong>{{ fmt(totals().milk) }} L</strong></article>
-    <article><small>Eggs</small><strong>{{ fmt(totals().eggs) }}</strong></article>
-    <article><small>Fish</small><strong>{{ fmt(totals().fish) }}</strong></article>
-    <article><small>Records</small><strong>{{ fmt(totals().count) }}</strong></article>
+  <section class="kpis" aria-label="Production totals">
+    <article>
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 20c2-6 6-8 8-8 2 4 0 8-2 10"/><path d="M9 10c.4-3 2-5 4-6"/></svg></span>
+      <div><small>Milk</small><strong>{{ fmt(totals().milk) }} L</strong><em>Recorded quantity</em></div>
+    </article>
+    <article>
+      <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="13" rx="5" ry="6.5"/></svg></span>
+      <div><small>Eggs</small><strong>{{ fmt(totals().eggs) }}</strong><em>Recorded quantity</em></div>
+    </article>
+    <article>
+      <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 14c2-4 4-4 6 0s4 4 6 0 4-4 4 0"/><path d="M6 18c2-2 3-2 4 0"/></svg></span>
+      <div><small>Fish</small><strong>{{ fmt(totals().fish) }}</strong><em>Recorded quantity</em></div>
+    </article>
+    <article>
+      <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/></svg></span>
+      <div><small>Records</small><strong>{{ fmt(totals().count) }}</strong><em>Stored production rows</em></div>
+    </article>
   </section>
 
-  <div class="split">
-    <form class="entry" id="record" [formGroup]="form" (ngSubmit)="submit()">
-      <header class="entry-head">
-        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9M9 19V5M14 19v-7M19 19V8"/></svg></span>
-        <div>
-          <h2>Record Production</h2>
-          <p>Log daily production from farm activities.</p>
-        </div>
+  <section class="stage">
+    <article class="panel" id="overview">
+      <header class="panel-head">
+        <h2>Milk by farm</h2>
+        <span class="count">{{ fmt(totals().milk) }} L</span>
       </header>
-      <h3>Production information</h3>
-      <div class="entry-grid">
-        <label>Farm <em>*</em>
-          <select formControlName="farmId">
-            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
-          </select>
-        </label>
-        <label>Product <em>*</em>
-          <select formControlName="productType"><option>MILK</option><option>EGGS</option><option>FISH</option></select>
-        </label>
-        <label>Quantity <em>*</em>
-          <input formControlName="quantity" type="number" min="0.01" step="0.01">
-        </label>
-        <label>Unit <em>*</em><input formControlName="unit"></label>
-        <label>Date<input formControlName="recordedOn" type="date"></label>
-        <label class="wide">Notes<input formControlName="notes" placeholder="Optional note about this record"></label>
-      </div>
-      @if (error()) { <div class="error">{{ error() }}</div> }
-      <div class="entry-foot">
-        <a class="ghost-btn" href="#records">Cancel</a>
-        <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Record Production' }}</button>
-      </div>
-    </form>
-
-    <article class="card" id="cycles">
-      <h2>Fish cycles</h2>
-      <p class="muted">Estimated live count is stocked minus mortality and harvest.</p>
-      <div class="cycles">
-        @for (cycle of cycles(); track cycle.id) {
-          <article class="cycle">
-            <header>
-              <strong>{{ cycle.code }}</strong>
-              <span class="status-pill is-active">{{ cycle.status }}</span>
-            </header>
-            <p>{{ cycle.farmName }}</p>
-            <p class="muted">Stocked {{ fmt(cycle.stockedQuantity) }} · Mortality {{ fmt(cycle.mortality) }} · Harvested {{ fmt(cycle.harvested) }}</p>
-            <div class="bar" aria-hidden="true"><span [style.width.%]="progress(cycle.stockedQuantity, cycle.estimatedLiveCount)"></span></div>
-            <small>Estimated live {{ fmt(cycle.estimatedLiveCount) }} · {{ progress(cycle.stockedQuantity, cycle.estimatedLiveCount) }}%</small>
-          </article>
-        } @empty { <p class="muted">No fish cycles are recorded.</p> }
-      </div>
+      @if (loading() && records().length === 0) {
+        <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div></div>
+      } @else if (milkByFarm().length === 0) {
+        <p class="note">No milk quantity is recorded.</p>
+      } @else {
+        <div class="mix">
+          <div class="donut" [style.background]="milkDonut()" role="img" aria-label="Milk by farm">
+            <span>{{ fmt(totals().milk) }}<small>litres</small></span>
+          </div>
+          <ul class="tiles">
+            @for (item of milkByFarm(); track item.name) {
+              <li>
+                <div class="tile-top">
+                  <span><i [style.background]="item.color"></i><b>{{ item.name }}</b></span>
+                  <strong>{{ fmt(item.count) }} L</strong>
+                </div>
+                <span class="bar" aria-hidden="true"><i [style.width.%]="item.share" [style.background]="item.color"></i></span>
+                <em>{{ item.share }}% of milk</em>
+              </li>
+            }
+          </ul>
+        </div>
+        @if (totals().eggs === 0 && totals().fish === 0) {
+          <p class="note">Eggs and fish have no recorded quantity.</p>
+        }
+      }
     </article>
-  </div>
 
-  <article class="card" id="records">
-    <h2>Production records</h2>
+    <article class="panel" id="cycles">
+      <header class="panel-head">
+        <h2>Fish cycles</h2>
+        <span class="count">{{ fmt(cycles().length) }}</span>
+      </header>
+      @if (loading() && cycles().length === 0) {
+        <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div></div>
+      } @else if (cycles().length === 0) {
+        <p class="note">No fish cycles are recorded.</p>
+      } @else {
+        <div class="cycles">
+          @for (cycle of cycles(); track cycle.id) {
+            <article class="cycle">
+              <header>
+                <div>
+                  <strong>{{ cycle.code }}</strong>
+                  <p>{{ cycle.farmName }} · Started {{ dateLabel(cycle.startedOn) }}</p>
+                </div>
+                <span class="status-pill is-active">{{ word(cycle.status) }}</span>
+              </header>
+              <dl>
+                <div><dt>Stocked</dt><dd>{{ fmt(cycle.stockedQuantity) }}</dd></div>
+                <div><dt>Mortality</dt><dd>{{ fmt(cycle.mortality) }}</dd></div>
+                <div><dt>Harvested</dt><dd>{{ fmt(cycle.harvested) }}</dd></div>
+                <div><dt>Live estimate</dt><dd>{{ fmt(cycle.estimatedLiveCount) }}</dd></div>
+              </dl>
+              <span class="bar" aria-hidden="true"><i [style.width.%]="progress(cycle.stockedQuantity, cycle.estimatedLiveCount)"></i></span>
+              <small>{{ progress(cycle.stockedQuantity, cycle.estimatedLiveCount) }}% of stocked fish still estimated live</small>
+            </article>
+          }
+        </div>
+      }
+    </article>
+  </section>
+
+  <article class="panel" id="records">
+    <header class="panel-head">
+      <h2>Production records</h2>
+      <span class="count">{{ fmt(records().length) }}</span>
+    </header>
     @if (loading()) {
       <div class="skeleton-stack" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
     } @else if (records().length === 0) {
-      <p class="empty-state">No records found.</p>
+      <p class="note">No records found.</p>
     } @else {
       <div class="table-wrap">
         <table>
           <thead><tr><th>Date</th><th>Farm</th><th>Product</th><th>Quantity</th><th>Notes</th></tr></thead>
           <tbody>
-            @for (row of records(); track row.id) {
+            @for (row of pagedRecords(); track row.id) {
               <tr>
-                <td>{{ row.recordedOn }}</td>
-                <td>{{ row.farmName }}</td>
-                <td>{{ row.productType }}</td>
+                <td>{{ dateLabel(row.recordedOn) }}</td>
+                <td><a [routerLink]="['/farms', row.farmId]">{{ row.farmName }}</a></td>
+                <td><span class="product" [class.eggs]="row.productType === 'EGGS'" [class.fish]="row.productType === 'FISH'">{{ productLabel(row.productType) }}</span></td>
                 <td>{{ fmt(row.quantity) }} {{ row.unit }}</td>
                 <td>{{ row.notes || '—' }}</td>
               </tr>
@@ -92,6 +123,62 @@
           </tbody>
         </table>
       </div>
+      <footer class="pager" aria-label="Production record pages">
+        <span>{{ rangeLabel() }}</span>
+        @if (pageCount() > 1) {
+          <div class="pager-controls">
+            <button type="button" class="pager-step" (click)="go(visiblePage() - 1)" [disabled]="visiblePage() === 0" aria-label="Previous page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+            </button>
+            @for (item of pages(); track item) {
+              <button type="button" [class.current]="item === visiblePage()" [attr.aria-current]="item === visiblePage() ? 'page' : null" [attr.aria-label]="'Page ' + (item + 1)" (click)="go(item)">{{ item + 1 }}</button>
+            }
+            <button type="button" class="pager-step" (click)="go(visiblePage() + 1)" [disabled]="visiblePage() >= pageCount() - 1" aria-label="Next page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+          </div>
+        }
+      </footer>
     }
   </article>
+
+}
+
+@if (formOpen()) {
+  <div class="modal-back" (click)="closeForm()">
+    <form class="entry" id="record" role="dialog" aria-modal="true" aria-labelledby="production-form-title" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="submit()">
+      <header class="entry-head">
+        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9M9 19V5M14 19v-7M19 19V8"/></svg></span>
+        <div>
+          <h2 id="production-form-title">Record production</h2>
+          <p>Log daily production from farm activities.</p>
+        </div>
+      </header>
+      <div class="entry-grid">
+        <label><span>Farm <em>*</em></span>
+          <select formControlName="farmId">
+            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+          </select>
+        </label>
+        <label><span>Product <em>*</em></span>
+          <select formControlName="productType">
+            <option value="MILK">Milk</option>
+            <option value="EGGS">Eggs</option>
+            <option value="FISH">Fish</option>
+          </select>
+        </label>
+        <label><span>Quantity <em>*</em></span>
+          <input formControlName="quantity" type="number" min="0.01" step="0.01">
+        </label>
+        <label><span>Unit <em>*</em></span><input formControlName="unit"></label>
+        <label><span>Date</span><input formControlName="recordedOn" type="date"></label>
+        <label class="wide"><span>Notes</span><input formControlName="notes" placeholder="Optional note about this record"></label>
+      </div>
+      @if (error()) { <div class="error">{{ error() }}</div> }
+      <div class="entry-foot">
+        <button class="ghost-btn" type="button" (click)="closeForm()" [disabled]="busy()">Cancel</button>
+        <button class="green-btn" type="submit" [disabled]="form.invalid || busy()">{{ busy() ? 'Saving…' : 'Record production' }}</button>
+      </div>
+    </form>
+  </div>
 }

@@ -14,6 +14,10 @@ public interface HerdBatchRepository extends JpaRepository<HerdBatch, UUID> {
 
     java.util.Optional<HerdBatch> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    long countByTenantIdAndSpeciesId(UUID tenantId, UUID speciesId);
+
+    long countByTenantIdAndBreedId(UUID tenantId, UUID breedId);
+
     @Query("""
             select b.farmId, sum(b.quantity)
             from HerdBatch b, Species s

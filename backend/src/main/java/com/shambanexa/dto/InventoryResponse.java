@@ -23,6 +23,12 @@ UUID id,
         BigDecimal stockValue,
         String supplierName,
         String storeName,
-        long version
+        long version,
+        BigDecimal usable,
+        int batchCount,
+        Integer daysLeft,
+        String expiryStatus,
+        String productType,
+        Integer withdrawalDays
 ) {
 }

@@ -1,16 +1,25 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Animal, Dashboard, Farm, FishCycle, HealthCase, HerdBatch, Species, WorkTask } from '../../core/models';
+import { chartSlice, healthChartColor } from '../../core/chart-colors';
+import { speciesPicture } from '../../core/catalog-images';
 import { apiError, formatNumber, signedPercent } from '../../core/format';
 
 type ViewMode = 'list' | 'cards' | 'herds';
 type DrawerTab = 'overview' | 'health';
+type AnimalScreen = 'overview' | 'registry' | 'species' | 'herds' | 'health' | 'detail';
 
 const SEXES = ['FEMALE', 'MALE', 'UNKNOWN'];
 const HEALTH = ['HEALTHY', 'WATCH', 'SICK', 'QUARANTINE'];
+const HEALTH_COLORS: Record<string, string> = {
+  HEALTHY: healthChartColor('HEALTHY'),
+  WATCH: healthChartColor('WATCH'),
+  SICK: healthChartColor('SICK'),
+  QUARANTINE: healthChartColor('QUARANTINE')
+};
 
 @Component({
   selector: 'app-livestock',
@@ -22,6 +31,15 @@ export class LivestockComponent {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  readonly screen = signal<AnimalScreen>('overview');
+  private readonly healthToday = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Dar_es_Salaam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+  private detailId = '';
 
   animals = signal<Animal[]>([]);
   batches = signal<HerdBatch[]>([]);
@@ -47,6 +65,7 @@ export class LivestockComponent {
   view = signal<ViewMode>('list');
   drawerTab = signal<DrawerTab>('overview');
   page = signal(0);
+  batchPage = signal(0);
   readonly pageSize = 8;
   readonly sexes = SEXES;
   readonly healthOptions = HEALTH;
@@ -132,13 +151,119 @@ export class LivestockComponent {
   });
 
   speciesTabs = computed(() => this.board()?.species ?? []);
+  openCaseRows = computed(() => this.cases().filter(item => item.caseStatus === 'OPEN'));
+  dueTasks = computed(() => this.tasks().filter(task => task.status === 'OPEN' && (task.taskType === 'TREATMENT' || /vaccin/i.test(task.title))));
+  overdueTreatments = computed(() => this.dueTasks().filter(task => this.treatmentLate(task)).length);
+  attentionAnimals = computed(() => this.animals()
+    .filter(animal => animal.status === 'ACTIVE' && animal.healthStatus !== 'HEALTHY')
+    .sort((a, b) => (a.name || a.tag).localeCompare(b.name || b.tag)));
+  breedMix = computed(() => {
+    const tab = this.speciesTab();
+    const rows = this.animals().filter(animal => animal.status === 'ACTIVE' && animal.speciesName === tab);
+    const total = rows.length || 1;
+    const counts = new Map<string, number>();
+    for (const animal of rows) {
+      const name = animal.breedName || 'Breed not recorded';
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count], index) => ({
+        name,
+        count,
+        share: Math.round((count / total) * 100),
+        color: chartSlice(index)
+      }));
+  });
+  breedDonut = computed(() => {
+    const items = this.breedMix();
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    if (!total) {
+      return 'conic-gradient(#e7ece8 0 100%)';
+    }
+    let cursor = 0;
+    return `conic-gradient(${items.map(item => {
+      const start = cursor;
+      cursor += (item.count / total) * 100;
+      return `${item.color} ${start}% ${cursor}%`;
+    }).join(',')})`;
+  });
+  speciesFocus = computed(() => {
+    const name = this.speciesTab();
+    const row = this.distribution().find(item => item.name.toLowerCase() === name.toLowerCase());
+    const tagged = this.breedMix().reduce((sum, item) => sum + item.count, 0);
+    const herds = this.speciesBatches();
+    const heads = herds.reduce((sum, batch) => sum + Number(batch.quantity || 0), 0);
+    const count = row ? Number(row.count) : tagged + heads;
+    const livestock = this.summary().total || 1;
+    return {
+      count,
+      share: row ? Math.round(row.share) : Math.round((count / livestock) * 100),
+      tagged,
+      heads,
+      herds: herds.length,
+      breeds: this.breedMix().length,
+      color: row?.color || '#1e8330'
+    };
+  });
+  herdBars = computed(() => {
+    const herds = this.speciesBatches();
+    const max = Math.max(...herds.map(batch => Number(batch.quantity || 0)), 1);
+    return herds.map(batch => ({
+      ...batch,
+      share: Math.round((Number(batch.quantity || 0) / max) * 100)
+    }));
+  });
+  speciesBatches = computed(() => {
+    const tab = this.speciesTab();
+    return this.batches().filter(batch => batch.status === 'ACTIVE' && batch.speciesName === tab);
+  });
+  herdStats = computed(() => {
+    const rows = this.filteredBatches().filter(batch => batch.status === 'ACTIVE');
+    return {
+      batches: rows.length,
+      heads: rows.reduce((sum, batch) => sum + Number(batch.quantity || 0), 0),
+      species: new Set(rows.map(batch => batch.speciesName)).size,
+      farms: new Set(rows.map(batch => batch.farmId)).size
+    };
+  });
+  herdSpecies = computed(() => {
+    const rows = this.filteredBatches().filter(batch => batch.status === 'ACTIVE');
+    const total = rows.reduce((sum, batch) => sum + Number(batch.quantity || 0), 0) || 1;
+    const counts = new Map<string, number>();
+    for (const batch of rows) {
+      counts.set(batch.speciesName, (counts.get(batch.speciesName) || 0) + Number(batch.quantity || 0));
+    }
+    const colors = new Map(this.distribution().map(item => [item.name, item.color]));
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count], index) => ({
+        name,
+        count,
+        share: Math.round((count / total) * 100),
+        color: colors.get(name) || chartSlice(index)
+      }));
+  });
+  herdDonut = computed(() => {
+    const items = this.herdSpecies();
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    if (!total) {
+      return 'conic-gradient(#e7ece8 0 100%)';
+    }
+    let cursor = 0;
+    return `conic-gradient(${items.map(item => {
+      const start = cursor;
+      cursor += (item.count / total) * 100;
+      return `${item.color} ${start}% ${cursor}%`;
+    }).join(',')})`;
+  });
 
   archivedCount = computed(() => this.animals().filter(animal => animal.status !== 'ACTIVE').length);
 
   distribution = computed(() => {
     const items = this.board()?.species ?? [];
     const total = items.reduce((sum, item) => sum + Number(item.count), 0) || 1;
-    return items.map(item => ({ ...item, share: (Number(item.count) / total) * 100 }));
+    return items.map((item, index) => ({ ...item, share: (Number(item.count) / total) * 100, color: chartSlice(index) }));
   });
 
   donut = computed(() => {
@@ -165,7 +290,7 @@ export class LivestockComponent {
   });
 
   healthDonut = computed(() => {
-    const colors: Record<string, string> = { HEALTHY: '#2f9e44', WATCH: '#d4a72c', SICK: '#e23b3b', QUARANTINE: '#c2780a' };
+    const colors = HEALTH_COLORS;
     const items = this.healthMix();
     if (items.length === 0) {
       return 'conic-gradient(#e7ece8 0 100%)';
@@ -180,24 +305,25 @@ export class LivestockComponent {
 
   upcoming = computed(() => this.tasks().filter(task => task.status === 'OPEN').slice(0, 5));
 
+  preview = computed(() => this.filteredAnimals().slice(0, 5));
   pageCount = computed(() => Math.max(1, Math.ceil(this.filteredAnimals().length / this.pageSize)));
   visiblePage = computed(() => Math.min(this.page(), this.pageCount() - 1));
   pagedAnimals = computed(() => {
     const start = this.visiblePage() * this.pageSize;
     return this.filteredAnimals().slice(start, start + this.pageSize);
   });
-  pages = computed(() => Array.from({ length: this.pageCount() }, (_, index) => index));
-  rangeLabel = computed(() => {
-    const total = this.filteredAnimals().length;
-    if (total === 0) {
-      return 'Showing 0 tagged animals';
-    }
-    const start = this.visiblePage() * this.pageSize + 1;
-    const end = Math.min(total, start + this.pageSize - 1);
-    return `Showing ${start}–${end} of ${formatNumber(total)} tagged`;
+  pages = computed(() => this.pageWindow(this.pageCount(), this.visiblePage()));
+  rangeLabel = computed(() => this.rangeText(this.filteredAnimals().length, this.visiblePage(), 'tagged'));
+  batchPageCount = computed(() => Math.max(1, Math.ceil(this.filteredBatches().length / this.pageSize)));
+  batchVisiblePage = computed(() => Math.min(this.batchPage(), this.batchPageCount() - 1));
+  pagedBatches = computed(() => {
+    const start = this.batchVisiblePage() * this.pageSize;
+    return this.filteredBatches().slice(start, start + this.pageSize);
   });
+  batchPages = computed(() => this.pageWindow(this.batchPageCount(), this.batchVisiblePage()));
+  batchRangeLabel = computed(() => this.rangeText(this.filteredBatches().length, this.batchVisiblePage(), 'herds'));
 
-  filtersActive = computed(() => !!(this.query() || this.farmId() || this.sex() || this.health() || this.breed() || this.speciesTab() !== 'all'));
+  filtersActive = computed(() => !!(this.query() || this.farmId() || this.sex() || this.health() || this.breed() || (this.screen() === 'registry' && this.speciesTab() !== 'all')));
 
   destinationFarms = computed(() => this.farms().filter(farm => farm.id !== this.transferAnimal()?.farmId));
 
@@ -210,6 +336,14 @@ export class LivestockComponent {
   });
 
   constructor() {
+    this.applyRoute();
+    this.router.events.subscribe(event => {
+      if (!(event instanceof NavigationEnd)) {
+        return;
+      }
+      this.applyRoute();
+      this.selected.set(this.detailId ? this.animals().find(animal => animal.id === this.detailId) || null : null);
+    });
     this.api.farms().subscribe({ next: farms => this.farms.set(farms), error: () => this.farms.set([]) });
     this.api.dashboard().subscribe({ next: board => this.board.set(board), error: () => this.board.set(null) });
     this.api.tasks().subscribe({ next: tasks => this.tasks.set(tasks), error: () => this.tasks.set([]) });
@@ -218,10 +352,13 @@ export class LivestockComponent {
     this.api.species().subscribe({
       next: species => {
         this.species.set(species);
+        if (this.screen() === 'herds') {
+          this.speciesTab.set('herds');
+        }
         const match = species.find(item => item.name.toLowerCase() === this.speciesQuery.toLowerCase());
-        if (match?.name.toLowerCase() === 'fish') {
+        if (this.screen() !== 'herds' && match?.name.toLowerCase() === 'fish') {
           this.speciesTab.set('fish');
-        } else if (match) {
+        } else if (this.screen() !== 'herds' && match) {
           this.speciesTab.set(match.name);
         }
         this.load();
@@ -261,6 +398,9 @@ export class LivestockComponent {
           return;
         }
         this.animals.set(items);
+        if (this.detailId) {
+          this.selected.set(items.find(animal => animal.id === this.detailId) || null);
+        }
         this.loading.set(false);
       },
       error: err => this.fail(err)
@@ -271,6 +411,128 @@ export class LivestockComponent {
     this.animals.set([]);
     this.loading.set(false);
     this.error.set(apiError(err, 'Livestock could not be loaded'));
+  }
+
+  private applyRoute(): void {
+    const url = this.router.url;
+    const path = url.split(/[?#]/)[0];
+    const parts = path.split('/').filter(Boolean);
+    const query = new URLSearchParams((url.split('?')[1] || '').split('#')[0]);
+    const speciesParam = query.get('species');
+    const fragment = url.includes('#') ? decodeURIComponent(url.split('#')[1] || '') : '';
+    const farmId = query.get('farmId') || '';
+    this.detailId = '';
+    if (parts[1] === 'registry') {
+      this.screen.set('registry');
+      this.view.set('list');
+      this.speciesTab.set(query.get('tab') === 'archived' ? 'archived' : 'all');
+      return;
+    }
+    if (parts[1] === 'herds') {
+      this.screen.set('herds');
+      this.speciesTab.set('herds');
+      this.view.set('herds');
+      return;
+    }
+    if (parts[1] === 'health') {
+      this.screen.set('health');
+      return;
+    }
+    if (parts[1] === 'species' && parts[2]) {
+      this.screen.set('species');
+      this.view.set('list');
+      this.speciesQuery = decodeURIComponent(parts[2]);
+      this.speciesTab.set(this.speciesQuery.toLowerCase() === 'fish' ? 'fish' : this.speciesQuery);
+      return;
+    }
+    if (parts[1] && parts[1] !== 'new') {
+      this.screen.set('detail');
+      this.detailId = parts[1];
+      return;
+    }
+    this.screen.set('overview');
+    if (speciesParam) {
+      this.router.navigate(['/livestock', 'species', speciesParam], {
+        queryParams: farmId ? { farmId } : {},
+        replaceUrl: true
+      });
+      return;
+    }
+    if (fragment === 'ledger' || fragment === 'transfer') {
+      this.router.navigate(['/livestock', 'registry'], { replaceUrl: true });
+    }
+  }
+
+  namedSpecies(): boolean {
+    const tab = this.speciesTab();
+    return tab !== 'all' && tab !== 'herds' && tab !== 'fish' && tab !== 'archived';
+  }
+
+  pageTitle(): string {
+    const screen = this.screen();
+    if (screen === 'registry') {
+      return this.speciesTab() === 'archived' ? 'Archived animals' : 'Animal registry';
+    }
+    if (screen === 'herds') {
+      return 'Herd batches';
+    }
+    if (screen === 'health') {
+      return 'Health records';
+    }
+    if (screen === 'detail') {
+      return this.selected()?.name || this.selected()?.tag || 'Animal';
+    }
+    if (screen === 'species') {
+      if (this.speciesTab() === 'fish') {
+        return 'Fish batches';
+      }
+      return this.speciesTab() === 'all' ? this.speciesQuery : this.speciesTab();
+    }
+    return 'Animal overview';
+  }
+
+  pageBlurb(): string {
+    const screen = this.screen();
+    if (screen === 'registry') {
+      return 'Tagged animals in your scope. Herd headcount stays on the herd page.';
+    }
+    if (screen === 'herds') {
+      if (this.loading() && this.batches().length === 0) {
+        return 'Headcount stored on each herd batch.';
+      }
+      const stats = this.herdStats();
+      return `${formatNumber(stats.heads)} head across ${formatNumber(stats.batches)} herds.`;
+    }
+    if (screen === 'health') {
+      if (this.loading() && this.animals().length === 0 && this.cases().length === 0) {
+        return 'Open health cases and due treatment tasks.';
+      }
+      const cases = this.summary().openCases;
+      const due = this.summary().due;
+      return `${formatNumber(cases)} open ${cases === 1 ? 'case' : 'cases'} and ${formatNumber(due)} due ${due === 1 ? 'treatment' : 'treatments'}.`;
+    }
+    if (screen === 'detail') {
+      return 'Identity and health recorded for this animal.';
+    }
+    if (screen === 'species') {
+      if (this.speciesTab() === 'fish') {
+        return 'Fish cycles stored for farms in your scope.';
+      }
+      if (!this.board() && this.batches().length === 0) {
+        return `Tagged ${this.speciesTab().toLowerCase()} and the herd batches stored for this species.`;
+      }
+      const focus = this.speciesFocus();
+      return `${formatNumber(focus.count)} head across ${formatNumber(focus.herds)} herds, with ${formatNumber(focus.tagged)} tagged.`;
+    }
+    return 'Tagged animals and herd headcount for farms in your scope.';
+  }
+
+  chip(): string {
+    const id = this.farmId();
+    if (!id) {
+      return 'All farms';
+    }
+    return this.farms().find(farm => farm.id === id)?.name || 'Selected farm';
   }
 
   today(): string {
@@ -286,12 +548,14 @@ export class LivestockComponent {
   setQuery(value: string): void {
     this.query.set(value);
     this.page.set(0);
+    this.batchPage.set(0);
     this.reloadTagged();
   }
 
   setFarm(value: string): void {
     this.farmId.set(value);
     this.page.set(0);
+    this.batchPage.set(0);
     this.reloadTagged();
   }
 
@@ -311,16 +575,25 @@ export class LivestockComponent {
   }
 
   chooseTab(tab: string): void {
-    this.speciesTab.set(tab);
     this.breed.set('');
     this.page.set(0);
     if (tab === 'herds') {
-      this.view.set('herds');
-    } else if (tab === 'fish') {
-      this.view.set('list');
-    } else if (this.view() === 'herds') {
-      this.view.set('list');
+      this.router.navigate(['/livestock', 'herds']);
+      return;
     }
+    if (tab === 'fish') {
+      this.router.navigate(['/livestock', 'species', 'Fish']);
+      return;
+    }
+    if (tab === 'archived') {
+      this.router.navigate(['/livestock', 'registry'], { queryParams: { tab: 'archived' } });
+      return;
+    }
+    if (tab === 'all') {
+      this.router.navigate(['/livestock', 'registry']);
+      return;
+    }
+    this.router.navigate(['/livestock', 'species', tab]);
   }
 
   setView(view: ViewMode): void {
@@ -334,9 +607,13 @@ export class LivestockComponent {
     this.sex.set('');
     this.health.set('');
     this.breed.set('');
-    this.speciesTab.set('all');
-    this.view.set('list');
     this.page.set(0);
+    this.batchPage.set(0);
+    if (this.screen() === 'registry') {
+      this.speciesTab.set('all');
+      this.view.set('list');
+      this.router.navigate(['/livestock', 'registry']);
+    }
     this.reloadTagged();
   }
 
@@ -350,9 +627,38 @@ export class LivestockComponent {
     this.page.set(Math.min(Math.max(page, 0), this.pageCount() - 1));
   }
 
+  goBatches(page: number): void {
+    this.batchPage.set(Math.min(Math.max(page, 0), this.batchPageCount() - 1));
+  }
+
+  private pageWindow(count: number, current: number): Array<number | 'gap'> {
+    if (count <= 7) {
+      return Array.from({ length: count }, (_, index) => index);
+    }
+    const wanted = [0, current - 1, current, current + 1, count - 1]
+      .filter((value, index, list) => value >= 0 && value < count && list.indexOf(value) === index)
+      .sort((a, b) => a - b);
+    const window: Array<number | 'gap'> = [];
+    wanted.forEach((value, index) => {
+      if (index > 0 && value - wanted[index - 1] > 1) {
+        window.push('gap');
+      }
+      window.push(value);
+    });
+    return window;
+  }
+
+  private rangeText(total: number, page: number, noun: string): string {
+    if (total === 0) {
+      return `Showing 0 ${noun}`;
+    }
+    const start = page * this.pageSize + 1;
+    const end = Math.min(total, start + this.pageSize - 1);
+    return `Showing ${start}–${end} of ${formatNumber(total)} ${noun}`;
+  }
+
   open(animal: Animal): void {
-    this.selected.set(animal);
-    this.drawerTab.set('overview');
+    this.router.navigate(['/livestock', animal.id]);
   }
 
   closeDetail(): void {
@@ -425,6 +731,33 @@ export class LivestockComponent {
     link.download = this.view() === 'herds' ? 'shambanexa-herds.csv' : 'shambanexa-livestock.csv';
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  treatmentLate(task: WorkTask): boolean {
+    return !!task.dueOn && task.dueOn.slice(0, 10) < this.healthToday && task.status === 'OPEN';
+  }
+
+  speciesPhoto(name: string | null | undefined): string | null {
+    return speciesPicture(name);
+  }
+
+  herdColor(name: string): string {
+    return this.herdSpecies().find(item => item.name === name)?.color || '#1e8330';
+  }
+
+  healthColor(status: string): string {
+    return healthChartColor(status);
+  }
+
+  severityClass(severity: string): string {
+    const value = severity.toUpperCase();
+    if (value === 'LOW') {
+      return 'is-watch';
+    }
+    if (value === 'HIGH' || value === 'CRITICAL' || value === 'URGENT') {
+      return 'is-sick';
+    }
+    return 'is-other';
   }
 
   healthClass(status: string): string {

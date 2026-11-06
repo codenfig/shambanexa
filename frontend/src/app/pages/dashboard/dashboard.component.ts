@@ -5,7 +5,9 @@ import { AdviserBoardComponent } from './adviser-board.component';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { ActivityItem, AlertItem, Dashboard, Farm, FishCycle, HealthCase, InventoryItem, TrendPoint, WorkTask } from '../../core/models';
+import { CHART_CAUTION, CHART_DANGER, CHART_SAFE, chartSlice as sliceColor } from '../../core/chart-colors';
 import { formatMoney, formatMonth, formatNumber, relativeTime, signedPercent } from '../../core/format';
+import { statusOf } from '../inventory/inventory.format';
 import { MapCallout, TanzaniaMapComponent, TanzaniaPin } from '../../shared/tanzania-map/tanzania-map.component';
 import { healthAlert, healthLabel, healthNotice, healthPhrase } from '../../core/disease';
 import { ToastService } from '../../core/toast.service';
@@ -27,6 +29,32 @@ interface ChartModel {
   area: string;
   points: ChartPoint[];
   ticks: { y: number; milk: string; revenue: string }[];
+}
+
+interface PieSlice {
+  label: string;
+  count: number;
+  share: number;
+  color: string;
+  shade: string;
+  d: string;
+  lx: number;
+  ly: number;
+  nx: number;
+  ny: number;
+  lead: boolean;
+}
+
+interface OverviewPie {
+  id: string;
+  title: string;
+  href: string;
+  center: string;
+  unit: string;
+  note: string;
+  aria: string;
+  slices: PieSlice[];
+  gradient: string;
 }
 
 @Component({
@@ -55,6 +83,8 @@ export class DashboardComponent {
   selectedId = signal<string | null>(null);
   hoveredId = signal<string | null>(null);
   chartIndex = signal<number | null>(null);
+  hovered = signal<{ pie: string; label: string } | null>(null);
+  private lastSlice = new Map<string, string>();
   showActivity = signal(false);
 
   constructor() {
@@ -106,6 +136,13 @@ export class DashboardComponent {
   when = relativeTime;
   signed = signedPercent;
 
+  pies = computed(() => {
+    const data = this.data();
+    if (!data) {
+      return [];
+    }
+    return [this.speciesPie(data), this.farmPie(data), this.alertPie(data), this.stockPie()];
+  });
   openTasks = computed(() => this.tasks() ?? []);
   lowStock = computed(() => (this.inventory() ?? []).filter(item => item.lowStock));
   openCases = computed(() => this.cases() ?? []);
@@ -160,11 +197,6 @@ export class DashboardComponent {
   share(count: number, species: { count: number }[]): number {
     const total = species.reduce((sum, item) => sum + Number(item.count), 0);
     return total ? (Number(count) / total) * 100 : 0;
-  }
-
-  barWidth(count: number, species: { count: number }[]): string {
-    const max = Math.max(...species.map(item => Number(item.count)), 1);
-    return `${(Number(count) / max) * 100}%`;
   }
 
   spark(trends: TrendPoint[], key: 'milkLitres' | 'revenue'): string {
@@ -311,13 +343,13 @@ export class DashboardComponent {
     if (item.eventType === 'PRODUCTION') {
       return 'milk';
     }
-    if (item.eventType === 'INVENTORY') {
+    if (item.eventType === 'INVENTORY' || item.eventType === 'MEDICAL') {
       return 'stock';
     }
-    if (item.eventType === 'FARM') {
+    if (item.eventType === 'FARM' || item.eventType === 'SETTINGS') {
       return 'farm';
     }
-    if (item.eventType === 'FINANCE') {
+    if (item.eventType === 'FINANCE' || item.eventType === 'MARKET') {
       return 'money';
     }
     if (item.eventType === 'STAFF' || /task|completed/.test(text)) {
@@ -357,6 +389,24 @@ export class DashboardComponent {
     }
     if (item.eventType === 'ADVICE') {
       return ['/advice'];
+    }
+    if (item.eventType === 'ADVISER') {
+      return ['/advisers'];
+    }
+    if (item.eventType === 'MEDICAL') {
+      return ['/suppliers'];
+    }
+    if (item.eventType === 'MARKET') {
+      return ['/market'];
+    }
+    if (item.eventType === 'ACCESS') {
+      return ['/access'];
+    }
+    if (item.eventType === 'SETTINGS') {
+      return ['/settings'];
+    }
+    if (item.eventType === 'FINANCE') {
+      return ['/analytics'];
     }
     if (item.farmId) {
       return ['/farms', item.farmId];
@@ -412,6 +462,305 @@ export class DashboardComponent {
         this.toast.show('Export failed.', 'err');
       }
     });
+  }
+
+  focusSlice(pieId: string, label: string): void {
+    this.lastSlice.set(pieId, label);
+    this.hovered.set({ pie: pieId, label });
+  }
+
+  clearSlice(): void {
+    this.hovered.set(null);
+  }
+
+  isOn(pieId: string, label: string): boolean {
+    const hit = this.hovered();
+    return hit?.pie === pieId && hit.label === label;
+  }
+
+  cardSlice(pie: OverviewPie): PieSlice | null {
+    const label = this.hovered()?.pie === pie.id ? this.hovered()?.label : this.lastSlice.get(pie.id);
+    return pie.slices.find(slice => slice.label === label) ?? null;
+  }
+
+  sliceLine(pie: OverviewPie, slice: PieSlice): string {
+    if (slice.count === 0) {
+      return 'None recorded in this part';
+    }
+    const count = `${formatNumber(slice.count)} of ${pie.center}`;
+    if (pie.id === 'animals') {
+      return `${count} recorded animals`;
+    }
+    if (pie.id === 'farms' && slice.label === 'Clear') {
+      return `${count} farms with no warning or critical alert`;
+    }
+    if (pie.id === 'farms' && slice.label === 'Warning') {
+      return `${count} farms with an open warning`;
+    }
+    if (pie.id === 'farms') {
+      return `${count} farms with an open critical alert`;
+    }
+    if (pie.id === 'alerts' && slice.label === 'Info') {
+      return `${count} informational alerts`;
+    }
+    if (pie.id === 'alerts' && slice.label === 'Warning') {
+      return `${count} warnings`;
+    }
+    if (pie.id === 'alerts') {
+      return `${count} critical alerts`;
+    }
+    if (slice.label === 'In stock') {
+      return `${count} items above the reorder point`;
+    }
+    if (slice.label === 'Out of stock' || slice.label === 'Expired' || slice.label === 'Out or expired') {
+      return `${count} items out of stock or past their date`;
+    }
+    return `${count} items low or expiring within 30 days`;
+  }
+
+  private speciesPie(data: Dashboard): OverviewPie {
+    const counts = data.species.map(item => Number(item.count));
+    const shares = this.shares(counts);
+    const slices = this.arcs(data.species.map((item, index) => ({
+      label: item.name,
+      count: Number(item.count),
+      share: shares[index] ?? 0,
+      color: sliceColor(index)
+    })));
+    const counted = counts.reduce((sum, count) => sum + count, 0);
+    const change = data.animalChangePercent !== null
+      ? `${signedPercent(data.animalChangePercent)} from last month. `
+      : 'No earlier herd count. ';
+    const outside = data.totalAnimals > counted ? `${formatNumber(data.totalAnimals - counted)} are outside this mix. ` : '';
+    return {
+      id: 'animals',
+      title: 'Livestock',
+      href: '/livestock',
+      center: formatNumber(counted || data.totalAnimals),
+      unit: 'animals',
+      note: slices.length ? `${outside}${formatNumber(data.totalAnimals)} animals. ${change}` : 'No livestock counts recorded.',
+      aria: slices.length ? this.pieLabel('Livestock', slices) : 'No livestock counts recorded.',
+      slices,
+      gradient: this.ring(slices)
+    };
+  }
+
+  private farmPie(data: Dashboard): OverviewPie {
+    const alerts = this.alerts();
+    const quarter = `${formatNumber(data.newFarmsThisQuarter)} new this quarter`;
+    if (!alerts) {
+      return this.pendingPie('farms', 'Farms', '/farms', formatNumber(data.farmCount), 'farms', `${quarter}. Attention split is still loading.`);
+    }
+    const tones = { ok: 0, warn: 0, alert: 0 };
+    let inactive = 0;
+    for (const pin of data.locations) {
+      const tone = this.toneFor(pin.id, alerts);
+      if (pin.status !== 'ACTIVE' && tone === 'ok') {
+        inactive += 1;
+      } else {
+        tones[tone] += 1;
+      }
+    }
+    const slices = this.statusSlices([
+      { label: 'Clear', count: tones.ok, color: CHART_SAFE },
+      { label: 'Warning', count: tones.warn, color: CHART_CAUTION },
+      { label: 'Critical', count: tones.alert, color: CHART_DANGER }
+    ]);
+    const quiet = inactive ? `${formatNumber(inactive)} not active. ` : '';
+    return {
+      id: 'farms',
+      title: 'Farms',
+      href: '/farms',
+      center: formatNumber(data.farmCount),
+      unit: 'farms',
+      note: `${quiet}${quarter}. Clear means no warning or critical alert.`,
+      aria: this.pieLabel('Farms', slices),
+      slices,
+      gradient: this.ring(slices)
+    };
+  }
+
+  private alertPie(data: Dashboard): OverviewPie {
+    const alerts = this.alerts();
+    if (!alerts) {
+      return this.pendingPie('alerts', 'Open alerts', '/alerts', formatNumber(data.openAlertCount), 'open', 'Severity split is still loading.');
+    }
+    const open = alerts.filter(alert => alert.status === 'OPEN');
+    const count = (severity: string) => open.filter(alert => alert.severity === severity).length;
+    const slices = this.statusSlices([
+      { label: 'Info', count: count('INFO'), color: CHART_SAFE },
+      { label: 'Warning', count: count('WARNING'), color: CHART_CAUTION },
+      { label: 'Critical', count: count('CRITICAL'), color: CHART_DANGER }
+    ]);
+    return {
+      id: 'alerts',
+      title: 'Open alerts',
+      href: '/alerts',
+      center: formatNumber(open.length),
+      unit: 'open',
+      note: 'Green is informational. Red is critical.',
+      aria: this.pieLabel('Open alerts', slices),
+      slices,
+      gradient: this.ring(slices)
+    };
+  }
+
+  private stockPie(): OverviewPie {
+    const items = this.inventory();
+    if (!items) {
+      return this.pendingPie('stock', 'Stock', '/inventory', '—', 'items', 'Stock status is still loading.');
+    }
+    const counts = { safe: 0, low: 0, soon: 0, out: 0, expired: 0 };
+    for (const item of items) {
+      const status = statusOf(item);
+      if (status === 'Low stock') counts.low += 1;
+      else if (status === 'Expiring') counts.soon += 1;
+      else if (status === 'Out of stock') counts.out += 1;
+      else if (status === 'Expired') counts.expired += 1;
+      else counts.safe += 1;
+    }
+    const caution = counts.low + counts.soon;
+    const danger = counts.out + counts.expired;
+    const cautionLabel = counts.low > 0 && counts.soon > 0 ? 'Needs attention' : counts.soon > 0 ? 'Expiring' : 'Low stock';
+    const dangerLabel = counts.out > 0 && counts.expired > 0 ? 'Out or expired' : counts.expired > 0 ? 'Expired' : 'Out of stock';
+    const slices = items.length
+      ? this.statusSlices([
+        { label: 'In stock', count: counts.safe, color: CHART_SAFE },
+        { label: cautionLabel, count: caution, color: CHART_CAUTION },
+        { label: dangerLabel, count: danger, color: CHART_DANGER }
+      ])
+      : [];
+    return {
+      id: 'stock',
+      title: 'Stock',
+      href: '/inventory',
+      center: formatNumber(items.length),
+      unit: 'items',
+      note: items.length
+        ? 'Green is in stock. Orange needs attention. Red is out of stock or expired.'
+        : 'No stock items are stored.',
+      aria: items.length ? this.pieLabel('Stock', slices) : 'No stock items are stored.',
+      slices,
+      gradient: this.ring(slices)
+    };
+  }
+
+  private pendingPie(id: string, title: string, href: string, center: string, unit: string, note: string): OverviewPie {
+    return {
+      id,
+      title,
+      href,
+      center,
+      unit,
+      note,
+      aria: `${title}. ${note}`,
+      slices: [],
+      gradient: 'conic-gradient(#e7ece8 0 100%)'
+    };
+  }
+
+  private statusSlices(rows: { label: string; count: number; color: string }[]): PieSlice[] {
+    const shares = this.shares(rows.map(row => row.count));
+    return this.arcs(rows.map((row, index) => ({ ...row, share: shares[index] ?? 0 })));
+  }
+
+  private shares(counts: number[]): number[] {
+    const total = counts.reduce((sum, count) => sum + count, 0);
+    if (!total) {
+      return counts.map(() => 0);
+    }
+    const raw = counts.map(count => (count / total) * 100);
+    const whole = raw.map(value => Math.floor(value));
+    let leftover = 100 - whole.reduce((sum, value) => sum + value, 0);
+    const order = raw
+      .map((value, index) => ({ index, fraction: value - whole[index], count: counts[index] }))
+      .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+    for (const item of order) {
+      if (leftover <= 0 || item.count <= 0) {
+        continue;
+      }
+      whole[item.index] += 1;
+      leftover -= 1;
+    }
+    return whole;
+  }
+
+  private arcs(slices: { label: string; count: number; share: number; color: string }[]): PieSlice[] {
+    const total = slices.reduce((sum, slice) => sum + slice.count, 0);
+    const leadCount = Math.max(...slices.map(slice => slice.count), 0);
+    const parts = slices.filter(slice => slice.count > 0).length;
+    let cursor = 0;
+    let leadGiven = false;
+    return slices.map(slice => {
+      const start = cursor;
+      const span = total ? slice.count / total : 0;
+      cursor += span;
+      const mid = start + span / 2;
+      const angle = mid * Math.PI * 2 - Math.PI / 2;
+      const lead = parts > 1 && !leadGiven && slice.count === leadCount && slice.count > 0;
+      if (lead) {
+        leadGiven = true;
+      }
+      return {
+        ...slice,
+        shade: this.shade(slice.color),
+        d: span > 0 ? this.wedge(start, start + span) : '',
+        lx: 100 + Math.cos(angle) * 36,
+        ly: 78 + Math.sin(angle) * 36,
+        nx: Math.cos(angle),
+        ny: Math.sin(angle),
+        lead
+      };
+    });
+  }
+
+  private shade(hex: string): string {
+    const value = Number.parseInt(hex.slice(1), 16);
+    const mix = (channel: number) => Math.round(channel * 0.62);
+    const red = mix((value >> 16) & 255);
+    const green = mix((value >> 8) & 255);
+    const blue = mix(value & 255);
+    return `#${[red, green, blue].map(channel => channel.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  private wedge(start: number, end: number): string {
+    if (end - start >= 0.999) {
+      return `${this.fan(start, start + 0.5)} ${this.fan(start + 0.5, end)}`;
+    }
+    return this.fan(start, end);
+  }
+
+  private fan(start: number, end: number): string {
+    const cx = 100;
+    const cy = 78;
+    const radius = 68;
+    const point = (turn: number) => {
+      const angle = turn * Math.PI * 2 - Math.PI / 2;
+      return [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius];
+    };
+    const [x0, y0] = point(start);
+    const [x1, y1] = point(end);
+    const large = end - start > 0.5 ? 1 : 0;
+    return `M ${cx} ${cy} L ${x0} ${y0} A ${radius} ${radius} 0 ${large} 1 ${x1} ${y1} Z`;
+  }
+
+  private ring(slices: PieSlice[]): string {
+    const total = slices.reduce((sum, slice) => sum + slice.count, 0);
+    if (!total) {
+      return 'conic-gradient(#e7ece8 0 100%)';
+    }
+    let cursor = 0;
+    const stops = slices.filter(slice => slice.count > 0).map(slice => {
+      const start = cursor;
+      cursor += (slice.count / total) * 100;
+      return `${slice.color} ${start}% ${cursor}%`;
+    });
+    return `conic-gradient(${stops.join(', ')})`;
+  }
+
+  private pieLabel(title: string, slices: PieSlice[]): string {
+    const parts = slices.map(slice => `${slice.label} ${formatNumber(slice.count)}, ${slice.share} percent`);
+    return `${title}. ${parts.join('. ')}.`;
   }
 
   private toneFor(farmId: string, alerts: AlertItem[]): 'ok' | 'warn' | 'alert' {

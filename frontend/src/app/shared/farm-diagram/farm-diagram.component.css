@@ -1,0 +1,24 @@
+:host { display: block; }
+.diagram {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #e6eee8;
+  border-radius: 18px;
+  background: #f8faf8;
+}
+.diagram figcaption {
+  margin: 0 0 8px;
+  color: #142018;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.diagram svg { display: block; width: 100%; height: auto; }
+.sheet { fill: #fffef8; stroke: #e7eee9; }
+polygon, polyline { fill: rgba(30, 131, 48, 0.16); stroke: #1e8330; stroke-width: 2.4; stroke-linejoin: round; }
+polyline { fill: none; }
+circle { fill: #fff; stroke: #1e8330; stroke-width: 2; }
+text { fill: #14532d; font-size: 9px; font-weight: 800; text-anchor: middle; }
+.pin { fill: #1e8330; stroke: #fffef8; stroke-width: 2; }
+.diagram p, .empty { margin: 8px 0 0; color: #66756c; font-size: 13px; font-weight: 650; line-height: 1.4; }

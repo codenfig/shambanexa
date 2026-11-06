@@ -37,7 +37,7 @@
         </button>
         <button type="button" [class.on]="section() === 'master'" (click)="open('master')">
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
-          <span><strong>Master Data</strong><small>Species kept for livestock records</small></span>
+          <span><strong>Master Data</strong><small>Species, breeds, and inventory lists</small></span>
         </button>
         <button type="button" [class.on]="section() === 'integrations'" (click)="open('integrations')">
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 8V5a3 3 0 0 1 6 0v3M8 8h8v11H8z"/></svg></span>
@@ -156,28 +156,7 @@
             </footer>
           }
         } @else if (section() === 'master') {
-          <header class="sheet-head">
-            <div>
-              <h2>Master Data</h2>
-              <p>Species kept for livestock records. Counts on the dashboard come from animals, not from this list.</p>
-            </div>
-          </header>
-          @if (species().length === 0) {
-            <p class="empty">No species are recorded.</p>
-          } @else {
-            <ul class="species">
-              @for (item of species(); track item.id) {
-                <li>
-                  <i [style.background]="item.chartColor"></i>
-                  <div>
-                    <strong>{{ item.name }}</strong>
-                    <span>{{ item.code }}</span>
-                  </div>
-                  <em>{{ item.category }}</em>
-                </li>
-              }
-            </ul>
-          }
+          <app-master-data [canEdit]="canEdit()" />
         } @else if (section() === 'integrations') {
           <header class="sheet-head">
             <div>

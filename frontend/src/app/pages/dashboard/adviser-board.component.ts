@@ -230,6 +230,24 @@ export class AdviserBoardComponent {
     if (item.eventType === 'ADVICE') {
       return ['/advice'];
     }
+    if (item.eventType === 'ADVISER') {
+      return ['/advisers'];
+    }
+    if (item.eventType === 'MEDICAL') {
+      return ['/suppliers'];
+    }
+    if (item.eventType === 'MARKET') {
+      return ['/market'];
+    }
+    if (item.eventType === 'ACCESS') {
+      return ['/access'];
+    }
+    if (item.eventType === 'SETTINGS') {
+      return ['/settings'];
+    }
+    if (item.eventType === 'FINANCE') {
+      return ['/analytics'];
+    }
     if (item.farmId) {
       return ['/farms', item.farmId];
     }

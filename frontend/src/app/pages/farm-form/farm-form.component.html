@@ -9,15 +9,18 @@
       <div>
         <p class="eyebrow">{{ editing ? 'Farm record' : 'New farm' }}</p>
         <h1>{{ editing ? 'Edit Farm' : 'Add Farm' }}</h1>
-        <p>{{ editing ? 'Update the farm record. The change is kept with the audit trail.' : 'Register the farm, then click the map to draw its boundary. Several farms can share one region.' }}</p>
+        <p>{{ editing ? 'Update the main location, then add corners to draw the property boundary.' : 'Place one pin for the main location. The property boundary is added from Edit Farm after this record is saved.' }}</p>
       </div>
     </header>
 
     <div class="layout">
       <section class="panel">
-        <div class="panel-copy">
-          <h2>Farm details</h2>
-          <p>Name, code, and the people who run it.</p>
+        <div class="panel-head">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
+          <div class="panel-copy">
+            <h2>Farm details</h2>
+            <p>Name, code, and the people who run it.</p>
+          </div>
         </div>
         <div class="fields">
           <label><span>Farm name <em>*</em></span>
@@ -61,35 +64,75 @@
       </section>
 
       <section class="panel location">
-        <div class="panel-copy">
-          <h2>Boundary</h2>
-          <p>Click each corner of the farm. At least three corners close the boundary.</p>
+        <div class="panel-head">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.3"/></svg></span>
+          <div class="panel-copy">
+            <h2>{{ editing ? 'Location and boundary' : 'Main location' }}</h2>
+            <p>{{ editing ? 'The pin is the farm’s main point. Boundary corners outline the property. Three or more corners close the shape.' : 'Click the map, use GPS, or type one latitude and longitude inside Tanzania.' }}</p>
+          </div>
         </div>
         <div class="draw-tools">
-          <button type="button" class="ghost-btn" (click)="undoCorner()" [disabled]="boundary().length === 0">Undo corner</button>
-          <button type="button" class="ghost-btn" (click)="clearBoundary()" [disabled]="boundary().length === 0">Clear</button>
-          <span>{{ boundary().length }} corner{{ boundary().length === 1 ? '' : 's' }}</span>
+          @if (editing) {
+            <button type="button" class="ghost-btn" [class.on]="mode() === 'pin'" (click)="mode.set('pin')">Main location</button>
+            <button type="button" class="ghost-btn" [class.on]="mode() === 'boundary'" (click)="mode.set('boundary')">Boundary</button>
+          }
+          <button type="button" class="ghost-btn gps" (click)="locate()" [disabled]="locating()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+            {{ locating() ? 'Reading GPS…' : 'Use my current location' }}
+          </button>
+          @if (editing) {
+            <button type="button" class="ghost-btn" (click)="undoBoundary()" [disabled]="history().length === 0">Undo</button>
+            <button type="button" class="ghost-btn" (click)="resetBoundary()" [disabled]="boundary().length === 0 && history().length === 0">Reset</button>
+          }
         </div>
-        <app-tanzania-map
-          class="fill"
-          [drawing]="true"
-          [sketch]="boundary()"
-          [markerLatitude]="coordinate('latitude')"
-          [markerLongitude]="coordinate('longitude')"
-          markerLabel="Farm"
-          ariaLabel="Draw the farm boundary in Tanzania"
-          (corner)="addCorner($event)"
-        />
+        <p class="hint">{{ editing && mode() === 'boundary' ? 'Click the map to add the next corner. Use Up and Down to change the order around the property.' : 'Click the map to drop the main location pin.' }}</p>
+        <div class="map-stage">
+          <app-tanzania-map
+            class="fill"
+            [selectable]="!editing || mode() === 'pin'"
+            [drawing]="editing && mode() === 'boundary'"
+            [sketch]="boundary()"
+            [markerLatitude]="coordinate('latitude')"
+            [markerLongitude]="coordinate('longitude')"
+            markerLabel="Farm"
+            ariaLabel="Farm location and boundary in Tanzania"
+            (picked)="place($event)"
+            (corner)="addCorner($event)"
+          />
+        </div>
         <div class="coords">
           <label><span>Latitude <em>*</em></span>
-            <input formControlName="latitude" type="number" step="0.000001" min="-90" max="90" placeholder="Set on the map">
+            <input formControlName="latitude" type="number" step="0.000001" min="-90" max="90" placeholder="Click the map">
             @if (invalid('latitude')) { <small>Enter a latitude between -90 and 90.</small> }
           </label>
           <label><span>Longitude <em>*</em></span>
-            <input formControlName="longitude" type="number" step="0.000001" min="-180" max="180" placeholder="Set on the map">
+            <input formControlName="longitude" type="number" step="0.000001" min="-180" max="180" placeholder="Click the map">
             @if (invalid('longitude')) { <small>Enter a longitude between -180 and 180.</small> }
           </label>
         </div>
+        @if (editing) {
+          <app-farm-diagram [points]="boundary()" [latitude]="coordinate('latitude')" [longitude]="coordinate('longitude')" [note]="boundaryNote()" />
+          @if (boundary().length) {
+            <ol class="corners">
+              @for (point of boundary(); track $index) {
+                <li>
+                  <span class="index">{{ $index + 1 }}</span>
+                  <label><span>Latitude</span>
+                    <input type="number" step="0.000001" min="-90" max="90" [value]="point.latitude" (change)="editPoint($index, 'latitude', cornerValue($event))">
+                  </label>
+                  <label><span>Longitude</span>
+                    <input type="number" step="0.000001" min="-180" max="180" [value]="point.longitude" (change)="editPoint($index, 'longitude', cornerValue($event))">
+                  </label>
+                  <span class="corner-actions">
+                    <button type="button" class="ghost-btn" (click)="movePoint($index, -1)" [disabled]="$index === 0">Up</button>
+                    <button type="button" class="ghost-btn" (click)="movePoint($index, 1)" [disabled]="$index === boundary().length - 1">Down</button>
+                    <button type="button" class="ghost-btn" (click)="removePoint($index)">Remove</button>
+                  </span>
+                </li>
+              }
+            </ol>
+          }
+        }
       </section>
     </div>
 

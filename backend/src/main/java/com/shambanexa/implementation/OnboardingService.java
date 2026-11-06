@@ -1,5 +1,6 @@
 package com.shambanexa.implementation;
 
+import com.shambanexa.config.AppProperties;
 import com.shambanexa.common.AccessScopes;
 import com.shambanexa.common.ApiException;
 import com.shambanexa.common.CurrentUser;
@@ -31,18 +32,23 @@ public class OnboardingService {
     private final FarmService farms;
     private final AuthService auth;
     private final PasswordEncoder passwords;
+    private final AppProperties properties;
 
     public OnboardingService(TenantRepository tenants, UserAccountRepository users, FarmService farms,
-                             AuthService auth, PasswordEncoder passwords) {
+                             AuthService auth, PasswordEncoder passwords, AppProperties properties) {
         this.tenants = tenants;
         this.users = users;
         this.farms = farms;
         this.auth = auth;
         this.passwords = passwords;
+        this.properties = properties;
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        if (!properties.isRegistrationEnabled()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "REGISTRATION_CLOSED", "Registration is closed for this workspace.");
+        }
         String email = request.email().trim().toLowerCase();
         if (users.findByEmailIgnoreCase(email).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "EMAIL_TAKEN", "An account with that email already exists");

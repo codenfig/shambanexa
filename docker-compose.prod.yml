@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shambanexa}
+      POSTGRES_USER: ${POSTGRES_USER:-shambanexa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - shambanexa-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shambanexa} -d ${POSTGRES_DB:-shambanexa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shambanexa}
+      DB_USER: ${POSTGRES_USER:-shambanexa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8088:80"
+    depends_on:
+      - api
+
+volumes:
+  shambanexa-pg:

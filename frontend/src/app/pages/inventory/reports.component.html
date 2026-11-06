@@ -1,0 +1,52 @@
+<header class="inv-head">
+  <div>
+    <div class="title-row"><h1>Inventory reports</h1></div>
+    <p>Values use {{ store.report()?.currency || store.currencyCode() }}. Counts come from stored batches and stock lines.</p>
+  </div>
+  <div class="head-actions">
+    <a class="ghost-btn" routerLink="/inventory">Stock overview</a>
+    <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
+  </div>
+</header>
+
+@if (store.loading() && !store.report()) {
+  <div class="skeleton-stack" aria-busy="true" aria-label="Loading inventory report"><div class="skeleton"></div></div>
+} @else if (!store.report()) {
+  <div class="state"><h2>Unable to load data.</h2><button class="green-btn" type="button" (click)="store.refresh()">Retry</button></div>
+} @else {
+  <div class="kpi-row">
+    <article class="kpi static"><span><small>Inventory value</small><strong>{{ money(store.report()!.totalValue) }}</strong><em>Costed stock</em></span></article>
+    <article class="kpi static"><span><small>Near expiry</small><strong>{{ fmt(store.report()!.nearExpiry) }}</strong><em>Batches inside a warning window</em></span></article>
+    <article class="kpi static"><span><small>Expired value</small><strong>{{ money(store.report()!.expiredValue) }}</strong><em>{{ fmt(store.report()!.expiredBatches) }} batches</em></span></article>
+    <article class="kpi static"><span><small>Quarantined</small><strong>{{ fmt(store.report()!.quarantined) }}</strong><em>Blocked batches</em></span></article>
+  </div>
+  <div class="board">
+    <section class="sheet">
+      <h2>Value by category</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>Products</th><th>Value</th></tr></thead>
+          <tbody>
+            @for (row of store.report()!.byCategory; track row.category) {
+              <tr>
+                <td>{{ label(row.category) }}</td>
+                <td>{{ fmt(row.products) }}</td>
+                <td>{{ money(row.value) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <aside class="side">
+      <article>
+        <h2>Expiring batches</h2>
+        <ul class="lines">
+          @for (row of store.report()!.expiring; track row.days) {
+            <li><strong>Within {{ row.days }} days</strong><span>{{ fmt(row.batches) }} batches</span></li>
+          }
+        </ul>
+      </article>
+    </aside>
+  </div>
+}

@@ -55,6 +55,8 @@ public class InventoryLedgerEntry extends BaseEntity {
 
     private UUID relatedId;
 
+    private UUID batchId;
+
     private UUID actorId;
 
     @Column(nullable = false, length = 160)

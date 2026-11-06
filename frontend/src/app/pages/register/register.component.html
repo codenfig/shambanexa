@@ -1,68 +1,218 @@
 <section class="register">
-  <form class="studio" [formGroup]="form" (ngSubmit)="submit()">
-    <header class="studio-head">
-      <a class="back" routerLink="/login">Sign in</a>
-      <div>
-        <p class="eyebrow">Create account</p>
-        <h1>Register your farm</h1>
-        <p>Your account starts with Own Farm Only access. Draw the farm boundary before you continue.</p>
+  <aside class="rail">
+    <div class="rail-copy">
+      <a class="logo" routerLink="/login" title="ShambaNexa">
+        <img src="assets/logo.png" alt="ShambaNexa">
+      </a>
+      <h1>Register your farm.</h1>
+      <p class="intro">Create your account, add your farm details and mark its main location to get started with ShambaNexa.</p>
+      <ol class="rail-steps">
+        <li [class.done]="accountReady()" [class.current]="currentStep() === 1">
+          <span class="num">@if (accountReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 1 }</span>
+          <span><strong>Account</strong><small>Name, email and password</small></span>
+        </li>
+        <li [class.done]="farmReady()" [class.current]="currentStep() === 2">
+          <span class="num">@if (farmReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 2 }</span>
+          <span><strong>Farm details</strong><small>Farm name, region and address</small></span>
+        </li>
+        <li [class.done]="locationReady()" [class.current]="currentStep() === 3">
+          <span class="num">@if (locationReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 3 }</span>
+          <span><strong>Farm location</strong><small>Add one main location</small></span>
+        </li>
+      </ol>
+    </div>
+    <div class="rail-foot">
+      <div class="safe">
+        <span class="shield" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6l-7-3z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
+        </span>
+        <span><strong>Your information is safe with us</strong><small>We use your information only to create your account and provide farm services.</small></span>
       </div>
+      <img class="landscape" src="assets/register-landscape.jpg" alt="">
+    </div>
+  </aside>
+
+  <form class="sheet" [formGroup]="form" (ngSubmit)="submit()">
+    <header class="sheet-head">
+      <a class="back-link" routerLink="/login">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+        Create account
+      </a>
+      <p class="have">Already have an account? <a routerLink="/login">Sign in <span aria-hidden="true">→</span></a></p>
     </header>
 
-    <div class="layout">
-      <section class="panel">
-        <h2>Account</h2>
-        <div class="fields">
-          <label class="wide"><span>Full name <em>*</em></span>
-            <input formControlName="fullName" maxlength="160" autocomplete="name">
-          </label>
-          <label><span>Email <em>*</em></span>
-            <input formControlName="email" type="email" autocomplete="email" maxlength="180">
-          </label>
-          <label><span>Password <em>*</em></span>
-            <input formControlName="password" type="password" autocomplete="new-password" minlength="8">
-          </label>
-        </div>
-        <h2>Farm</h2>
-        <div class="fields">
-          <label><span>Farm name <em>*</em></span>
-            <input formControlName="farmName" maxlength="160">
-          </label>
-          <label><span>Farm code <em>*</em></span>
-            <input formControlName="farmCode" maxlength="40" autocomplete="off">
-          </label>
-          <label class="wide"><span>Region <em>*</em></span>
-            <select formControlName="region">
-              <option value="">Select a region</option>
-              @for (name of regions; track name) {
-                <option [value]="name">{{ name }}</option>
-              }
-            </select>
-          </label>
-          <label class="wide"><span>Address <em>*</em></span>
-            <input formControlName="address" maxlength="300">
-          </label>
-          <label class="wide"><span>Phone</span>
-            <input formControlName="contactPhone" maxlength="40">
-          </label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Boundary</h2>
-        <p class="hint">Click at least three corners inside Tanzania. The farm location is the centre of that shape.</p>
-        <div class="draw-tools">
-          <button type="button" class="ghost-btn" (click)="undoCorner()" [disabled]="boundary().length === 0">Undo corner</button>
-          <span>{{ boundary().length }} corners</span>
-        </div>
-        <app-tanzania-map [drawing]="true" [sketch]="boundary()" ariaLabel="Draw the farm boundary" (corner)="addCorner($event)" />
-      </section>
+    <div class="title">
+      <h2>Register your farm</h2>
+      <p>Tell us about your farm and mark its main location on the map. You can add more details after registration.</p>
     </div>
 
-    @if (error()) { <div class="error">{{ error() }}</div> }
-    <div class="actions">
-      <p>You will see only this farm until an administrator changes your access scope.</p>
-      <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create account' }}</button>
+    <ol class="progress">
+      <li [class.done]="accountReady()" [class.current]="currentStep() === 1">
+        <span class="mark">@if (accountReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 1 }</span>
+        <span><strong>Account</strong><small>Name, email and password</small></span>
+      </li>
+      <li class="join" [class.done]="accountReady()" aria-hidden="true"></li>
+      <li [class.done]="farmReady()" [class.current]="currentStep() === 2">
+        <span class="mark">@if (farmReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 2 }</span>
+        <span><strong>Farm details</strong><small>Farm name, region and address</small></span>
+      </li>
+      <li class="join" [class.done]="farmReady()" aria-hidden="true"></li>
+      <li [class.done]="locationReady()" [class.current]="currentStep() === 3 && !locationReady()">
+        <span class="mark">@if (locationReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 3 }</span>
+        <span><strong>Farm location</strong><small>Add one main location</small></span>
+      </li>
+    </ol>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 19.2c1.2-3 3.6-4.5 7-4.5s5.8 1.5 7 4.5"/></svg></span>
+        <div>
+          <h3>Account</h3>
+          <p>The person who will sign in.</p>
+        </div>
+      </div>
+      <div class="trio">
+        <label class="field"><span>Full name <em>*</em></span>
+          <input formControlName="fullName" maxlength="160" autocomplete="name">
+          @if (invalid('fullName')) { <small>Enter your full name.</small> }
+        </label>
+        <label class="field"><span>Email <em>*</em></span>
+          <input formControlName="email" type="email" autocomplete="email" maxlength="180">
+          @if (invalid('email')) { <small>Enter a valid email address.</small> }
+        </label>
+        <label class="field"><span>Password <em>*</em></span>
+          <span class="secret">
+            <input formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8">
+            <button class="eye" type="button" (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.4"/></svg>
+            </button>
+          </span>
+          @if (invalid('password')) { <small>Use at least 8 characters.</small> } @else { <small class="hint">At least 8 characters.</small> }
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
+        <div>
+          <h3>Farm details</h3>
+          <p>This record is the farm you can open after sign-in.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <label class="field"><span>Farm name <em>*</em></span>
+          <input formControlName="farmName" maxlength="160">
+          @if (invalid('farmName')) { <small>Enter the farm name.</small> }
+        </label>
+        <label class="field"><span>Farm code <em>*</em></span>
+          <input formControlName="farmCode" maxlength="40" autocomplete="off">
+          @if (invalid('farmCode')) { <small>Enter a farm code.</small> } @else { <small class="hint">Short unique code</small> }
+        </label>
+      </div>
+      <div class="trio">
+        <label class="field"><span>Region <em>*</em></span>
+          <select formControlName="region">
+            <option value="">Select a region</option>
+            @for (name of regions; track name) {
+              <option [value]="name">{{ name }}</option>
+            }
+          </select>
+          @if (invalid('region')) { <small>Choose a region.</small> }
+        </label>
+        <label class="field"><span>Address <em>*</em></span>
+          <input formControlName="address" maxlength="300">
+          @if (invalid('address')) { <small>Enter the address.</small> }
+        </label>
+        <label class="field"><span>Phone</span>
+          <input formControlName="contactPhone" maxlength="40">
+          <small class="hint">Contact phone (optional)</small>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.3"/></svg></span>
+        <div>
+          <h3>Set your farm’s main location</h3>
+          <p>Click the map to place a pin, use the search box, or use your current location. This is the farm’s main point, not the property corners.</p>
+        </div>
+      </div>
+
+      <div class="map-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          <input type="search" [value]="query()" (input)="searchFrom($event)" (focus)="searchOpen.set(query().trim().length >= 2)" (blur)="closeSearch()" placeholder="Search village, ward or place" autocomplete="off" aria-label="Search village, ward or place">
+          @if (searchOpen() && query().trim().length >= 2) {
+            <ul class="results">
+              @for (place of matches(); track place.name) {
+                <li><button type="button" (mousedown)="choose(place)">{{ place.name }} <small>{{ place.kind }}</small></button></li>
+              } @empty {
+                <li class="empty">No saved place matches. Click the map or type the coordinates.</li>
+              }
+            </ul>
+          }
+        </div>
+        <button class="tool gps" type="button" (click)="locate()" [disabled]="locating()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+          {{ locating() ? 'Reading GPS…' : 'Use my current location' }}
+        </button>
+        <button class="tool" type="button" (click)="clearLocation()" [disabled]="coordinate('latitude') == null && coordinate('longitude') == null && !query()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v5h5"/></svg>
+          Reset
+        </button>
+      </div>
+
+      <div class="map-layout">
+        <div class="map-stage">
+          <div class="zoom">
+            <button type="button" (click)="zoomBy(0.35)" [disabled]="zoom() >= 2.2" aria-label="Zoom in">+</button>
+            <button type="button" (click)="zoomBy(-0.35)" [disabled]="zoom() <= 1" aria-label="Zoom out">−</button>
+          </div>
+          <app-tanzania-map
+            [zoom]="zoom()"
+            [selectable]="true"
+            [markerLatitude]="coordinate('latitude')"
+            [markerLongitude]="coordinate('longitude')"
+            markerLabel="Farm"
+            ariaLabel="Place the farm’s main location in Tanzania"
+            (picked)="place($event)"
+          />
+        </div>
+        <div class="pin-side">
+          <div class="info">
+            <span aria-hidden="true">i</span>
+            <p>Your location places the farm on the map.</p>
+          </div>
+          <label class="field"><span>Latitude <em>*</em></span>
+            <input formControlName="latitude" type="number" step="0.000001" min="-90" max="90" placeholder="e.g. -3.3500" (input)="accuracy.set(null)">
+            @if (invalid('latitude')) { <small>Enter a latitude between -90 and 90.</small> }
+          </label>
+          <label class="field"><span>Longitude <em>*</em></span>
+            <input formControlName="longitude" type="number" step="0.000001" min="-180" max="180" placeholder="e.g. 37.3400" (input)="accuracy.set(null)">
+            @if (invalid('longitude')) { <small>Enter a longitude between -180 and 180.</small> }
+          </label>
+          @if (accuracy() !== null) {
+            <p class="accuracy"><span aria-hidden="true"></span>Accuracy: {{ accuracy() }} metres</p>
+          }
+        </div>
+      </div>
+      <p class="after"><span aria-hidden="true"></span>Add one main location now. You can draw the complete farm boundary after registration.</p>
+    </section>
+
+    @if (error()) { <div class="error" role="alert">{{ error() }}</div> }
+    @if (notice()) { <p class="notice">{{ notice() }}</p> }
+
+    <div class="foot">
+      <label class="agree">
+        <input type="checkbox" [checked]="agreed()" (change)="setAgreed($event)">
+        <span>I agree to the <button type="button" (click)="explainTerms()">Terms of Service</button> and <button type="button" (click)="explainPrivacy()">Privacy Policy</button>.</span>
+      </label>
+      <div class="actions">
+        <a class="ghost-btn" routerLink="/login">Back</a>
+        <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create account' }} @if (!busy()) { <span aria-hidden="true">→</span> }</button>
+      </div>
     </div>
   </form>
 </section>

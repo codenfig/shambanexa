@@ -22,6 +22,6 @@ public record RegisterRequest(
         @NotBlank @Size(max = 160) String farmName,
         @NotBlank @Size(max = 40) String farmCode,
         @Size(max = 40) String contactPhone,
-        @NotNull @Size(min = 3, max = 60) List<@Valid GeoPoint> boundary
+        @Size(max = 60) List<@Valid GeoPoint> boundary
 ) {
 }

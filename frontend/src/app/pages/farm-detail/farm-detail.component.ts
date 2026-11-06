@@ -5,12 +5,13 @@ import { AlertItem, Facility, Farm, FarmClimate, FarmForecast } from '../../core
 import { healthAlert, healthLabel, healthNotice, healthPhrase } from '../../core/disease';
 import { apiError, formatNumber } from '../../core/format';
 import { TanzaniaMapComponent, TanzaniaPin } from '../../shared/tanzania-map/tanzania-map.component';
+import { FarmDiagramComponent } from '../../shared/farm-diagram/farm-diagram.component';
 
 type DetailTab = 'overview' | 'location' | 'facilities';
 
 @Component({
   selector: 'app-farm-detail',
-  imports: [RouterLink, TanzaniaMapComponent],
+  imports: [RouterLink, TanzaniaMapComponent, FarmDiagramComponent],
   templateUrl: './farm-detail.component.html',
   styleUrl: './farm-detail.component.css'
 })

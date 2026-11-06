@@ -6,8 +6,12 @@ import java.util.UUID;
 
 public record AccessCatalogResponse(
         List<RoleCard> roles,
-        List<AuditRow> activity
+        List<AuditRow> activity,
+        List<PermissionOption> permissions
 ) {
+    public record PermissionOption(String code, String label, String detail) {
+    }
+
     public record RoleCard(
             String code,
             String label,

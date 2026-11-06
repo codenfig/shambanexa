@@ -6,9 +6,12 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record StockIssueRequest(
         @NotNull @Positive BigDecimal quantity,
-        @NotBlank @Size(max = 300) String reason
+        @NotBlank @Size(max = 300) String reason,
+        UUID batchId,
+        @Size(max = 300) String overrideReason
 ) {
 }

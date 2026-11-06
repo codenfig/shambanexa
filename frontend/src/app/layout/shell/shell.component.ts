@@ -36,6 +36,9 @@ export interface NavItemView {
 export interface NavSectionView {
   id: string;
   label: string;
+  icon: string;
+  open: boolean;
+  current: boolean;
   items: NavItemView[];
 }
 
@@ -65,16 +68,15 @@ export class ShellComponent {
   navOpen = signal(false);
   collapsed = signal(this.readStorage('shambanexa-sidebar') === '1');
   theme = signal<'light' | 'dark'>(this.readStorage('shambanexa-theme') === 'dark' ? 'dark' : 'light');
-  private openIds = signal<Record<string, boolean>>({ animals: true });
+  private openIds = signal<Record<string, boolean>>({});
+  private sectionOpen = signal<Record<string, boolean>>({});
   alertCount = signal(0);
   recentAlerts = signal<AlertItem[]>([]);
   farms = signal<Farm[]>([]);
-  farmsReady = signal(false);
   speciesList = signal<Species[]>([]);
   showFish = signal(false);
   openTaskCount = signal(0);
   apiConnected = signal(false);
-  farmMenuOpen = signal(false);
   readonly menu = computed(() => this.buildMenu());
   upgradeOpen = signal(false);
   plan = signal('Plan');
@@ -92,7 +94,6 @@ export class ShellComponent {
       this.alertsOpen.set(false);
       this.quickOpen.set(false);
       this.hits.set([]);
-      this.farmMenuOpen.set(false);
       this.expandForRoute();
     });
     this.api.dashboard().subscribe({
@@ -108,13 +109,9 @@ export class ShellComponent {
     this.api.farms().subscribe({
       next: farms => {
         this.farms.set(farms);
-        this.farmsReady.set(true);
         this.expandForRoute();
       },
-      error: () => {
-        this.farms.set([]);
-        this.farmsReady.set(true);
-      }
+      error: () => this.farms.set([])
     });
     this.api.species().subscribe({
       next: species => {
@@ -183,6 +180,9 @@ export class ShellComponent {
       staff: 'Staff',
       alerts: 'Alerts',
       advisers: 'Farm Advisers',
+      health: 'Animal health',
+      suppliers: 'Medical Suppliers',
+      market: 'Agricultural Marketplace',
       settings: 'Settings',
       help: 'Help',
       access: 'Roles & Permissions'
@@ -205,13 +205,42 @@ export class ShellComponent {
     if (root === 'livestock' && parts[1] === 'new') {
       return [section, first, { label: 'Register animal', link: null }];
     }
+    if (root === 'livestock' && parts[1]) {
+      const labels: Record<string, string> = {
+        registry: 'Animal registry',
+        herds: 'Herd batches',
+        health: 'Health records',
+        transfers: 'Transfer history',
+        species: decodeURIComponent(parts[2] || 'Species')
+      };
+      return [section, first, { label: parts[1] === 'species' ? labels['species'] : (labels[parts[1]] || 'Animal'), link: null }];
+    }
+    if (root === 'staff' && parts[1]) {
+      const labels: Record<string, string> = {
+        directory: 'Staff directory',
+        assignments: 'Assignments',
+        attendance: 'Attendance & shifts',
+        performance: 'Performance & training'
+      };
+      return [section, first, { label: labels[parts[1]] || 'Staff profile', link: null }];
+    }
+    if (root === 'alerts' && parts[1]) {
+      const pages: Record<string, string> = {
+        history: 'Alert History',
+        rules: 'Alert Rules',
+        report: 'Report health'
+      };
+      return [section, first, { label: pages[parts[1]] || parts[1], link: null }];
+    }
     if (root === 'inventory' && parts[1]) {
       const pages: Record<string, string> = {
         receipts: 'Stock Receipts',
+        issues: 'Stock Issues',
         adjustments: 'Adjustments',
         transfers: 'Transfers',
         suppliers: 'Suppliers',
-        low: 'Low-stock Alerts'
+        low: 'Low-stock Alerts',
+        reports: 'Reports'
       };
       return [section, first, { label: pages[parts[1]] || parts[1], link: null }];
     }
@@ -224,9 +253,15 @@ export class ShellComponent {
     this.openIds.update(current => ({ ...current, [id]: !current[id] }));
   }
 
+  toggleSection(id: string, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.sectionOpen.update(current => ({ ...current, [id]: !current[id] }));
+  }
+
   onNavKey(event: KeyboardEvent): void {
     const nav = event.currentTarget as HTMLElement;
-    const items = [...nav.querySelectorAll<HTMLElement>('a, button.branch-chev')].filter(el => el.offsetParent !== null);
+    const items = [...nav.querySelectorAll<HTMLElement>('a, button.branch-chev, button.section-toggle')].filter(el => el.offsetParent !== null);
     const current = document.activeElement as HTMLElement | null;
     const index = current ? items.indexOf(current) : -1;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -245,6 +280,21 @@ export class ShellComponent {
       return;
     }
     if (!current) {
+      return;
+    }
+    if (current.classList.contains('section-toggle')) {
+      const bodyId = current.getAttribute('aria-controls') || '';
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        if (current.getAttribute('aria-expanded') !== 'true') {
+          current.click();
+        }
+        window.setTimeout(() => document.getElementById(bodyId)?.querySelector<HTMLElement>('a')?.focus(), 0);
+      }
+      if (event.key === 'ArrowLeft' && current.getAttribute('aria-expanded') === 'true') {
+        event.preventDefault();
+        current.click();
+      }
       return;
     }
     const branch = current.closest('.branch');
@@ -271,43 +321,10 @@ export class ShellComponent {
       if (chevron?.getAttribute('aria-expanded') === 'true') {
         event.preventDefault();
         chevron.click();
-      }
-    }
-  }
-
-  onFarmKey(event: KeyboardEvent): void {
-    const options = [...document.querySelectorAll<HTMLButtonElement>('#farm-menu [role="option"]')];
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      if (!this.farmMenuOpen() || !options.length) {
-        this.farmMenuOpen.set(true);
-        window.setTimeout(() => document.querySelector<HTMLButtonElement>('#farm-menu [role="option"]')?.focus(), 0);
         return;
       }
-      const index = options.indexOf(document.activeElement as HTMLButtonElement);
-      options[Math.min(options.length - 1, index + 1)]?.focus();
+      current.closest('.nav-group')?.querySelector<HTMLElement>('button.section-toggle')?.focus();
     }
-    if (event.key === 'ArrowUp' && this.farmMenuOpen()) {
-      event.preventDefault();
-      const index = options.indexOf(document.activeElement as HTMLButtonElement);
-      if (index <= 0) {
-        document.getElementById('farm-switch')?.focus();
-      } else {
-        options[index - 1]?.focus();
-      }
-    }
-  }
-
-  farmLine(): string {
-    const farm = this.currentFarm();
-    if (farm) {
-      return farm.region || 'Selected farm';
-    }
-    if (!this.farmsReady()) {
-      return 'Loading farms';
-    }
-    const count = this.farms().length;
-    return count === 1 ? '1 farm' : `${count} farms`;
   }
 
   currentFarm(): Farm | null {
@@ -316,26 +333,6 @@ export class ShellComponent {
       return null;
     }
     return this.farms().find(farm => farm.id === match[1]) ?? null;
-  }
-
-  toggleFarmMenu(event: Event): void {
-    event.stopPropagation();
-    if (this.collapsed()) {
-      this.farmMenuOpen.set(false);
-      this.router.navigate(['/farms']);
-      return;
-    }
-    this.farmMenuOpen.update(open => !open);
-  }
-
-  chooseFarm(id: string | null): void {
-    this.farmMenuOpen.set(false);
-    this.navOpen.set(false);
-    if (id) {
-      this.router.navigate(['/farms', id]);
-    } else {
-      this.router.navigate(['/farms']);
-    }
   }
 
   toggleCollapsed(): void {
@@ -394,7 +391,6 @@ export class ShellComponent {
     this.menuOpen.set(false);
     this.alertsOpen.set(false);
     this.quickOpen.set(false);
-    this.farmMenuOpen.set(false);
   }
 
   @HostListener('document:keydown.escape')
@@ -404,24 +400,21 @@ export class ShellComponent {
     this.quickOpen.set(false);
     this.navOpen.set(false);
     this.upgradeOpen.set(false);
-    this.farmMenuOpen.set(false);
-  }
-
-  scopeTitle(): string {
-    if (!this.farmsReady()) {
-      return 'Assigned farms';
-    }
-    const count = this.farms().length;
-    return count === 1 ? '1 Assigned Farm' : `${count} Assigned Farms`;
   }
 
   private buildMenu(): NavSectionView[] {
     const sections = this.session()?.canAdvise ? ADVISER_SECTIONS : NAV_SECTIONS;
-    return sections.map(section => ({
-      id: section.id,
-      label: section.label,
-      items: section.items.filter(item => this.allowed(item.permission)).map(item => this.toItem(item))
-    })).filter(section => section.items.length > 0);
+    return sections.map(section => {
+      const items = section.items.filter(item => this.allowed(item.permission)).map(item => this.toItem(item));
+      return {
+        id: section.id,
+        label: section.label,
+        icon: section.icon,
+        open: this.sectionOpen()[section.id] === true,
+        current: items.some(item => item.active || item.children.some(child => child.active)),
+        items
+      };
+    }).filter(section => section.items.length > 0);
   }
 
   private toItem(item: NavItemConfig): NavItemView {
@@ -457,9 +450,8 @@ export class ShellComponent {
         id: `species-${name.toLowerCase()}`,
         label: name,
         species: name,
-        commands: ['/livestock'],
-        query: { species: name },
-        active: this.matches({ path: '/livestock', exact: true, query: { species: name } })
+        commands: ['/livestock', 'species', name],
+        active: this.matches({ path: `/livestock/species/${name}`, exact: true })
       }));
     }
     if (item.dynamic === 'facilities') {
@@ -567,13 +559,19 @@ export class ShellComponent {
   }
 
   private expandForRoute(): void {
-    const ids = this.menu().flatMap(section => section.items.filter(item => item.active || item.children.some(child => child.active)).map(item => item.id));
-    if (!ids.length) {
+    const sections = this.menu().filter(section => section.current);
+    const ids = sections.flatMap(section => section.items.filter(item => item.active || item.children.some(child => child.active)).map(item => item.id));
+    if (!sections.length) {
       return;
     }
     this.openIds.update(current => {
       const next = { ...current };
       ids.forEach(id => next[id] = true);
+      return next;
+    });
+    this.sectionOpen.update(current => {
+      const next = { ...current };
+      sections.forEach(section => next[section.id] = true);
       return next;
     });
   }

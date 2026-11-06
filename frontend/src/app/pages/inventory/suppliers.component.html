@@ -58,6 +58,15 @@
             <div><dt>Stock lines</dt><dd>{{ fmt(row.lines) }}</dd></div>
             <div><dt>Farms</dt><dd>{{ row.farms.join(', ') }}</dd></div>
             <div><dt>Categories</dt><dd>{{ row.categories.join(', ') }}</dd></div>
+            @if (directory(); as card) {
+              <div><dt>Type</dt><dd>{{ card.supplierType }}</dd></div>
+              <div><dt>Phone</dt><dd>{{ card.phone || '—' }}</dd></div>
+              <div><dt>Location</dt><dd>{{ card.location || '—' }}</dd></div>
+              <div><dt>Registration</dt><dd>{{ card.registrationNo || '—' }}</dd></div>
+              <div><dt>License</dt><dd>{{ card.licenseNo || '—' }}</dd></div>
+              <div><dt>Lead time</dt><dd>{{ card.leadDays == null ? '—' : card.leadDays + ' days' }}</dd></div>
+              <div><dt>Status</dt><dd>{{ card.status }}</dd></div>
+            }
           </dl>
           <ul class="lines">
             @for (item of lines(); track item.id) {
@@ -67,6 +76,9 @@
               </li>
             }
           </ul>
+          @if (missing().length) {
+            <p class="note">{{ missing().length }} stock line{{ missing().length === 1 ? '' : 's' }} still have no supplier.</p>
+          }
         } @else {
           <p class="quiet">No supplier is stored. A receipt can record a name on a stock line.</p>
           @if (missing().length) {

@@ -1,0 +1,16 @@
+.request-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; align-items: start; }
+.stack { display: grid; gap: 12px; }
+.request header { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.request h2 { margin: 0; font-size: 18px; }
+.request header span { border-radius: 999px; padding: 3px 8px; background: #f8f1de; color: #8d6b22; font-size: 12px; font-weight: 800; }
+.request header span.answered { background: #e8f6ec; color: #1e8330; }
+.request .meta { margin: 6px 0; color: #66756c; font-size: 13px; font-weight: 700; }
+.request p { margin: 0; }
+.request blockquote { margin: 12px 0 0; padding: 10px 12px; background: #f7faf8; border-radius: 0 12px 12px 0; display: grid; gap: 4px; }
+.composer { display: grid; gap: 10px; position: sticky; top: 84px; }
+.composer h2 { margin: 0; font-family: Fraunces, Georgia, serif; }
+.error { color: #9f2d20; font-weight: 700; }
+@media (max-width: 900px) {
+  .request-layout { grid-template-columns: 1fr; }
+  .composer { position: static; }
+}

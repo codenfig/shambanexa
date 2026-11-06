@@ -5,8 +5,8 @@
 } @else if (loading()) {
   <div class="skeleton-stack" aria-busy="true" aria-label="Loading dashboard">
     <div class="skeleton title-skel"></div>
-    <div class="kpi-row">
-      @for (item of [1, 2, 3, 4]; track item) { <div class="skeleton kpi-skel"></div> }
+    <div class="overview">
+      @for (item of [1, 2, 3, 4]; track item) { <div class="skeleton pie-skel"></div> }
     </div>
   </div>
 } @else if (error()) {
@@ -28,32 +28,76 @@
     </div>
   </header>
 
-  <section class="kpi-row" id="overview" aria-label="Operations summary">
-    <article class="card kpi">
-      <div class="kpi-label"><span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 16c2-6 12-6 14 0"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg></span>Total Animals</div>
-      <strong>{{ fmt(data.totalAnimals) }}</strong>
-      <p class="delta" [class.up]="(data.animalChangePercent || 0) > 0" [class.down]="(data.animalChangePercent || 0) < 0">
-        @if (data.animalChangePercent !== null) { {{ signed(data.animalChangePercent) }} from last month }
-        @else { No earlier herd count }
-      </p>
+  <section class="overview" id="overview" aria-label="Operations summary">
+    @for (pie of pies(); track pie.id) {
+      <article class="card pie-card" (mouseleave)="clearSlice()">
+        <header>
+          <h2>{{ pie.title }}</h2>
+          <a [routerLink]="pie.href">Open</a>
+        </header>
+        <div class="pie-body">
+          <div class="pie-stage">
+            <svg class="pie-svg" viewBox="-8 -4 216 180" role="img" [attr.aria-label]="pie.aria">
+              <ellipse class="ground" cx="100" cy="112" rx="76" ry="16" />
+              @for (slice of pie.slices; track slice.label) {
+                @if (slice.d) {
+                  <path class="crust" [class.lead]="slice.lead" [class.on]="isOn(pie.id, slice.label)" [attr.d]="slice.d" [attr.fill]="slice.shade" [style.--nx]="slice.nx" [style.--ny]="slice.ny" />
+                }
+              }
+              @for (slice of pie.slices; track slice.label) {
+                @if (slice.d) {
+                  <g class="wedge" [class.lead]="slice.lead" [class.on]="isOn(pie.id, slice.label)" [style.--nx]="slice.nx" [style.--ny]="slice.ny" (mouseenter)="focusSlice(pie.id, slice.label)">
+                    <path [attr.d]="slice.d" [attr.fill]="slice.color" />
+                    @if (slice.share >= 8) {
+                      <text [attr.x]="slice.lx" [attr.y]="slice.ly">{{ slice.share }}%</text>
+                    }
+                  </g>
+                }
+              }
+            </svg>
+          </div>
+          @if (pie.slices.length) {
+            <ul class="slices">
+              @for (slice of pie.slices; track slice.label) {
+                <li [class.on]="isOn(pie.id, slice.label)" (mouseenter)="focusSlice(pie.id, slice.label)">
+                  <i [style.background]="slice.color"></i>
+                  <span>{{ slice.label }}</span>
+                  <b>{{ fmt(slice.count) }}</b>
+                  <em>{{ slice.share }}%</em>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="waiting">{{ pie.note }}</p>
+          }
+        </div>
+        @if (pie.slices.length) {
+          <p class="pie-note">{{ pie.note }}</p>
+        }
+        <div class="slice-card" [class.show]="isOn(pie.id, cardSlice(pie)?.label || '')">
+          @if (cardSlice(pie); as slice) {
+            <i [style.background]="slice.color"></i>
+            <div>
+              <strong>{{ slice.label }}</strong>
+              <b>{{ fmt(slice.count) }} · {{ slice.share }}%</b>
+              <small>{{ sliceLine(pie, slice) }}</small>
+            </div>
+          }
+        </div>
+      </article>
+    }
+    <article class="card fact">
+      <small>Milk today</small>
+      <strong>{{ fmt(data.milkTodayLitres) }} L</strong>
+      <em [class.up]="data.milkDeltaVsYesterday > 0" [class.down]="data.milkDeltaVsYesterday < 0">{{ signedAmount(data.milkDeltaVsYesterday) }} L vs yesterday</em>
     </article>
-    <article class="card kpi">
-      <div class="kpi-label"><span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></span>Farms</div>
-      <strong>{{ data.farmCount }}</strong>
-      <p class="delta up">+{{ data.newFarmsThisQuarter }} new this quarter</p>
-    </article>
-    <article class="card kpi">
-      <div class="kpi-label"><span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c2 4 2 7 0 10 3-1 5-1 7 1-4 1-7 4-8 8-1-4-4-7-8-8 2-2 4-2 7-1  -2-3-2-6 2-10z"/></svg></span>Milk Today</div>
-      <strong>{{ fmt(data.milkTodayLitres) }}L</strong>
-      <p class="delta" [class.up]="data.milkDeltaVsYesterday > 0" [class.down]="data.milkDeltaVsYesterday < 0">{{ signedAmount(data.milkDeltaVsYesterday) }}L vs yesterday</p>
-    </article>
-    <article class="card kpi">
-      <div class="kpi-label"><span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M8 7c0-2 1.8-3 4-3s4 1 4 3-1.8 3-4 3-4 1-4 3 1.8 3 4 3 4-1 4-3"/></svg></span>Revenue</div>
+    <article class="card fact">
+      <small>Revenue</small>
       <strong>{{ money(data.revenue, data.currencyCode) }}</strong>
-      <p class="delta" [class.up]="(data.revenueChangePercent || 0) > 0" [class.down]="(data.revenueChangePercent || 0) < 0">
+      <em [class.up]="(data.revenueChangePercent || 0) > 0" [class.down]="(data.revenueChangePercent || 0) < 0">
         @if (data.revenueChangePercent !== null) { {{ signed(data.revenueChangePercent) }} from last month }
         @else { No prior month }
-      </p>
+      </em>
     </article>
   </section>
 
@@ -63,7 +107,7 @@
         <div class="card-head">
           <h2>Farm Locations — Tanzania</h2>
           @if (canReport()) {
-            <a class="ghost-btn map-report" routerLink="/alerts" fragment="report">Report health</a>
+            <a class="ghost-btn map-report" routerLink="/alerts/report">Report health</a>
           }
         </div>
         <div class="map-layout" [class.has-drawer]="selectedPin()">
@@ -120,62 +164,9 @@
           <span class="legend-count">{{ data.farmCount }} Farms · {{ data.fieldCount }} Fields · {{ data.regionCount }} Regions</span>
         </div>
       </article>
-
-      <article class="card" id="species">
-        <h2>Animal Counts by Species</h2>
-        @if (data.species.length === 0) {
-          <p class="empty-state">No livestock counts recorded.</p>
-        }
-        @for (item of data.species; track item.name) {
-          <a class="bar-row" [routerLink]="['/livestock']" [queryParams]="{ species: item.name }">
-            <span>{{ item.name }}</span>
-            <span class="track"><span [style.width]="barWidth(item.count, data.species)" [style.background]="item.color"></span></span>
-            <strong>{{ fmt(item.count) }}</strong>
-          </a>
-        }
-        <p class="total-line">Total: {{ fmt(data.totalAnimals) }} animals
-          @if (data.animalChangePercent !== null) { · {{ signed(data.animalChangePercent) }} MoM }
-        </p>
-      </article>
     </div>
 
     <div class="col">
-      <article class="card" id="trends">
-        <div class="card-head">
-          <h2>Production Trends — Last 6 Months</h2>
-        </div>
-        <div class="chart-key">
-          <span><i class="swatch milk"></i> Milk (L)</span>
-          <span><i class="swatch revenue"></i> Revenue ({{ data.currencyCode }})</span>
-        </div>
-        @if (chart(); as model) {
-          <svg class="chart" [attr.viewBox]="'0 0 ' + model.width + ' ' + model.height" role="img" aria-label="Production trends for the last six months">
-            @for (tick of model.ticks; track tick.y) {
-              <line class="axis" x1="46" [attr.x2]="model.width - 72" [attr.y1]="tick.y" [attr.y2]="tick.y" />
-              <text class="tick" x="40" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.milk }}</text>
-              <text class="tick" [attr.x]="model.width - 66" [attr.y]="tick.y + 4" text-anchor="start">{{ tick.revenue }}</text>
-            }
-            <path [attr.d]="model.area" class="area" />
-            <path [attr.d]="model.milkPath" class="series milk" />
-            <path [attr.d]="model.revenuePath" class="series revenue" />
-            @for (point of model.points; track point.month; let i = $index) {
-              <text class="tick" [attr.x]="point.x" [attr.y]="model.height - 6" text-anchor="middle">{{ point.month }}</text>
-              <circle class="hit" [attr.cx]="point.x" [attr.cy]="point.yMilk" r="10" (mouseenter)="chartIndex.set(i)" (mouseleave)="chartIndex.set(null)" (focus)="chartIndex.set(i)" (blur)="chartIndex.set(null)" tabindex="0" [attr.aria-label]="point.month + ', milk ' + fmt(point.milk) + ' litres, revenue ' + money(point.revenue, data.currencyCode)" />
-            }
-            @if (hoveredPoint(model); as point) {
-              <g class="tip" [attr.transform]="tipTransform(point)">
-                <rect width="156" height="58" rx="10" />
-                <text x="10" y="18">{{ point.month }}</text>
-                <text x="10" y="36">Milk {{ fmt(point.milk) }} L</text>
-                <text x="10" y="50">{{ money(point.revenue, data.currencyCode) }}</text>
-              </g>
-            }
-          </svg>
-        } @else {
-          <p class="empty-state">No production months recorded.</p>
-        }
-      </article>
-
       <article class="card" id="dash-alerts">
         <div class="card-head">
           <h2>Alerts &amp; Notifications</h2>
@@ -247,4 +238,40 @@
       </article>
     </div>
   </div>
+
+  <article class="card" id="trends">
+    <div class="card-head">
+      <h2>Production Trends — Last 6 Months</h2>
+    </div>
+    <div class="chart-key">
+      <span><i class="swatch milk"></i> Milk (L)</span>
+      <span><i class="swatch revenue"></i> Revenue ({{ data.currencyCode }})</span>
+    </div>
+    @if (chart(); as model) {
+      <svg class="chart" [attr.viewBox]="'0 0 ' + model.width + ' ' + model.height" role="img" aria-label="Production trends for the last six months">
+        @for (tick of model.ticks; track tick.y) {
+          <line class="axis" x1="46" [attr.x2]="model.width - 72" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+          <text class="tick" x="40" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.milk }}</text>
+          <text class="tick" [attr.x]="model.width - 66" [attr.y]="tick.y + 4" text-anchor="start">{{ tick.revenue }}</text>
+        }
+        <path [attr.d]="model.area" class="area" />
+        <path [attr.d]="model.milkPath" class="series milk" />
+        <path [attr.d]="model.revenuePath" class="series revenue" />
+        @for (point of model.points; track point.month; let i = $index) {
+          <text class="tick" [attr.x]="point.x" [attr.y]="model.height - 6" text-anchor="middle">{{ point.month }}</text>
+          <circle class="hit" [attr.cx]="point.x" [attr.cy]="point.yMilk" r="10" (mouseenter)="chartIndex.set(i)" (mouseleave)="chartIndex.set(null)" (focus)="chartIndex.set(i)" (blur)="chartIndex.set(null)" tabindex="0" [attr.aria-label]="point.month + ', milk ' + fmt(point.milk) + ' litres, revenue ' + money(point.revenue, data.currencyCode)" />
+        }
+        @if (hoveredPoint(model); as point) {
+          <g class="tip" [attr.transform]="tipTransform(point)">
+            <rect width="156" height="58" rx="10" />
+            <text x="10" y="18">{{ point.month }}</text>
+            <text x="10" y="36">Milk {{ fmt(point.milk) }} L</text>
+            <text x="10" y="50">{{ money(point.revenue, data.currencyCode) }}</text>
+          </g>
+        }
+      </svg>
+    } @else {
+      <p class="empty-state">No production months recorded.</p>
+    }
+  </article>
 }

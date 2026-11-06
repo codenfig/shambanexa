@@ -52,4 +52,15 @@ public class InventoryAdjustment extends BaseEntity {
     private Instant decidedAt;
 
     private UUID ledgerId;
+
+    private UUID batchId;
+
+    @Column(length = 40)
+    private String reasonCode;
+
+    @Column(length = 400)
+    private String notes;
+
+    @Column(precision = 14, scale = 2)
+    private BigDecimal quantityBefore;
 }

@@ -2,11 +2,15 @@ package com.shambanexa.controller;
 
 import com.shambanexa.dto.AccessAssignmentRequest;
 import com.shambanexa.dto.AccessCatalogResponse;
+import com.shambanexa.dto.CreateRoleRequest;
+import com.shambanexa.dto.RoleCreatedResponse;
+import com.shambanexa.dto.RolePermissionRequest;
 import com.shambanexa.dto.UserAccessView;
 import com.shambanexa.implementation.AccessCatalogService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +32,16 @@ public class AccessController {
     @GetMapping("/roles")
     AccessCatalogResponse roles() {
         return catalog.current();
+    }
+
+    @PostMapping("/roles")
+    RoleCreatedResponse createRole(@RequestBody CreateRoleRequest request) {
+        return catalog.createRole(request);
+    }
+
+    @PutMapping("/roles/{code}/permissions")
+    void updatePermissions(@PathVariable String code, @RequestBody RolePermissionRequest request) {
+        catalog.updatePermissions(code, request);
     }
 
     @GetMapping("/users")

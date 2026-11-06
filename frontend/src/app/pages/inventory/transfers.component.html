@@ -82,7 +82,7 @@
     <form class="entry" role="dialog" aria-modal="true" aria-labelledby="transfer-title" (click)="$event.stopPropagation()" [formGroup]="form" (ngSubmit)="submit()">
       <header class="entry-head">
         <div>
-          <h2 id="transfer-title">Stock transfer</h2>
+          <h2 id="transfer-title">New Stock Transfer</h2>
           <p>Move quantity to another farm in your scope. The destination can keep its own store name.</p>
         </div>
       </header>
@@ -99,6 +99,7 @@
         </label>
         <label>Quantity <em>*</em><input formControlName="quantity" type="number" min="0.01" step="0.01"></label>
         <label>Reason <em>*</em><input formControlName="reason"></label>
+        <p class="note">The earliest eligible batch moves with its lot and expiry. Expired and quarantined batches are not transferred as usable stock.</p>
         <label class="wide">Destination store<input formControlName="destinationStore" placeholder="Optional"></label>
       </div>
       @if (!otherFarms(form.controls.itemId.value).length) {

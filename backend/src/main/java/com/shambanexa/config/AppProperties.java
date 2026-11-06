@@ -11,6 +11,7 @@ public class AppProperties {
 
     private Jwt jwt = new Jwt();
     private Cors cors = new Cors();
+    private boolean registrationEnabled = true;
 
     @Getter
     @Setter

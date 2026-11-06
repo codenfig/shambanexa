@@ -10,7 +10,7 @@
   background: #fff; border: 1px solid #e7eee9; border-radius: 18px; padding: 16px;
   box-shadow: 0 10px 28px rgba(20, 36, 24, 0.045); position: relative; overflow: hidden;
 }
-.summary article::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #2f9e44; }
+.summary article::before {  position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #2f9e44; }
 .summary span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .summary strong { display: block; margin-top: 8px; font-size: 28px; letter-spacing: -0.04em; }
 
@@ -45,7 +45,7 @@ th { color: #64748b; font-size: 11px; letter-spacing: 0.06em; text-transform: up
   display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px;
   font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
 }
-.status-pill.is-active { background: #e8f5e9; color: #166534; }
+.status-pill.is-active { background: #e8f5e9; color: #1e8330; }
 .status-pill.is-inactive { background: #f1f5f9; color: #475569; }
 .status-pill.is-other { background: #fff7e8; color: #8d6b22; }
 
@@ -66,7 +66,7 @@ th { color: #64748b; font-size: 11px; letter-spacing: 0.06em; text-transform: up
 }
 .pin i {
   width: 12px; height: 12px; border-radius: 999px; display: block; margin: 0 auto 2px;
-  background: #166534; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.16);
+  background: #1e8330; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.16);
 }
 .empty, .empty-map, .state { padding: 28px 16px; color: var(--muted); }
 .empty h2 { margin: 0 0 6px; color: #17201b; font-size: 20px; }

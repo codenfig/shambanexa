@@ -1,39 +1,127 @@
-<app-page-header title="Help centre" description="How herd movements, production, stock, and access are recorded." />
-    <article class="card help" id="centre">
-      <h2>How the record works</h2>
-      <article>
-        <h3 id="movements">Register and move animals</h3>
+<section class="hero">
+  <div>
+    <p class="kicker">Help &amp; Support</p>
+    <h1>Help centre</h1>
+    <p>How herd movements, production, stock, and access are recorded.</p>
+  </div>
+  <div class="actions">
+    <a class="ghost-btn" routerLink="/help" fragment="contact">Contact</a>
+    <a class="green-btn" routerLink="/help" fragment="status">System status</a>
+  </div>
+</section>
+
+<nav class="topics" aria-label="Help topics">
+  <a routerLink="/help" fragment="movements">
+    <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/><path d="M4 5v14"/></svg></span>
+    <strong>Register and move</strong>
+    <span>Out and in on one transfer</span>
+  </a>
+  <a routerLink="/help" fragment="milk">
+    <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 20c2-6 6-8 8-8 2 4 0 8-2 10"/><path d="M9 10c.4-3 2-5 4-6"/></svg></span>
+    <strong>Milk and revenue</strong>
+    <span>Today, and this month</span>
+  </a>
+  <a routerLink="/help" fragment="fish">
+    <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14c2-4 4-4 6 0s4 4 6 0 4-4 4 0"/><path d="M6 18c2-2 3-2 4 0"/></svg></span>
+    <strong>Fish cycles</strong>
+    <span>Estimated live count</span>
+  </a>
+  <a routerLink="/help" fragment="stock">
+    <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span>
+    <strong>Stock</strong>
+    <span>Available quantity</span>
+  </a>
+  <a routerLink="/help" fragment="access">
+    <span class="bubble ink" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+    <strong>Access</strong>
+    <span>Farms on the grant</span>
+  </a>
+</nav>
+
+<section class="guide" id="centre" aria-labelledby="guide-title">
+  <header class="guide-head">
+    <h2 id="guide-title">How the record works</h2>
+    <p>Each note below describes a rule the screens already follow.</p>
+  </header>
+  <div class="notes">
+    <article id="movements">
+      <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/><path d="M4 5v14"/></svg></span>
+      <div>
+        <h3>Register and move animals</h3>
         <p>A new tag posts a registration on the movement ledger. A transfer posts an out movement and an in movement in one action, so the herd total stays the same and the farm counts change.</p>
-      </article>
-      <article>
-        <h3 id="milk">Milk and revenue</h3>
+      </div>
+    </article>
+    <article id="milk">
+      <span class="bubble gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 20c2-6 6-8 8-8 2 4 0 8-2 10"/><path d="M9 10c.4-3 2-5 4-6"/></svg></span>
+      <div>
+        <h3>Milk and revenue</h3>
         <p>Milk today is the sum of milk records for the current Dar es Salaam date. Revenue is income posted in the current month. Each dashboard number links back to those stored rows.</p>
-      </article>
-      <article>
-        <h3 id="fish">Fish cycles</h3>
+      </div>
+    </article>
+    <article id="fish">
+      <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14c2-4 4-4 6 0s4 4 6 0 4-4 4 0"/><path d="M6 18c2-2 3-2 4 0"/></svg></span>
+      <div>
+        <h3>Fish cycles</h3>
         <p>Estimated live count is stocked quantity minus mortality and harvest. The screen labels it as an estimate.</p>
-      </article>
-      <article>
-        <h3 id="stock">Stock</h3>
+      </div>
+    </article>
+    <article id="stock">
+      <span class="bubble teal" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span>
+      <div>
+        <h3>Stock</h3>
         <p>An adjustment cannot take available quantity below zero. Low-stock rows are the ones at or under their reorder point.</p>
-      </article>
-      <article>
-        <h3 id="access">Access</h3>
-        <p>A tenant administrator sees every farm. A farm manager sees only farms named on their role grant. The Northern Farm manager account is limited to that farm. The stored roles and the permissions each one holds are listed under Roles &amp; Permissions.</p>
-      </article>
+      </div>
     </article>
-    <article class="card" id="contact" style="margin-top:14px">
-      <h2>Contact support</h2>
-      <p>The tenant administrator for this workspace is <a href="mailto:admin&#64;shambanexa.com">admin&#64;shambanexa.com</a>.</p>
+    <article class="wide" id="access">
+      <span class="bubble ink" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <div>
+        <h3>Access</h3>
+        <p>A tenant administrator sees every farm. A farm manager sees only farms named on their role grant. The Northern Farm manager account is limited to that farm. The stored roles and the permissions each one holds are listed under <a routerLink="/access">Roles &amp; Permissions</a>.</p>
+      </div>
     </article>
-    <article class="card" id="status" style="margin-top:14px">
-      <h2>System status</h2>
+  </div>
+</section>
+
+<div class="side">
+  <article class="panel" id="contact">
+    <header class="panel-head">
+      <div>
+        <h2>Contact support</h2>
+        <p>Write to the tenant administrator for this workspace.</p>
+      </div>
+    </header>
+    <div class="body">
+      <a class="mail" href="mailto:admin&#64;shambanexa.com">
+        <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="m4 7 8 6 8-6"/></svg></span>
+        <span>
+          <strong>admin&#64;shambanexa.com</strong>
+          <small>Opens your mail app</small>
+        </span>
+      </a>
+    </div>
+  </article>
+
+  <article class="panel" id="status">
+    <header class="panel-head">
+      <div>
+        <h2>System status</h2>
+        <p>A live check of the operations API.</p>
+      </div>
+    </header>
+    <div class="body">
       @if (status(); as current) {
-        <p>The operations API responded for {{ current.tenantName }}.</p>
-        <p class="muted">{{ current.timezone }} · {{ current.currencyCode }} · {{ current.locale }}</p>
+        <p class="live"><i aria-hidden="true"></i> The operations API responded</p>
+        <strong class="tenant">{{ current.tenantName }}</strong>
+        <ul class="facts">
+          <li><span>Timezone</span><strong>{{ current.timezone }}</strong></li>
+          <li><span>Currency</span><strong>{{ current.currencyCode }}</strong></li>
+          <li><span>Locale</span><strong>{{ current.locale }}</strong></li>
+        </ul>
       } @else if (statusError()) {
-        <p>The operations API did not respond.</p>
+        <p class="down">The operations API did not respond.</p>
       } @else {
-        <p class="muted">Checking the operations API…</p>
+        <p class="wait">Checking the operations API…</p>
       }
-    </article>
+    </div>
+  </article>
+</div>

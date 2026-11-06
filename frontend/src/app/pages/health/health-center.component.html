@@ -1,0 +1,624 @@
+<section class="health">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Health center</p>
+      <h1>Animal Health &amp; Veterinary</h1>
+      <p>Record treatments and vaccinations, issue medicine from farm stock, and find veterinary shops an administrator has verified.</p>
+    </div>
+    <div class="actions">
+      @if (canRecord()) {
+        <button type="button" class="green-btn" (click)="openSheet('treatment')">+ Record Treatment</button>
+        <button type="button" class="green-btn" (click)="openSheet('vaccination')">+ Add Vaccination</button>
+      }
+      @if (canApprove()) {
+        <button type="button" class="ghost-btn" (click)="openSheet('protocol')">Approve Protocol</button>
+      }
+      <a class="ghost-btn" routerLink="/suppliers">Find Medical Shop</a>
+    </div>
+  </header>
+
+  @if (loadError()) {
+    <p class="banner">{{ loadError() }}</p>
+  }
+  @if (formError() && !sheet()) {
+    <p class="banner">{{ formError() }}</p>
+  }
+  @if (loading() && !board()) {
+    <p class="empty">Loading animal health…</p>
+  }
+  @if (board(); as health) {
+    <div class="kpis">
+      <article class="animals">
+        <span>Total animals</span>
+        <strong>{{ count(totalAnimals()) }}</strong>
+        <small>Herd and tagged livestock</small>
+      </article>
+      <article class="watch">
+        <span>Under treatment</span>
+        <strong>{{ count(underTreatment()) }}</strong>
+        <small>Open health cases and treatments in progress</small>
+      </article>
+      <article class="due">
+        <span>Vaccinations due soon</span>
+        <strong>{{ count(health.report.dueSoon) }}</strong>
+        <small>Planned in the next 30 days</small>
+      </article>
+      <article class="late">
+        <span>Overdue vaccinations</span>
+        <strong>{{ count(health.report.overdue) }}</strong>
+        <small>Planned date has passed</small>
+      </article>
+      <article class="done">
+        <span>Treatments completed</span>
+        <strong>{{ count(health.report.completedTreatments) }}</strong>
+        <small>Recorded on this page</small>
+      </article>
+      <article class="stock">
+        <span>Medicines in stock</span>
+        <strong>{{ count(medicinesInStock()) }}</strong>
+        <small>{{ medicineLines() }} medicine lines · usable quantity</small>
+      </article>
+    </div>
+
+    <div class="split three">
+      <article class="card">
+        <h2>Animals by species</h2>
+        <div class="species">
+          <div class="donut" [style.background]="donut()">
+            <div><strong>{{ count(totalAnimals()) }}</strong><span>Total animals</span></div>
+          </div>
+          <ul>
+            @for (row of speciesSlices(); track row.name) {
+              <li>
+                @if (row.photo) { <img [src]="row.photo" [alt]="row.name"> } @else { <i [style.background]="row.color"></i> }
+                <span>{{ row.name }}</span>
+                <b>{{ count(row.count) }} ({{ row.share }}%)</b>
+              </li>
+            }
+          </ul>
+        </div>
+      </article>
+
+      <article class="card">
+        <header><h2>Upcoming vaccinations</h2><a routerLink="/livestock/health">Health records</a></header>
+        @if (!upcoming().length) {
+          <p class="empty">No vaccination is scheduled. A planned vaccination appears here after it is recorded.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Due</th><th>Animal</th><th>Vaccine</th><th>Status</th></tr></thead>
+            <tbody>
+              @for (row of upcoming(); track row.id) {
+                <tr>
+                  <td>{{ dayLabel(row.nextDueOn) }}</td>
+                  <td>{{ row.subject }}</td>
+                  <td>{{ row.vaccineName }}</td>
+                  <td><span class="pill" [class.overdue]="row.displayStatus === 'OVERDUE'" [class.planned]="row.displayStatus === 'PLANNED'">{{ statusLabel(row.displayStatus) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </article>
+
+      <article class="card">
+        <h2>Health alerts</h2>
+        @if (!notices().length) {
+          <p class="empty">No health reminder is open.</p>
+        } @else {
+          <ul class="alerts">
+            @for (notice of notices(); track notice.title + notice.detail) {
+              <li [class]="notice.tone"><strong>{{ notice.title }}</strong><span>{{ notice.detail }}</span></li>
+            }
+          </ul>
+        }
+        <p class="fine">{{ health.report.reminderNote }}</p>
+      </article>
+    </div>
+
+    <div class="filters card">
+      <label>Farm
+        <select [value]="farmFilter()" (change)="farmFilter.set(text($event))">
+          <option value="">All farms</option>
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+      </label>
+      <label>Animal or herd
+        <select [value]="subjectFilter()" (change)="subjectFilter.set(text($event))">
+          <option value="">All</option>
+          @for (row of animals(); track row.id) { <option [value]="row.id">{{ row.tag }}</option> }
+          @for (row of herds(); track row.id) { <option [value]="row.id">{{ row.name }}</option> }
+        </select>
+      </label>
+      <label>Veterinarian <input [value]="vetFilter()" (input)="vetFilter.set(text($event))" placeholder="Name"></label>
+      <label>Activity
+        <select [value]="activityFilter()" (change)="activityFilter.set(text($event))">
+          <option value="ALL">All</option>
+          <option value="Vaccination">Vaccination</option>
+          <option value="Treatment">Treatment</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="Examination">Examination</option>
+          <option value="Appointment">Appointment</option>
+        </select>
+      </label>
+      <label>Search <input [value]="query()" (input)="query.set(text($event))" placeholder="Diagnosis, vaccine, animal"></label>
+    </div>
+
+    <div class="split two">
+      <article class="card">
+        <header>
+          <h2>Health calendar</h2>
+          <div class="views">
+            <button type="button" [class.on]="calendarView() === 'month'" (click)="calendarView.set('month')">Month</button>
+            <button type="button" [class.on]="calendarView() === 'week'" (click)="calendarView.set('week')">Week</button>
+            <button type="button" [class.on]="calendarView() === 'day'" (click)="calendarView.set('day')">Day</button>
+          </div>
+        </header>
+        <div class="month-bar">
+          <button type="button" (click)="shiftView(-1)" aria-label="Previous">‹</button>
+          <strong>{{ calendarView() === 'month' ? monthTitle() : dayLabel(selectedDay()) }}</strong>
+          <button type="button" (click)="shiftView(1)" aria-label="Next">›</button>
+        </div>
+        @if (calendarView() === 'day') {
+          <ul class="day-list">
+            @for (event of eventsOn(selectedDay()); track event.kind + event.title + event.date) {
+              <li><span class="pill">{{ event.kind }}</span> {{ event.title }}</li>
+            } @empty {
+              <li class="empty">Nothing is scheduled on this day.</li>
+            }
+          </ul>
+        } @else {
+          <div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+          <div class="cal">
+            @for (cell of calendarCells(); track cell.date) {
+              <button type="button" class="day" [class.out]="!cell.inMonth" [class.today]="cell.date === selectedDay()" (click)="pickDay(cell.date)">
+                <b>{{ cell.date.slice(8) }}</b>
+                @for (event of chips(cell.date); track event.kind + event.title) {
+                  <em [class.vaccination]="event.kind === 'Vaccination'" [class.treatment]="event.kind === 'Treatment'" [class.examination]="event.kind === 'Examination'" [class.follow]="event.kind === 'Follow-up'" [class.appointment]="event.kind === 'Appointment'">{{ event.title }}</em>
+                }
+              </button>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="card">
+        <header><h2>Recent treatments</h2><a routerLink="/livestock/health">Tagged health</a></header>
+        @if (!recent().length) {
+          <p class="empty">No treatment is recorded yet. Open health cases stay on the alerts list and on tagged health records.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Date</th><th>Animal</th><th>Diagnosis</th><th>Medicine</th><th>Status</th></tr></thead>
+            <tbody>
+              @for (row of recent(); track row.id) {
+                <tr>
+                  <td>{{ dayLabel(row.startedOn) }}</td>
+                  <td>{{ row.subject }}<small>{{ row.farmName }}</small></td>
+                  <td>{{ row.diagnosis }}</td>
+                  <td>{{ row.dose ? row.dose.itemName : '—' }}</td>
+                  <td><span class="pill" [class.COMPLETED]="row.status === 'COMPLETED'" [class.IN_PROGRESS]="row.status === 'IN_PROGRESS'" [class.PLANNED]="row.status === 'PLANNED'" [class.CANCELLED]="row.status === 'CANCELLED'">{{ statusLabel(row.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </article>
+    </div>
+
+    <article class="card" id="shops">
+      <header>
+        <h2>Registered veterinary shops</h2>
+        <a routerLink="/suppliers">Directory</a>
+      </header>
+      <p class="fine">Verified means an administrator checked the licence. A shop is not labelled registered until that check. Licence expiry and the issuing authority are shown only when the shop recorded them.</p>
+      <div class="filters tight">
+        <label>Search <input [value]="shopQuery()" (input)="shopQuery.set(text($event))" placeholder="Shop, region, product"></label>
+        <label>Standing
+          <select [value]="standingFilter()" (change)="standingFilter.set(text($event))">
+            <option value="ALL">All</option>
+            <option value="Verified">Verified</option>
+            <option value="Pending verification">Pending verification</option>
+            <option value="Expired licence">Expired licence</option>
+            <option value="Unverified">Unverified</option>
+          </select>
+        </label>
+        <label>Distance from
+          <select [value]="originFarmId()" (change)="originFarmId.set(text($event))">
+            <option value="">Choose a farm</option>
+            @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+          </select>
+        </label>
+        <label>Within
+          <select [value]="maxKm()" (change)="maxKm.set(text($event))">
+            <option value="ANY">Any distance</option>
+            <option value="50">50 km</option>
+            <option value="150">150 km</option>
+            <option value="400">400 km</option>
+          </select>
+        </label>
+      </div>
+      <div class="split two">
+        <app-tanzania-map [pins]="pins()" [selectedId]="pickedShopId()" (pinPicked)="pickedShopId.set($event)" ariaLabel="Veterinary shops in Tanzania" />
+        <div>
+          @if (pickedShop(); as picked) {
+            <div class="shop-card">
+              <strong>{{ picked.shop.name }}</strong>
+              <span class="pill" [class.ok]="picked.tone === 'ok'" [class.warn]="picked.tone === 'warn'" [class.bad]="picked.tone === 'bad'">{{ picked.standing }}</span>
+              <p>{{ picked.shop.district }}, {{ picked.shop.region }}</p>
+              <p>{{ picked.distance == null ? 'Choose a farm to calculate distance' : picked.distance + ' km from the selected farm' }}</p>
+              <p>Licence {{ picked.shop.licenseNumber }}</p>
+              <p>{{ picked.shop.licenseAuthority || 'Issuing authority not recorded' }}</p>
+              <p>{{ picked.shop.licenseExpiresOn ? 'Expires ' + dayLabel(picked.shop.licenseExpiresOn) : 'Licence expiry not recorded' }}</p>
+              <p>{{ picked.shop.phone }}</p>
+              <div class="actions">
+                <a class="ghost-btn" [href]="'tel:' + picked.shop.phone">Contact</a>
+                <a class="green-btn" routerLink="/suppliers">Request availability</a>
+              </div>
+            </div>
+          }
+          @if (!shopRows().length) {
+            <p class="empty">No shop matches this search.</p>
+          } @else {
+            <ul class="shops">
+              @for (row of shopRows(); track row.shop.id) {
+                <li [class.on]="row.shop.id === pickedShopId()">
+                  <button type="button" (click)="pickedShopId.set(row.shop.id)">
+                    <strong>{{ row.shop.name }}</strong>
+                    <span>{{ row.shop.district }} · {{ row.distance == null ? row.shop.region : row.distance + ' km' }}</span>
+                  </button>
+                  <span class="pill" [class.ok]="row.tone === 'ok'" [class.warn]="row.tone === 'warn'" [class.bad]="row.tone === 'bad'">{{ row.standing }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <header><h2>Medicine on the farm</h2><a routerLink="/inventory">Inventory</a></header>
+      <p class="fine">Only open, unexpired medicine batches can be administered. Expired, quarantined, and disposed stock stays blocked. Withdrawal days are stored when the product or the veterinarian supplies them.</p>
+      @if (!medicineRows().length) {
+        <p class="empty">No medicine batch is stored.</p>
+      } @else {
+        <table>
+          <thead><tr><th>Product</th><th>Batch</th><th>Farm</th><th>Remaining</th><th>Available</th><th>Expiry</th><th>Withdrawal</th><th>Status</th></tr></thead>
+          <tbody>
+            @for (row of medicineRows(); track row.batch.id) {
+              <tr>
+                <td>{{ row.batch.productName }}</td>
+                <td>{{ row.batch.lotCode }}</td>
+                <td>{{ row.batch.farmName }}</td>
+                <td>{{ count(row.batch.quantityRemaining) }} {{ row.batch.unit }}</td>
+                <td>{{ count(row.item.available) }} {{ row.item.unit }}</td>
+                <td>{{ dayLabel(row.batch.expiresOn) }}</td>
+                <td>{{ row.item.withdrawalDays == null ? 'Not recorded' : row.item.withdrawalDays + ' days' }}</td>
+                <td><span class="pill" [class.bad]="row.tone === 'bad'" [class.warn]="row.tone === 'warn'" [class.ok]="row.tone === 'ok'">{{ row.label }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </article>
+
+    <div class="split two">
+      <article class="card">
+        <h2>Common diagnoses</h2>
+        @if (!health.report.conditions.length) {
+          <p class="empty">No diagnosis is recorded yet.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Diagnosis</th><th>Records</th></tr></thead>
+            <tbody>
+              @for (row of health.report.conditions; track row.name) {
+                <tr><td>{{ row.name }}</td><td>{{ count(row.count) }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </article>
+      <article class="card">
+        <h2>Medicine withdrawal periods</h2>
+        @if (!hasWithdrawal()) {
+          <p class="empty">No withdrawal period is recorded. Days are saved only when the medicine or the veterinarian supplies them.</p>
+        } @else {
+          <table>
+            <thead><tr><th>Subject</th><th>Medicine</th><th>Days</th><th>Ends</th></tr></thead>
+            <tbody>
+              @for (row of filteredTreatments(); track row.id) {
+                @if (row.dose; as dose) {
+                  @if (dose.withdrawalEndsOn) {
+                    <tr><td>{{ row.subject }}</td><td>{{ dose.itemName }}</td><td>{{ dose.withdrawalDays }}</td><td>{{ dayLabel(dose.withdrawalEndsOn) }}</td></tr>
+                  }
+                }
+              }
+              @for (row of filteredVaccinations(); track row.id) {
+                @if (row.withdrawalEndsOn) {
+                  <tr><td>{{ row.subject }}</td><td>{{ row.itemName || row.vaccineName }}</td><td>{{ row.withdrawalDays }}</td><td>{{ dayLabel(row.withdrawalEndsOn) }}</td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        }
+      </article>
+    </div>
+
+    <article class="card">
+      <h2>Reports</h2>
+      <div class="reports">
+        <article><span>Treatments this month</span><strong>{{ count(treatmentsThisMonth()) }}</strong></article>
+        <article><span>Vaccination coverage</span><strong>{{ coverage() }}</strong></article>
+        <article><span>Overdue vaccinations</span><strong>{{ count(health.report.overdue) }}</strong></article>
+        <article><span>Medicine issued</span><strong>{{ health.report.medicines.length ? health.report.medicines.length + ' products' : 'None' }}</strong></article>
+        <article><span>Known treatment cost</span><strong>{{ money(health.report.knownCost) }}</strong><small>{{ health.report.dosesWithoutCost }} issued doses have no unit cost</small></article>
+        <article><span>Veterinary activity</span><strong>{{ health.report.veterinarians.length ? health.report.veterinarians.length + ' names' : 'None recorded' }}</strong></article>
+      </div>
+      @if (health.report.medicines.length) {
+        <table>
+          <thead><tr><th>Medicine</th><th>Quantity</th><th>Known cost</th></tr></thead>
+          <tbody>
+            @for (row of health.report.medicines; track row.name) {
+              <tr><td>{{ row.name }}</td><td>{{ count(row.quantity) }} {{ row.unit }}</td><td>{{ money(row.knownCost) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+      @if (supplierRegions().length) {
+        <h3>Verified shops by region</h3>
+        <ul class="regions">
+          @for (row of supplierRegions(); track row.region) { <li>{{ row.region }} <b>{{ row.count }}</b></li> }
+        </ul>
+      }
+    </article>
+
+    <article class="card">
+      <h2>Vaccination protocols</h2>
+      <p class="fine">A Farm Adviser or super admin approves a protocol. The application does not invent or prescribe one.</p>
+      @if (!health.protocols.length) {
+        <p class="empty">No vaccination protocol has been approved.</p>
+      } @else {
+        <table>
+          <thead><tr><th>Species</th><th>Protocol</th><th>Age group</th><th>Interval</th><th>Approved by</th><th>Status</th></tr></thead>
+          <tbody>
+            @for (row of health.protocols; track row.id) {
+              <tr>
+                <td>{{ row.speciesName }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.ageGroup }}</td>
+                <td>{{ row.intervalDays }} days</td>
+                <td>{{ row.approvedByName }}</td>
+                <td>{{ row.active ? 'Active' : 'Inactive' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </article>
+
+    @if (canRecord() && (filteredTreatments().length || filteredVaccinations().length)) {
+      <article class="card">
+        <h2>Update a record</h2>
+        @for (row of filteredTreatments(); track row.id) {
+          <div class="update">
+            <span>{{ row.subject }} · {{ row.diagnosis }}</span>
+            <select [value]="draftStatus(row.id, row.status)" (change)="setDraft(row.id, text($event))">
+              <option value="PLANNED">Planned</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <button type="button" class="ghost-btn" [disabled]="saving()" (click)="updateTreatment(row)">Update treatment</button>
+          </div>
+        }
+        @for (row of filteredVaccinations(); track row.id) {
+          <div class="update">
+            <span>{{ row.subject }} · {{ row.vaccineName }}</span>
+            <select [value]="draftStatus(row.id, row.status)" (change)="setDraft(row.id, text($event))">
+              <option value="PLANNED">Planned</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="MISSED">Missed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <button type="button" class="ghost-btn" [disabled]="saving()" (click)="updateVaccination(row)">Update vaccination</button>
+          </div>
+        }
+      </article>
+    }
+  }
+</section>
+
+@if (sheet() === 'treatment') {
+  <div class="backdrop" (click)="closeSheet()">
+    <form class="dialog" (click)="$event.stopPropagation()" (submit)="saveTreatment($event)">
+      <h2>Record treatment</h2>
+      <p class="fine">Stock is issued only when the status is in progress or completed. Expired and quarantined batches are refused.</p>
+      @if (formError()) { <p class="banner">{{ formError() }}</p> }
+      <label>Farm
+        <select [value]="tFarm()" (change)="tFarm.set(text($event)); tSubject.set(''); tItem.set(''); tBatch.set('')">
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+      </label>
+      <div class="pair">
+        <label>Subject
+          <select [value]="tSubjectKind()" (change)="tSubjectKind.set(text($event)); tSubject.set('')">
+            <option value="animal">Animal</option>
+            <option value="herd">Herd</option>
+          </select>
+        </label>
+        <label>{{ tSubjectKind() === 'herd' ? 'Herd' : 'Animal' }}
+          <select [value]="tSubject()" (change)="tSubject.set(text($event))">
+            <option value="">Choose</option>
+            @for (row of subjects(tSubjectKind(), tFarm()); track row.id) { <option [value]="row.id">{{ row.label }}</option> }
+          </select>
+        </label>
+      </div>
+      <label>Symptoms <textarea rows="2" [value]="tSymptoms()" (input)="tSymptoms.set(text($event))"></textarea></label>
+      <label>Diagnosis <input [value]="tDiagnosis()" (input)="tDiagnosis.set(text($event))"></label>
+      <label>Treatment <textarea rows="2" [value]="tDescription()" (input)="tDescription.set(text($event))"></textarea></label>
+      <div class="pair">
+        <label>Veterinarian <input [value]="tVet()" (input)="tVet.set(text($event))"></label>
+        <label>Status
+          <select [value]="tStatus()" (change)="tStatus.set(text($event))">
+            <option value="PLANNED">Planned</option>
+            <option value="IN_PROGRESS">In progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </label>
+      </div>
+      <div class="pair">
+        <label>Started <input type="date" [value]="tStarted()" (input)="tStarted.set(text($event))"></label>
+        <label>Follow-up <input type="date" [value]="tFollow()" (input)="tFollow.set(text($event))"></label>
+      </div>
+      <label>Outcome <input [value]="tOutcome()" (input)="tOutcome.set(text($event))"></label>
+      <label>Medicine
+        <select [value]="tItem()" (change)="tItem.set(text($event)); tBatch.set('')">
+          <option value="">No stock movement</option>
+          @for (item of farmMedicines(tFarm()); track item.id) {
+            <option [value]="item.id" [disabled]="item.available <= 0">{{ item.name }} · {{ count(item.available) }} {{ item.unit }}{{ item.available <= 0 ? ' · out of stock' : '' }}</option>
+          }
+        </select>
+      </label>
+      @if (tItem()) {
+        <div class="pair">
+          <label>Batch
+            <select [value]="tBatch()" (change)="tBatch.set(text($event))">
+              <option value="">Earliest usable batch</option>
+              @for (batch of usableBatches(tItem()); track batch.id) { <option [value]="batch.id">{{ batch.lotCode }} · {{ count(batch.quantityRemaining) }} {{ batch.unit }}</option> }
+            </select>
+          </label>
+          <label>Quantity <input type="number" min="0" step="0.001" [value]="tQuantity()" (input)="tQuantity.set(text($event))"></label>
+        </div>
+        <label>Withdrawal days, if known <input type="number" min="0" [value]="tWithdrawal()" (input)="tWithdrawal.set(text($event))" placeholder="Leave blank if not recorded"></label>
+        @if (needsOverride(tItem(), tBatch())) {
+          <label>Reason for a later batch <input [value]="tOverride()" (input)="tOverride.set(text($event))"></label>
+        }
+      }
+      <div class="actions">
+        <button type="button" class="ghost-btn" (click)="closeSheet()">Cancel</button>
+        <button type="submit" class="green-btn" [disabled]="saving()">Save treatment</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (sheet() === 'vaccination') {
+  <div class="backdrop" (click)="closeSheet()">
+    <form class="dialog" (click)="$event.stopPropagation()" (submit)="saveVaccination($event)">
+      <h2>Add vaccination</h2>
+      <p class="fine">Choose an approved protocol when one exists. Completing the record issues the selected medicine batch.</p>
+      @if (formError()) { <p class="banner">{{ formError() }}</p> }
+      <label>Protocol
+        <select [value]="vProtocol()" (change)="applyProtocol(text($event))">
+          <option value="">No protocol</option>
+          @for (row of activeProtocols(); track row.id) {
+            @if (row.active) { <option [value]="row.id">{{ row.speciesName }} · {{ row.name }}</option> }
+          }
+        </select>
+      </label>
+      <label>Farm
+        <select [value]="vFarm()" (change)="vFarm.set(text($event)); vSubject.set(''); vItem.set('')">
+          @for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }
+        </select>
+      </label>
+      <div class="pair">
+        <label>Subject
+          <select [value]="vSubjectKind()" (change)="vSubjectKind.set(text($event)); vSubject.set('')">
+            <option value="animal">Animal</option>
+            <option value="herd">Herd</option>
+          </select>
+        </label>
+        <label>{{ vSubjectKind() === 'herd' ? 'Herd' : 'Animal' }}
+          <select [value]="vSubject()" (change)="vSubject.set(text($event))">
+            <option value="">Choose</option>
+            @for (row of subjects(vSubjectKind(), vFarm()); track row.id) { <option [value]="row.id">{{ row.label }}</option> }
+          </select>
+        </label>
+      </div>
+      <div class="pair">
+        <label>Species
+          <select [value]="vSpecies()" (change)="vSpecies.set(text($event))">
+            @for (row of species(); track row.id) { <option [value]="row.name">{{ row.name }}</option> }
+          </select>
+        </label>
+        <label>Age group <input [value]="vAge()" (input)="vAge.set(text($event))"></label>
+      </div>
+      <label>Vaccine <input [value]="vVaccine()" (input)="vVaccine.set(text($event))"></label>
+      <div class="pair">
+        <label>Veterinarian <input [value]="vVet()" (input)="vVet.set(text($event))"></label>
+        <label>Status
+          <select [value]="vStatus()" (change)="vStatus.set(text($event))">
+            <option value="PLANNED">Planned</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="MISSED">Missed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </label>
+      </div>
+      <div class="pair">
+        <label>Given on <input type="date" [value]="vGiven()" (input)="vGiven.set(text($event))"></label>
+        <label>Next due <input type="date" [value]="vDue()" (input)="vDue.set(text($event))"></label>
+      </div>
+      <label>Notes <textarea rows="2" [value]="vNotes()" (input)="vNotes.set(text($event))"></textarea></label>
+      <label>Medicine batch
+        <select [value]="vItem()" (change)="vItem.set(text($event)); vBatch.set('')">
+          <option value="">No stock movement</option>
+          @for (item of farmMedicines(vFarm()); track item.id) {
+            <option [value]="item.id" [disabled]="item.available <= 0">{{ item.name }} · {{ count(item.available) }} {{ item.unit }}</option>
+          }
+        </select>
+      </label>
+      @if (vItem()) {
+        <div class="pair">
+          <label>Batch
+            <select [value]="vBatch()" (change)="vBatch.set(text($event))">
+              <option value="">Earliest usable batch</option>
+              @for (batch of usableBatches(vItem()); track batch.id) { <option [value]="batch.id">{{ batch.lotCode }}</option> }
+            </select>
+          </label>
+          <label>Quantity <input type="number" min="0" step="0.001" [value]="vQuantity()" (input)="vQuantity.set(text($event))"></label>
+        </div>
+        <label>Withdrawal days, if known <input [value]="vWithdrawal()" (input)="vWithdrawal.set(text($event))"></label>
+        @if (needsOverride(vItem(), vBatch())) {
+          <label>Reason for a later batch <input [value]="vOverride()" (input)="vOverride.set(text($event))"></label>
+        }
+      }
+      <div class="actions">
+        <button type="button" class="ghost-btn" (click)="closeSheet()">Cancel</button>
+        <button type="submit" class="green-btn" [disabled]="saving()">Save vaccination</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (sheet() === 'protocol') {
+  <div class="backdrop" (click)="closeSheet()">
+    <form class="dialog" (click)="$event.stopPropagation()" (submit)="saveProtocol($event)">
+      <h2>Approve a protocol</h2>
+      <p class="fine">This records a schedule approved by the signed-in Farm Adviser or super admin. It does not prescribe a dose or change stock.</p>
+      @if (formError()) { <p class="banner">{{ formError() }}</p> }
+      <label>Species
+        <select [value]="pSpecies()" (change)="pSpecies.set(text($event))">
+          @for (row of species(); track row.id) { <option [value]="row.name">{{ row.name }}</option> }
+        </select>
+      </label>
+      <label>Name <input [value]="pName()" (input)="pName.set(text($event))"></label>
+      <div class="pair">
+        <label>Age group <input [value]="pAge()" (input)="pAge.set(text($event))"></label>
+        <label>Interval in days <input type="number" min="1" [value]="pInterval()" (input)="pInterval.set(text($event))"></label>
+      </div>
+      <label>Suggested medicine, optional
+        <select [value]="pItem()" (change)="pItem.set(text($event))">
+          <option value="">None</option>
+          @for (item of items(); track item.id) {
+            @if (item.category === 'MEDICINE') { <option [value]="item.id">{{ item.name }} · {{ item.farmName }}</option> }
+          }
+        </select>
+      </label>
+      <label>Notes <textarea rows="2" [value]="pNotes()" (input)="pNotes.set(text($event))"></textarea></label>
+      <div class="actions">
+        <button type="button" class="ghost-btn" (click)="closeSheet()">Cancel</button>
+        <button type="submit" class="green-btn" [disabled]="saving()">Approve protocol</button>
+      </div>
+    </form>
+  </div>
+}

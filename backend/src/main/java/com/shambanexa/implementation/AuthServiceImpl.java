@@ -7,8 +7,12 @@ import com.shambanexa.common.ApiException;
 import com.shambanexa.dto.AuthResponse;
 import com.shambanexa.common.CurrentUser;
 import com.shambanexa.common.RolePermissions;
+import com.shambanexa.entity.AccessRoleDefinition;
+import com.shambanexa.entity.AccessRolePermission;
 import com.shambanexa.entity.UserAccount;
 import com.shambanexa.entity.UserRoleGrant;
+import com.shambanexa.repository.AccessRoleDefinitionRepository;
+import com.shambanexa.repository.AccessRolePermissionRepository;
 import com.shambanexa.repository.UserAccountRepository;
 import com.shambanexa.repository.UserRoleGrantRepository;
 import com.shambanexa.security.JwtService;
@@ -19,8 +23,10 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,13 +34,18 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserAccountRepository users;
     private final UserRoleGrantRepository grants;
+    private final AccessRoleDefinitionRepository roleDefinitions;
+    private final AccessRolePermissionRepository rolePermissions;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public AuthServiceImpl(UserAccountRepository users, UserRoleGrantRepository grants,
-                       PasswordEncoder passwordEncoder, JwtService jwtService) {
+                           AccessRoleDefinitionRepository roleDefinitions, AccessRolePermissionRepository rolePermissions,
+                           PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.users = users;
         this.grants = grants;
+        this.roleDefinitions = roleDefinitions;
+        this.rolePermissions = rolePermissions;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -80,12 +91,29 @@ public class AuthServiceImpl implements AuthService {
                         : RolePermissions.FARM_EXPERT.equals(code) ? 2
                         : RolePermissions.AUDITOR.equals(code) ? 3 : 1))
                 .toList();
+        List<AccessRoleDefinition> defined = roleDefinitions.findByTenantIdOrderByLabelAsc(user.getTenantId());
+        Map<String, AccessRoleDefinition> custom = defined.stream()
+                .collect(Collectors.toMap(AccessRoleDefinition::getCode, Function.identity(), (left, right) -> left));
+        List<UUID> roleIds = defined.stream().map(AccessRoleDefinition::getId).toList();
+        Map<UUID, List<String>> storedPermissions = roleIds.isEmpty()
+                ? Map.of()
+                : rolePermissions.findByRoleIdIn(roleIds).stream()
+                .collect(Collectors.groupingBy(AccessRolePermission::getRoleId,
+                        Collectors.mapping(AccessRolePermission::getPermissionCode, Collectors.toList())));
         if (!ordered.isEmpty()) {
-            roleLabel = RolePermissions.label(ordered.get(0));
+            AccessRoleDefinition customRole = custom.get(ordered.get(0));
+            roleLabel = customRole == null ? RolePermissions.label(ordered.get(0)) : customRole.getLabel();
         }
         for (String role : ordered) {
             authorities.add("ROLE_" + role);
-            authorities.addAll(RolePermissions.permissions(role));
+            if (RolePermissions.isSystem(role)) {
+                authorities.addAll(RolePermissions.permissions(role));
+            } else {
+                AccessRoleDefinition customRole = custom.get(role);
+                if (customRole != null) {
+                    authorities.addAll(storedPermissions.getOrDefault(customRole.getId(), List.of()));
+                }
+            }
         }
         return new CurrentUser(
                 user.getId(),
