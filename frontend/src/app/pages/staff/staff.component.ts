@@ -98,6 +98,7 @@ export class StaffComponent {
   busy = signal(false);
   error = signal('');
   formOpen = signal(false);
+  photoOpen = signal(false);
   query = signal('');
   farmFilter = signal('');
   roleFilter = signal('');
@@ -192,6 +193,14 @@ export class StaffComponent {
   profileTasks = computed(() => {
     const name = this.selected()?.fullName;
     return this.tasks().filter(task => !!name && task.assigneeName === name);
+  });
+  profileSkills = computed(() => {
+    const id = this.selected()?.id;
+    return id ? this.competencies().filter(row => row.staffId === id) : [];
+  });
+  profileCertificates = computed(() => {
+    const id = this.selected()?.id;
+    return id ? this.training().filter(row => row.staffId === id) : [];
   });
 
   todoTasks = computed(() => this.tasks().filter(task => this.lane(task.status) === 'todo'));
@@ -466,6 +475,10 @@ export class StaffComponent {
 
   @HostListener('document:keydown.escape')
   closeOnEscape(): void {
+    if (this.photoOpen()) {
+      this.photoOpen.set(false);
+      return;
+    }
     if (this.formOpen()) this.closeForm();
   }
 

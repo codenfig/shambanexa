@@ -38,6 +38,15 @@ public class UserAccount extends BaseEntity {
     @Column(nullable = false, length = 20)
     private String accessScope;
 
+    @Column(length = 40)
+    private String phone;
+
+    @Column
+    private byte[] photo;
+
+    @Column(length = 40)
+    private String photoType;
+
     @Column(nullable = false)
     private Instant createdAt;
 

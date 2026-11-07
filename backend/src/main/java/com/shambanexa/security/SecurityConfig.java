@@ -12,8 +12,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.boot.web.servlet.MultipartConfigFactory;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.MultipartConfigElement;
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,6 +44,14 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    @Bean
+    MultipartConfigElement multipartConfigElement() {
+        MultipartConfigFactory factory = new MultipartConfigFactory();
+        factory.setMaxFileSize(DataSize.ofMegabytes(2));
+        factory.setMaxRequestSize(DataSize.ofMegabytes(2));
+        return factory.createMultipartConfig();
     }
 
     @Bean

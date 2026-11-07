@@ -42,7 +42,7 @@
               <tr><td class="blank" colspan="6">No adjustments are stored.</td></tr>
             } @else {
               @for (row of filtered(); track row.id) {
-                <tr [class.picked]="chosen()?.id === row.id" (click)="pick(row)">
+                <tr [class.picked]="isPicked(row)" (click)="pick(row)">
                   <td><strong>{{ row.itemName }}</strong><span>{{ row.sku }}</span></td>
                   <td>{{ row.farmName }}</td>
                   <td>{{ signed(row.delta) }} {{ row.unit }}</td>

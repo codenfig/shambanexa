@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -15,7 +15,10 @@ type FarmSort = 'name' | 'region' | 'animals' | 'facilities' | 'status';
 
 interface FacilityRow extends Facility {
   farmName: string;
+  farmId: string;
 }
+
+type FacilityLayout = 'grid' | 'list';
 
 @Component({
   selector: 'app-farms',
@@ -27,6 +30,7 @@ export class FarmsComponent {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   farms = signal<Farm[]>([]);
   alerts = signal<AlertItem[]>([]);
@@ -41,8 +45,15 @@ export class FarmsComponent {
   facilitiesLoading = signal(false);
   facilitiesError = signal('');
   private facilitiesLoaded = false;
+  facilityQuery = signal('');
+  facilityFarm = signal('');
+  facilityType = signal('');
+  facilityStatus = signal('');
+  facilityLayout = signal<FacilityLayout>('grid');
+  facilityPage = signal(0);
   page = signal(0);
   readonly pageSize = 8;
+  readonly facilityPageSize = 8;
   fmt = formatNumber;
 
   canCreate = computed(() => this.auth.session()?.allFarms === true);
@@ -142,9 +153,100 @@ export class FarmsComponent {
 
   maintenanceRows = computed(() => this.facilityRows().filter(row => row.status !== 'ACTIVE'));
 
+  facilityStats = computed(() => {
+    const rows = this.facilityRows();
+    const operational = rows.filter(row => row.status === 'ACTIVE').length;
+    return {
+      total: rows.length,
+      operational,
+      attention: rows.length - operational,
+      farms: new Set(rows.map(row => row.farmName)).size
+    };
+  });
+
+  facilityFarmOptions = computed(() => [...new Set(this.facilityRows().map(row => row.farmName))].sort((a, b) => a.localeCompare(b)));
+
+  facilityStatusOptions = computed(() => [...new Set(this.facilityRows().map(row => row.status))].sort((a, b) => a.localeCompare(b)));
+
+  filteredFacilities = computed(() => {
+    const query = this.facilityQuery().trim().toLowerCase();
+    const farm = this.facilityFarm();
+    const type = this.facilityType();
+    const status = this.facilityStatus();
+    return this.facilityRows().filter(row => {
+      if (farm && row.farmName !== farm) {
+        return false;
+      }
+      if (type && row.facilityType !== type) {
+        return false;
+      }
+      if (status && row.status !== status) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+      const haystack = [row.name, row.farmName, row.code, row.facilityType, this.typeLabel(row.facilityType), this.statusLabel(row.status)]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    }).sort((a, b) => a.name.localeCompare(b.name) || a.farmName.localeCompare(b.farmName));
+  });
+
+  visibleFacilities = computed(() => this.view() === 'maintenance'
+    ? this.filteredFacilities().filter(row => row.status !== 'ACTIVE')
+    : this.filteredFacilities());
+
+  facilityPageCount = computed(() => Math.max(1, Math.ceil(this.visibleFacilities().length / this.facilityPageSize)));
+
+  visibleFacilityPage = computed(() => Math.min(this.facilityPage(), this.facilityPageCount() - 1));
+
+  pagedFacilities = computed(() => {
+    const start = this.visibleFacilityPage() * this.facilityPageSize;
+    return this.visibleFacilities().slice(start, start + this.facilityPageSize);
+  });
+
+  facilityPages = computed(() => Array.from({ length: this.facilityPageCount() }, (_, index) => index));
+
+  facilityRange = computed(() => {
+    const total = this.visibleFacilities().length;
+    if (total === 0) {
+      return 'Showing 0 facilities';
+    }
+    const start = this.visibleFacilityPage() * this.facilityPageSize + 1;
+    const end = Math.min(total, start + this.facilityPageSize - 1);
+    return `Showing ${start}–${end} of ${formatNumber(total)} facilities`;
+  });
+
+  visibleTypes = computed(() => {
+    const farm = this.facilityFarm();
+    const status = this.facilityStatus();
+    const query = this.facilityQuery().trim().toLowerCase();
+    const groups = new Map<string, number>();
+    for (const row of this.facilityRows()) {
+      if (farm && row.farmName !== farm) {
+        continue;
+      }
+      if (status && row.status !== status) {
+        continue;
+      }
+      const label = this.typeLabel(row.facilityType).toLowerCase();
+      if (query && !label.includes(query) && !row.facilityType.toLowerCase().includes(query)) {
+        continue;
+      }
+      groups.set(row.facilityType, (groups.get(row.facilityType) ?? 0) + 1);
+    }
+    return [...groups.entries()]
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => this.typeLabel(a.type).localeCompare(this.typeLabel(b.type)));
+  });
+
   constructor() {
     this.route.queryParamMap.subscribe(params => {
       const view = params.get('view') || '';
+      if (view !== this.view()) {
+        this.facilityPage.set(0);
+      }
       this.view.set(view);
       if (view === 'facilities' || view === 'types' || view === 'maintenance') {
         this.sort.set('facilities');
@@ -169,7 +271,7 @@ export class FarmsComponent {
           return;
         }
         forkJoin(farms.map(farm => this.api.farm(farm.id).pipe(
-          map(detail => detail.facilities.map(item => ({ ...item, farmName: farm.name }))),
+          map(detail => detail.facilities.map(item => ({ ...item, farmName: farm.name, farmId: farm.id }))),
           catchError(() => of([] as FacilityRow[]))
         ))).subscribe(groups => {
           this.facilityRows.set(groups.flat());
@@ -236,6 +338,49 @@ export class FarmsComponent {
     this.page.set(Math.min(Math.max(page, 0), this.pageCount() - 1));
   }
 
+  setFacilityQuery(value: string): void {
+    this.facilityQuery.set(value);
+    this.facilityPage.set(0);
+  }
+
+  setFacilityFarm(value: string): void {
+    this.facilityFarm.set(value);
+    this.facilityPage.set(0);
+  }
+
+  setFacilityType(value: string): void {
+    this.facilityType.set(value);
+    this.facilityPage.set(0);
+  }
+
+  setFacilityStatus(value: string): void {
+    this.facilityStatus.set(value);
+    this.facilityPage.set(0);
+  }
+
+  setFacilityLayout(value: FacilityLayout): void {
+    this.facilityLayout.set(value);
+  }
+
+  resetFacilities(): void {
+    this.facilityQuery.set('');
+    this.facilityFarm.set('');
+    this.facilityType.set('');
+    this.facilityStatus.set('');
+    this.facilityPage.set(0);
+  }
+
+  goFacility(page: number): void {
+    this.facilityPage.set(Math.min(Math.max(page, 0), this.facilityPageCount() - 1));
+  }
+
+  openType(type: string): void {
+    this.facilityType.set(type);
+    this.facilityQuery.set('');
+    this.facilityPage.set(0);
+    void this.router.navigate(['/farms'], { queryParams: { view: 'facilities' } });
+  }
+
   exportCsv(): void {
     const header = ['Code', 'Name', 'Region', 'Status', 'Address', 'Manager', 'Phone', 'Animals', 'Facilities', 'Latitude', 'Longitude', 'Established', 'Updated'];
     const lines = this.filtered().map(farm => [
@@ -265,6 +410,44 @@ export class FarmsComponent {
     URL.revokeObjectURL(url);
   }
 
+  exportFacilities(): void {
+    const rows = this.view() === 'types'
+      ? [['Type', 'Facilities'], ...this.visibleTypes().map(item => [this.typeLabel(item.type), String(item.count)])]
+      : [
+          ['Name', 'Farm', 'Type', 'Status', 'Capacity', 'Unit', 'Added', 'Supervisor'],
+          ...this.visibleFacilities().map(item => [
+            item.name,
+            item.farmName,
+            this.typeLabel(item.facilityType),
+            this.statusLabel(item.status),
+            item.capacity === null ? '' : String(item.capacity),
+            item.capacityUnit || '',
+            this.addedLabel(item.createdAt),
+            item.supervisorName || ''
+          ])
+        ];
+    if (rows.length < 2) {
+      return;
+    }
+    const csv = rows
+      .map(columns => columns.map(value => `"${String(value).replaceAll('"', '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'shambanexa-facilities.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  facilitiesExportable(): boolean {
+    if (this.facilitiesLoading() || this.facilitiesError()) {
+      return false;
+    }
+    return this.view() === 'types' ? this.visibleTypes().length > 0 : this.visibleFacilities().length > 0;
+  }
+
   boundaries = computed(() => this.filtered()
     .filter(farm => (farm.boundary?.length ?? 0) >= 3)
     .map(farm => ({ id: farm.id, points: farm.boundary })));
@@ -288,6 +471,89 @@ export class FarmsComponent {
         notice: health ? healthNotice(health) : undefined
       };
     }));
+
+  typeLabel(type: string): string {
+    const names: Record<string, string> = {
+      BARN: 'Barn',
+      GRAZING: 'Grazing',
+      PEN: 'Pen',
+      WAREHOUSE: 'Warehouse',
+      CAGE: 'Cage',
+      POND: 'Pond',
+      MILKING: 'Milking unit'
+    };
+    return names[type] || type.charAt(0) + type.slice(1).toLowerCase();
+  }
+
+  facilityPhoto(row: FacilityRow): string {
+    const kind = this.photoKind(row.facilityType);
+    if (!kind) {
+      return '/assets/facilities/landscape.png';
+    }
+    const farm = row.farmName.trim().toLowerCase();
+    if (farm === 'central farm') {
+      return `/assets/facilities/${kind}-a.png`;
+    }
+    if (farm === 'coastal farm') {
+      return `/assets/facilities/${kind}-b.png`;
+    }
+    const alternate = [...row.farmId].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 2 === 0;
+    return `/assets/facilities/${kind}-${alternate ? 'a' : 'b'}.png`;
+  }
+
+  typePhoto(type: string): string {
+    const kind = this.photoKind(type);
+    return kind ? `/assets/facilities/${kind}-a.png` : '/assets/facilities/landscape.png';
+  }
+
+  private photoKind(type: string): string | null {
+    if (type === 'BARN' || type === 'MILKING') {
+      return 'barn';
+    }
+    if (type === 'GRAZING') {
+      return 'grazing';
+    }
+    if (type === 'PEN') {
+      return 'pen';
+    }
+    if (type === 'WAREHOUSE') {
+      return 'store';
+    }
+    return null;
+  }
+
+  statusLabel(status: string): string {
+    if (status === 'ACTIVE') {
+      return 'Operational';
+    }
+    if (status === 'MAINTENANCE' || status === 'NEEDS_ATTENTION') {
+      return 'Needs attention';
+    }
+    if (!status) {
+      return '—';
+    }
+    return status.charAt(0) + status.slice(1).toLowerCase().replaceAll('_', ' ');
+  }
+
+  capacityLabel(row: FacilityRow): string {
+    if (row.capacity === null || row.capacity === undefined) {
+      return '—';
+    }
+    const amount = formatNumber(Number(row.capacity));
+    return row.capacityUnit ? `${amount} ${row.capacityUnit}` : amount;
+  }
+
+  addedLabel(value: string | null): string {
+    if (!value) {
+      return '—';
+    }
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'Africa/Dar_es_Salaam'
+    }).format(new Date(value));
+  }
 
   statusClass(status: string): string {
     if (status === 'ACTIVE') {

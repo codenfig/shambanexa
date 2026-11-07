@@ -36,7 +36,7 @@
               <tr><td class="blank" colspan="4">No suppliers are stored.</td></tr>
             } @else {
               @for (row of groups(); track row.name) {
-                <tr [class.picked]="chosen()?.name === row.name" (click)="selected.set(row.name)">
+                <tr [class.picked]="isChosen(row.name)" (click)="selected.set(row.name)">
                   <td><strong>{{ row.name }}</strong></td>
                   <td>{{ fmt(row.lines) }}</td>
                   <td>{{ row.farms.join(', ') }}</td>

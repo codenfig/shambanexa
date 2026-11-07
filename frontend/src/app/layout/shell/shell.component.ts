@@ -1,11 +1,10 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { ApiService } from '../../core/api.service';
 import { AlertItem, Farm, SearchHit, Species } from '../../core/models';
-import { ToastService } from '../../core/toast.service';
 import { ADVISER_SECTIONS, NAV_SECTIONS, NavChildConfig, NavItemConfig, NavMatch, NavPermission, NavTarget } from './nav.config';
 
 export interface NavChildView {
@@ -57,9 +56,10 @@ export class ShellComponent {
   private auth = inject(AuthService);
   private api = inject(ApiService);
   private router = inject(Router);
-  toast = inject(ToastService);
-
   session = this.auth.session;
+  private photoUrl = signal<string | null>(null);
+  photo = this.photoUrl.asReadonly();
+  private photoToken = 0;
   query = '';
   hits = signal<SearchHit[]>([]);
   menuOpen = signal(false);
@@ -84,6 +84,31 @@ export class ShellComponent {
   private path = signal(this.router.url);
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.revokePhoto());
+    effect(() => {
+      const hasPhoto = !!this.session()?.hasPhoto;
+      const stamp = this.auth.photoStamp();
+      if (!hasPhoto) {
+        this.revokePhoto();
+        return;
+      }
+      const token = ++this.photoToken;
+      this.auth.loadPhoto().subscribe({
+        next: blob => {
+          if (token !== this.photoToken) {
+            return;
+          }
+          this.revokePhoto();
+          this.photoUrl.set(URL.createObjectURL(blob));
+        },
+        error: () => {
+          if (token === this.photoToken) {
+            this.revokePhoto();
+          }
+        }
+      });
+      void stamp;
+    });
     this.applyTheme(this.theme());
     this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(event => {
       const tree = this.router.parseUrl(this.router.url);
@@ -184,6 +209,7 @@ export class ShellComponent {
       suppliers: 'Medical Suppliers',
       market: 'Agricultural Marketplace',
       settings: 'Settings',
+      account: 'Your profile',
       help: 'Help',
       access: 'Roles & Permissions'
     };
@@ -380,6 +406,14 @@ export class ShellComponent {
     } else {
       this.router.navigate(['/staff']);
     }
+  }
+
+  private revokePhoto(): void {
+    const current = this.photoUrl();
+    if (current) {
+      URL.revokeObjectURL(current);
+    }
+    this.photoUrl.set(null);
   }
 
   logout(): void {
@@ -580,7 +614,7 @@ export class ShellComponent {
     if (root === 'analytics' || root === 'alerts') {
       return { label: 'Insight', link: '/analytics' };
     }
-    if (root === 'settings' || root === 'help' || root === 'access') {
+    if (root === 'settings' || root === 'help' || root === 'access' || root === 'account') {
       return { label: 'System', link: '/settings' };
     }
     return { label: 'Workspace', link: '/dashboard' };

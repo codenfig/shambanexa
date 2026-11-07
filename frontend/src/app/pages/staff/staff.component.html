@@ -236,8 +236,13 @@
     @if (screen() === 'profile') {
       @if (selected(); as person) {
         <article class="panel profile">
+          <figure class="portrait">
+            <button type="button" class="portrait-btn" (click)="photoOpen.set(true)" aria-label="View the officer photo larger">
+              <img src="assets/staff/officer.jpg" alt="Farm officer">
+            </button>
+          </figure>
+          <div class="profile-body">
           <header class="identity">
-            <span class="avatar lg" [class.gold]="tone(person.fullName) === 'gold'" [class.blue]="tone(person.fullName) === 'blue'" aria-hidden="true">{{ initial(person) }}</span>
             <div>
               <h2>{{ person.fullName }}</h2>
               <p>{{ person.roleTitle }} · <a [routerLink]="['/farms', person.farmId]">{{ person.farmName }}</a></p>
@@ -268,8 +273,47 @@
               }
             }
           }
-          <p class="note">Skills, certificates, documents, and attendance are not stored on this record.</p>
+          <section class="held" aria-label="Skills, certificates, and documents">
+            <div>
+              <h3>Skills</h3>
+              @if (profileSkills().length === 0) {
+                <p>Not recorded</p>
+              } @else {
+                <ul>
+                  @for (skill of profileSkills(); track skill.id) {
+                    <li>{{ skill.skill }} · {{ skill.level === 'GAP' ? 'Gap' : 'Met' }}</li>
+                  }
+                </ul>
+              }
+            </div>
+            <div>
+              <h3>Certificates</h3>
+              @if (profileCertificates().length === 0) {
+                <p>Not recorded</p>
+              } @else {
+                <ul>
+                  @for (item of profileCertificates(); track item.id) {
+                    <li>{{ item.title }}@if (item.completedOn) { · {{ dateLabel(item.completedOn) }} }</li>
+                  }
+                </ul>
+              }
+            </div>
+            <div>
+              <h3>Documents</h3>
+              <p>Not recorded</p>
+            </div>
+          </section>
+          <p class="note">Attendance is not stored on this record.</p>
+          </div>
         </article>
+        @if (photoOpen()) {
+          <div class="photo-back" (click)="photoOpen.set(false)">
+            <figure class="photo-zoom" role="dialog" aria-modal="true" aria-label="Officer photo" (click)="$event.stopPropagation()">
+              <button type="button" class="photo-close" (click)="photoOpen.set(false)">Close</button>
+              <img src="assets/staff/officer.jpg" alt="Farm officer">
+            </figure>
+          </div>
+        }
       } @else {
         <div class="state">
           <h2>That staff record is not in your scope.</h2>

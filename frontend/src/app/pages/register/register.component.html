@@ -4,94 +4,154 @@
       <a class="logo" routerLink="/login" title="ShambaNexa">
         <img src="assets/logo.png" alt="ShambaNexa">
       </a>
-      <h1>Register your farm.</h1>
-      <p class="intro">Create your account, add your farm details and mark its main location to get started with ShambaNexa.</p>
-      <ol class="rail-steps">
-        <li [class.done]="accountReady()" [class.current]="currentStep() === 1">
-          <span class="num">@if (accountReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 1 }</span>
-          <span><strong>Account</strong><small>Name, email and password</small></span>
-        </li>
-        <li [class.done]="farmReady()" [class.current]="currentStep() === 2">
-          <span class="num">@if (farmReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 2 }</span>
-          <span><strong>Farm details</strong><small>Farm name, region and address</small></span>
-        </li>
-        <li [class.done]="locationReady()" [class.current]="currentStep() === 3">
-          <span class="num">@if (locationReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 3 }</span>
-          <span><strong>Farm location</strong><small>Add one main location</small></span>
-        </li>
+     
+      <h1>Join the ShambaNexa agricultural community</h1>
+      <p class="intro">Manage your farm, access expert advice, buy and sell farm produce, or offer agricultural training — all in one platform.</p>
+      <ol class="timeline">
+        @for (step of timeline(); track step.index) {
+          <li [class.done]="step.done" [class.current]="step.current">
+            <span class="dot">
+              @if (step.done) {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4L18 8"/></svg>
+              } @else {
+                {{ step.index }}
+              }
+            </span>
+            <span>
+              <strong>{{ step.title }}</strong>
+              <small>{{ step.detail }}</small>
+            </span>
+          </li>
+        }
       </ol>
     </div>
-    <div class="rail-foot">
-      <div class="safe">
-        <span class="shield" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6l-7-3z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
-        </span>
-        <span><strong>Your information is safe with us</strong><small>We use your information only to create your account and provide farm services.</small></span>
-      </div>
-      <img class="landscape" src="assets/register-landscape.jpg" alt="">
+    <div class="rail-scene">
+      <img class="landscape" src="assets/register/landscape.png" alt="">
     </div>
   </aside>
 
   <form class="sheet" [formGroup]="form" (ngSubmit)="submit()">
-    <header class="sheet-head">
-      <a class="back-link" routerLink="/login">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
-        Create account
-      </a>
-      <p class="have">Already have an account? <a routerLink="/login">Sign in <span aria-hidden="true">→</span></a></p>
+    <header class="intro-banner">
+      <div class="banner-top">
+        <a class="back-link" routerLink="/login">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+          Create account
+        </a>
+        <p class="have">Already have an account? <a routerLink="/login">Sign in <span aria-hidden="true">→</span></a></p>
+      </div>
+      <h2>Register your account</h2>
+      <p>Choose the type of account that best describes you. Each account gives you access to tailored features and services. A veterinary medicine shop or agricultural seller stays hidden until an administrator approves it.</p>
     </header>
 
-    <div class="title">
-      <h2>Register your farm</h2>
-      <p>Tell us about your farm and mark its main location on the map. You can add more details after registration.</p>
-    </div>
-
-    <ol class="progress">
-      <li [class.done]="accountReady()" [class.current]="currentStep() === 1">
-        <span class="mark">@if (accountReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 1 }</span>
-        <span><strong>Account</strong><small>Name, email and password</small></span>
-      </li>
-      <li class="join" [class.done]="accountReady()" aria-hidden="true"></li>
-      <li [class.done]="farmReady()" [class.current]="currentStep() === 2">
-        <span class="mark">@if (farmReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 2 }</span>
-        <span><strong>Farm details</strong><small>Farm name, region and address</small></span>
-      </li>
-      <li class="join" [class.done]="farmReady()" aria-hidden="true"></li>
-      <li [class.done]="locationReady()" [class.current]="currentStep() === 3 && !locationReady()">
-        <span class="mark">@if (locationReady()) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg> } @else { 3 }</span>
-        <span><strong>Farm location</strong><small>Add one main location</small></span>
-      </li>
+    <ol class="stepper" aria-label="Registration progress">
+      @for (step of timeline(); track step.index) {
+        <li [class.done]="step.done" [class.current]="step.current">
+          <button type="button" [attr.aria-label]="step.title + '. ' + step.detail" [disabled]="!canOpen(step.index)" (click)="openStep(step.index)">
+            <span class="dot">
+              @if (step.done) {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4L18 8"/></svg>
+              } @else {
+                {{ step.index }}
+              }
+            </span>
+            <span class="step-copy">
+              <strong>{{ step.title }}</strong>
+              <small>{{ step.detail }}</small>
+            </span>
+          </button>
+        </li>
+      }
     </ol>
+    @for (step of timeline(); track step.index) {
+      @if (step.current) {
+        <p class="step-now"><strong>{{ step.title }}</strong><small>{{ step.detail }}</small></p>
+      }
+    }
 
+    @if (error()) { <div class="error banner" role="alert">{{ error() }}</div> }
+    @if (notice()) { <p class="notice">{{ notice() }}</p> }
+
+    @if (showing('type')) {
+    <div class="kinds" role="radiogroup" aria-label="Registration type">
+      @for (item of kinds; track item.id) {
+        <button type="button" class="kind" role="radio" [attr.data-tone]="item.tone" [class.on]="kind() === item.id" [attr.aria-checked]="kind() === item.id" (click)="chooseKind(item.id)">
+          <span class="kind-mark" aria-hidden="true">
+            @switch (item.id) {
+              @case ('FARM') { <svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M12 13c-3-2-6-2-8 0 0-4 3-7 8-8 5 1 8 4 8 8-2-2-5-2-8 0z"/></svg> }
+              @case ('MEDICAL_EXPERT') { <svg viewBox="0 0 24 24"><path d="M8 8.5a4 4 0 0 1 8 0c0 2.2-1.2 3.4-2.2 4.4L12 15l-1.8-2.1C9.2 11.9 8 10.7 8 8.5z"/><path d="M9 19h6M12 16v3"/></svg> }
+              @case ('MEDICAL_SELLER') { <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 10v8h12v-8"/><path d="M10 18v-4h4v4"/></svg> }
+              @case ('MARKET_BUYER') { <svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg> }
+              @case ('MARKET_SELLER') { <svg viewBox="0 0 24 24"><path d="M4 9h16v10H4z"/><path d="M8 9V7h8v2"/><path d="M9 14h6"/></svg> }
+              @default { <svg viewBox="0 0 24 24"><path d="M12 20V9"/><path d="M12 13c-2.4-2-5-2.2-7-.4 1.2-3.2 3.6-5.2 7-6.2 3.4 1 5.8 3 7 6.2-2-1.8-4.6-1.6-7 .4z"/></svg> }
+            }
+          </span>
+          <span class="kind-copy">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.detail }}</small>
+          </span>
+          <span class="kind-photo">
+            <img [src]="item.image" alt="">
+          </span>
+          <span class="kind-pick" aria-hidden="true">
+            @if (kind() === item.id) {
+              <svg viewBox="0 0 24 24"><path d="m6 12.5 4 4L18 8"/></svg>
+            }
+          </span>
+        </button>
+      }
+    </div>
+    }
+
+    @if (showing('account')) {
     <section class="panel">
       <div class="panel-head">
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 19.2c1.2-3 3.6-4.5 7-4.5s5.8 1.5 7 4.5"/></svg></span>
         <div>
-          <h3>Account</h3>
-          <p>The person who will sign in.</p>
+          <h3>Account information</h3>
+          <p>Details for your platform account.</p>
         </div>
       </div>
-      <div class="trio">
+      <div class="split">
         <label class="field"><span>Full name <em>*</em></span>
-          <input formControlName="fullName" maxlength="160" autocomplete="name">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 19c1-2.6 3-4 6-4s5 1.4 6 4"/></svg>
+            <input formControlName="fullName" maxlength="160" autocomplete="name" placeholder="Enter your full name">
+          </span>
           @if (invalid('fullName')) { <small>Enter your full name.</small> }
         </label>
         <label class="field"><span>Email <em>*</em></span>
-          <input formControlName="email" type="email" autocomplete="email" maxlength="180">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="m5 7 7 6 7-6"/></svg>
+            <input formControlName="email" type="email" autocomplete="email" maxlength="180" placeholder="Enter your email address">
+          </span>
           @if (invalid('email')) { <small>Enter a valid email address.</small> }
         </label>
         <label class="field"><span>Password <em>*</em></span>
-          <span class="secret">
-            <input formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8">
+          <span class="boxed secret">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="11" width="12" height="8" rx="1.6"/><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"/></svg>
+            <input formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8" placeholder="Create a password">
             <button class="eye" type="button" (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.4"/></svg>
             </button>
           </span>
           @if (invalid('password')) { <small>Use at least 8 characters.</small> } @else { <small class="hint">At least 8 characters.</small> }
         </label>
+        <label class="field"><span>Confirm password <em>*</em></span>
+          <span class="boxed secret">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="11" width="12" height="8" rx="1.6"/><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"/></svg>
+            <input formControlName="confirmPassword" [type]="showConfirm() ? 'text' : 'password'" autocomplete="new-password" minlength="8" placeholder="Repeat the password">
+            <button class="eye" type="button" (click)="showConfirm.set(!showConfirm())" [attr.aria-label]="showConfirm() ? 'Hide confirmation' : 'Show confirmation'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.4"/></svg>
+            </button>
+          </span>
+          @if (invalid('confirmPassword')) { <small>Use at least 8 characters.</small> } @else if (mismatch()) { <small>The passwords do not match.</small> } @else { <small class="hint">Repeat the password.</small> }
+        </label>
       </div>
     </section>
+    }
 
+    @if (showing('details')) {
+    @if (kind() === 'FARM') {
     <section class="panel">
       <div class="panel-head">
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span>
@@ -102,41 +162,175 @@
       </div>
       <div class="pair">
         <label class="field"><span>Farm name <em>*</em></span>
-          <input formControlName="farmName" maxlength="160">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>
+            <input formControlName="farmName" maxlength="160" placeholder="Enter the farm name">
+          </span>
           @if (invalid('farmName')) { <small>Enter the farm name.</small> }
         </label>
         <label class="field"><span>Farm code <em>*</em></span>
-          <input formControlName="farmCode" maxlength="40" autocomplete="off">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h8"/></svg>
+            <input formControlName="farmCode" maxlength="40" autocomplete="off" placeholder="Short unique code">
+          </span>
           @if (invalid('farmCode')) { <small>Enter a farm code.</small> } @else { <small class="hint">Short unique code</small> }
         </label>
       </div>
       <div class="trio">
         <label class="field"><span>Region <em>*</em></span>
-          <select formControlName="region">
-            <option value="">Select a region</option>
-            @for (name of regions; track name) {
-              <option [value]="name">{{ name }}</option>
-            }
-          </select>
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+            <select formControlName="region">
+              <option value="">Select a region</option>
+              @for (name of regions; track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          </span>
           @if (invalid('region')) { <small>Choose a region.</small> }
         </label>
         <label class="field"><span>Address <em>*</em></span>
-          <input formControlName="address" maxlength="300">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10.5 12 5l7 5.5V19H5z"/></svg>
+            <input formControlName="address" maxlength="300" placeholder="Enter the address">
+          </span>
           @if (invalid('address')) { <small>Enter the address.</small> }
         </label>
         <label class="field"><span>Phone</span>
-          <input formControlName="contactPhone" maxlength="40">
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h3l1 4-2 1a12 12 0 0 0 5 5l1-2 4 1v3c0 .6-.4 1-1 1A15 15 0 0 1 7 5c0-.6.4-1 1-1z"/></svg>
+            <input formControlName="contactPhone" maxlength="40" placeholder="Enter your phone number">
+          </span>
           <small class="hint">Contact phone (optional)</small>
         </label>
       </div>
     </section>
+    }
 
+    @if (kind() !== 'FARM') {
+    <section class="panel">
+      <div class="panel-head">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 19.2c1.2-3 3.6-4.5 7-4.5s5.8 1.5 7 4.5"/></svg></span>
+        <div>
+          <h3>Professional details ({{ heading() }})</h3>
+          <p>{{ kind() === 'MEDICAL_SELLER' || kind() === 'MARKET_SELLER' ? 'An administrator approves this profile before it is shown.' : 'This account stays separate from Farmer / Farm Manager and Farm Adviser.' }}</p>
+        </div>
+      </div>
+      @if (kind() === 'MEDICAL_SELLER' || kind() === 'MARKET_SELLER') {
+        <div class="pair">
+          <label class="field"><span>{{ kind() === 'MEDICAL_SELLER' ? 'Supplier name' : 'Seller name' }} <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16v10H4z"/><path d="M8 9V7h8v2"/></svg>
+              <input formControlName="organizationName" maxlength="160" placeholder="Enter the name">
+            </span>
+            @if (invalid('organizationName')) { <small>Enter the name.</small> }
+          </label>
+          <label class="field"><span>District <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              <input formControlName="district" maxlength="80" placeholder="Enter the district">
+            </span>
+            @if (invalid('district')) { <small>Enter the district.</small> }
+          </label>
+        </div>
+      }
+      <div class="trio">
+        <label class="field"><span>Region <em>*</em></span>
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+            <select formControlName="region">
+              <option value="">Select a region</option>
+              @for (name of regions; track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          </span>
+          @if (invalid('region')) { <small>Choose a region.</small> }
+        </label>
+        @if (kind() === 'MEDICAL_SELLER') {
+          <label class="field"><span>Address <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10.5 12 5l7 5.5V19H5z"/></svg>
+              <input formControlName="address" maxlength="300" placeholder="Enter the address">
+            </span>
+            @if (invalid('address')) { <small>Enter the address.</small> }
+          </label>
+        }
+        @if (kind() === 'AGRICULTURAL_TRAINER') {
+          <label class="field"><span>District <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              <input formControlName="district" maxlength="80" placeholder="Enter the district">
+            </span>
+            @if (invalid('district')) { <small>Enter the district.</small> }
+          </label>
+        }
+        @if (kind() !== 'MARKET_BUYER') {
+          <label class="field"><span>Phone <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h3l1 4-2 1a12 12 0 0 0 5 5l1-2 4 1v3c0 .6-.4 1-1 1A15 15 0 0 1 7 5c0-.6.4-1 1-1z"/></svg>
+              <input formControlName="contactPhone" maxlength="40" placeholder="Enter your phone number">
+            </span>
+            @if (invalid('contactPhone')) { <small>Enter a phone number.</small> }
+          </label>
+        } @else {
+          <label class="field"><span>Phone</span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h3l1 4-2 1a12 12 0 0 0 5 5l1-2 4 1v3c0 .6-.4 1-1 1A15 15 0 0 1 7 5c0-.6.4-1 1-1z"/></svg>
+              <input formControlName="contactPhone" maxlength="40" placeholder="Enter your phone number">
+            </span>
+            <small class="hint">Optional</small>
+          </label>
+        }
+      </div>
+      @if (kind() === 'MEDICAL_SELLER') {
+        <div class="trio">
+          <label class="field"><span>Licence number <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+              <input formControlName="licenseNumber" maxlength="80" placeholder="Enter the licence number">
+            </span>
+            @if (invalid('licenseNumber')) { <small>Enter the licence number.</small> }
+          </label>
+          <label class="field"><span>Opening hours <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 8v5l3 2"/></svg>
+              <input formControlName="hours" maxlength="120" placeholder="Mon–Sat 08:00–18:00">
+            </span>
+            @if (invalid('hours')) { <small>Enter the opening hours.</small> }
+          </label>
+          <label class="field"><span>Shop mark <em>*</em></span>
+            <span class="boxed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 5 8v8l7 4 7-4V8z"/></svg>
+              <select formControlName="mark">
+                @for (mark of marks; track mark.id) {
+                  <option [value]="mark.id">{{ mark.label }}</option>
+                }
+              </select>
+            </span>
+          </label>
+        </div>
+      }
+      @if (kind() !== 'MARKET_BUYER') {
+        <label class="field"><span>Description <em>*</em></span>
+          <span class="boxed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M6 12h12M6 17h8"/></svg>
+            <input formControlName="summary" maxlength="400" placeholder="Briefly describe your professional experience, services, or specialization.">
+          </span>
+          @if (invalid('summary')) { <small>Enter a short description.</small> }
+        </label>
+      }
+    </section>
+    }
+    }
+
+    @if (showing('location')) {
     <section class="panel">
       <div class="panel-head">
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.3"/></svg></span>
         <div>
-          <h3>Set your farm’s main location</h3>
-          <p>Click the map to place a pin, use the search box, or use your current location. This is the farm’s main point, not the property corners.</p>
+          <h3>{{ kind() === 'FARM' ? 'Set your farm’s main location' : 'Set the main location' }}</h3>
+          <p>{{ kind() === 'FARM' ? 'Click the map to place a pin, use the search box, or use your current location. This is the farm’s main point, not the property corners.' : 'Click the map to place the shop or stall inside Tanzania.' }}</p>
         </div>
       </div>
 
@@ -183,7 +377,7 @@
         <div class="pin-side">
           <div class="info">
             <span aria-hidden="true">i</span>
-            <p>Your location places the farm on the map.</p>
+            <p>{{ kind() === 'FARM' ? 'Your location places the farm on the map.' : 'Your location places this profile on the map.' }}</p>
           </div>
           <label class="field"><span>Latitude <em>*</em></span>
             <input formControlName="latitude" type="number" step="0.000001" min="-90" max="90" placeholder="e.g. -3.3500" (input)="accuracy.set(null)">
@@ -198,21 +392,47 @@
           }
         </div>
       </div>
-      <p class="after"><span aria-hidden="true"></span>Add one main location now. You can draw the complete farm boundary after registration.</p>
+      <p class="after"><span aria-hidden="true"></span>{{ kind() === 'FARM' ? 'Add one main location now. You can draw the complete farm boundary after registration.' : 'Place the shop or stall inside Tanzania.' }}</p>
     </section>
+    }
 
-    @if (error()) { <div class="error" role="alert">{{ error() }}</div> }
-    @if (notice()) { <p class="notice">{{ notice() }}</p> }
-
+    @if (showing('review')) {
+    <section class="panel">
+      <div class="panel-head">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4L18 8"/></svg></span>
+        <div>
+          <h3>Review your details</h3>
+          <p>Every step is complete. Check the details, agree to the terms, then create the account.</p>
+        </div>
+      </div>
+      <dl class="review-list">
+        @for (row of reviewRows(); track row.label) {
+          <div [class.wide]="row.wide">
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
     <div class="foot">
       <label class="agree">
         <input type="checkbox" [checked]="agreed()" (change)="setAgreed($event)">
         <span>I agree to the <button type="button" (click)="explainTerms()">Terms of Service</button> and <button type="button" (click)="explainPrivacy()">Privacy Policy</button>.</span>
       </label>
       <div class="actions">
-        <a class="ghost-btn" routerLink="/login">Back</a>
-        <button class="green-btn" type="submit" [disabled]="busy()">{{ busy() ? 'Creating…' : 'Create account' }} @if (!busy()) { <span aria-hidden="true">→</span> }</button>
+        <button class="ghost-btn" type="button" (click)="retreat()">Back</button>
+        <button class="green-btn" type="submit" [disabled]="busy() || !agreed()">{{ busy() ? 'Creating…' : 'Create account' }} @if (!busy()) { <span aria-hidden="true">→</span> }</button>
       </div>
     </div>
+    } @else {
+    <div class="actions">
+      @if (stage() === 0) {
+        <a class="ghost-btn" routerLink="/login">Back</a>
+      } @else {
+        <button class="ghost-btn" type="button" (click)="retreat()">Back</button>
+      }
+      <button class="green-btn" type="button" (click)="advance()">Continue</button>
+    </div>
+    }
   </form>
 </section>

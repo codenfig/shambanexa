@@ -1,0 +1,85 @@
+<section class="account">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Account</p>
+      <h1>Your profile</h1>
+      <p>Keep your photo, phone number, and password up to date.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="card identity">
+      <figure class="portrait">
+        @if (preview(); as src) {
+          <button type="button" class="portrait-btn" (click)="photoOpen.set(true)" aria-label="View your profile image larger">
+            <img [src]="src" alt="Your profile image">
+          </button>
+        } @else {
+          <span class="letter" aria-hidden="true">{{ (session()?.fullName || 'U').charAt(0) }}</span>
+        }
+      </figure>
+      <h2>{{ session()?.fullName }}</h2>
+      <span class="role">{{ session()?.roleLabel }}</span>
+      <p class="email">{{ session()?.email }}</p>
+      <label class="ghost-btn photo-pick">
+        {{ savingPhoto() ? 'Saving…' : (preview() ? 'Change photo' : 'Add photo') }}
+        <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhoto($event)" [disabled]="savingPhoto()">
+      </label>
+      <p class="hint">JPEG, PNG, or WebP, up to 2 MB. Click the photo to view it larger.</p>
+    </aside>
+
+    <div class="stack">
+      <form class="card panel" (submit)="$event.preventDefault(); savePhone()">
+        <div class="panel-title">
+          <h2>Phone number</h2>
+          <p>Shown on this account when someone needs to reach you.</p>
+        </div>
+        <label>
+          Phone number
+          <input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone" maxlength="40" autocomplete="tel" placeholder="+255 700 000 000">
+        </label>
+        <button class="green-btn" type="submit" [disabled]="savingPhone()">{{ savingPhone() ? 'Saving…' : 'Save phone number' }}</button>
+      </form>
+
+      <form class="card panel" (submit)="$event.preventDefault(); savePassword()">
+        <div class="panel-title">
+          <h2>Password</h2>
+          <p>Use 8 to 80 characters. The current password is required before it changes.</p>
+        </div>
+        <label>
+          Current password
+          <span class="secret">
+            <input [type]="showCurrent() ? 'text' : 'password'" [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)" name="currentPassword" autocomplete="current-password">
+            <button type="button" class="eye" (click)="showCurrent.set(!showCurrent())">{{ showCurrent() ? 'Hide' : 'Show' }}</button>
+          </span>
+        </label>
+        <div class="pair">
+          <label>
+            New password
+            <span class="secret">
+              <input [type]="showNew() ? 'text' : 'password'" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" name="newPassword" autocomplete="new-password" minlength="8" maxlength="80">
+              <button type="button" class="eye" (click)="showNew.set(!showNew())">{{ showNew() ? 'Hide' : 'Show' }}</button>
+            </span>
+          </label>
+          <label>
+            Confirm new password
+            <span class="secret">
+              <input [type]="showConfirm() ? 'text' : 'password'" [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="80">
+              <button type="button" class="eye" (click)="showConfirm.set(!showConfirm())">{{ showConfirm() ? 'Hide' : 'Show' }}</button>
+            </span>
+          </label>
+        </div>
+        <button class="green-btn" type="submit" [disabled]="savingPassword()">{{ savingPassword() ? 'Saving…' : 'Change password' }}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+@if (photoOpen() && preview(); as src) {
+  <div class="photo-back" (click)="photoOpen.set(false)">
+    <figure class="photo-zoom" role="dialog" aria-modal="true" aria-label="Profile image" (click)="$event.stopPropagation()">
+      <button type="button" class="photo-close" (click)="photoOpen.set(false)">Close</button>
+      <img [src]="src" alt="Your profile image">
+    </figure>
+  </div>
+}

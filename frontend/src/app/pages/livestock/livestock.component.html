@@ -438,7 +438,7 @@
               @for (animal of attentionAnimals(); track animal.id) {
                 <li>
                   @if (speciesPhoto(animal.speciesName); as src) {
-                    <img class="avatar photo" [src]="src" alt="">
+                    <span class="avatar"><img [src]="src" alt=""></span>
                   } @else {
                     <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
                   }
@@ -459,9 +459,14 @@
     @if (screen() === 'detail') {
       @if (selected(); as animal) {
         <article class="drawer wide" aria-label="Animal profile">
+          @if (speciesPhoto(animal.speciesName); as src) {
+            <figure class="portrait">
+              <img [src]="src" [alt]="animal.speciesName">
+            </figure>
+          }
+          <div class="profile">
           <header>
             <div class="who">
-              <span class="avatar lg" aria-hidden="true">{{ initial(animal) }}</span>
               <div>
                 <h2>{{ animal.name || animal.tag }}</h2>
                 <p>{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</p>
@@ -506,6 +511,7 @@
               <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer animal</button>
             }
           </div>
+          </div>
         </article>
       } @else if (!loading()) {
         <div class="empty"><h2>That animal is not in your scope.</h2><a class="green-btn" routerLink="/livestock/registry">Back to registry</a></div>
@@ -513,7 +519,7 @@
     }
 
     @if (screen() === 'registry' || screen() === 'species' || screen() === 'herds') {
-    <div class="stage" [class.solo]="screen() !== 'registry'">
+    <div class="stage solo">
       <article class="board" id="ledger" [class.species-ledger]="(screen() === 'species' && namedSpecies()) || screen() === 'herds'">
         <div class="filters" [class.species-filters]="screen() === 'species'" [class.herd-filters]="screen() === 'herds'">
           <label class="search-field">
@@ -682,7 +688,7 @@
               <article class="tile" [class.picked]="selected()?.id === animal.id">
                 <div class="who">
                   @if (speciesPhoto(animal.speciesName); as src) {
-                    <img class="avatar photo" [src]="src" alt="">
+                    <span class="avatar"><img [src]="src" alt=""></span>
                   } @else {
                     <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
                   }
@@ -693,10 +699,7 @@
                 <p>{{ label(animal.sex) }} · {{ ageLabel(animal.birthDate) }}</p>
                 <p class="meta">{{ animal.farmName }}</p>
                 <div class="row-actions">
-                  <button type="button" (click)="open(animal)">View</button>
-                  @if (animal.status === 'ACTIVE') {
-                    <button type="button" (click)="startTransfer(animal)">Transfer</button>
-                  }
+                  <ng-container [ngTemplateOutlet]="animalActions" [ngTemplateOutletContext]="{ $implicit: animal }" />
                 </div>
               </article>
             }
@@ -722,7 +725,7 @@
             }
           </footer>
         } @else {
-          <div class="table-scroll">
+          <div class="table-scroll" (scroll)="closeActionMenu()">
             <table>
               <thead>
                 <tr>
@@ -741,7 +744,7 @@
                     <td>
                       <div class="who">
                         @if (speciesPhoto(animal.speciesName); as src) {
-                    <img class="avatar photo" [src]="src" alt="">
+                    <span class="avatar"><img [src]="src" alt=""></span>
                   } @else {
                     <span class="avatar" aria-hidden="true">{{ initial(animal) }}</span>
                   }
@@ -757,10 +760,7 @@
                     <td><span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span></td>
                     <td><span class="status-pill is-active">{{ label(animal.status) }}</span></td>
                     <td class="row-actions">
-                      <button type="button" (click)="open(animal)">View</button>
-                      @if (animal.status === 'ACTIVE') {
-                        <button type="button" (click)="startTransfer(animal)">Transfer</button>
-                      }
+                      <ng-container [ngTemplateOutlet]="animalActions" [ngTemplateOutletContext]="{ $implicit: animal }" />
                     </td>
                   </tr>
                 }
@@ -789,98 +789,23 @@
           </footer>
         }
       </article>
-
-      @if (screen() === 'registry') {
-      <aside class="rail">
-      @if (selected(); as animal) {
-        <article class="drawer" aria-label="Animal profile">
-          <header>
-            <div class="who">
-              <span class="avatar lg" aria-hidden="true">{{ initial(animal) }}</span>
-              <div>
-                <h2>{{ animal.name || animal.tag }}</h2>
-                <p>{{ animal.tag }} · {{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</p>
-              </div>
-            </div>
-            <button type="button" class="text-btn" (click)="closeDetail()" aria-label="Close profile">Close</button>
-          </header>
-          <span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span>
-          <div class="drawer-tabs">
-            <button type="button" [class.on]="drawerTab() === 'overview'" (click)="drawerTab.set('overview')">Overview</button>
-            <button type="button" [class.on]="drawerTab() === 'health'" (click)="drawerTab.set('health')">Health</button>
-          </div>
-          @if (drawerTab() === 'overview') {
-            <dl>
-              <div><dt>Tag</dt><dd>{{ animal.tag }}</dd></div>
-              <div><dt>Sex</dt><dd>{{ label(animal.sex) }}</dd></div>
-              <div><dt>Species</dt><dd>{{ animal.speciesName }}</dd></div>
-              <div><dt>Breed</dt><dd>{{ animal.breedName || '—' }}</dd></div>
-              <div><dt>Farm</dt><dd><a [routerLink]="['/farms', animal.farmId]">{{ animal.farmName }}</a></dd></div>
-              <div><dt>Birth</dt><dd>{{ dateLabel(animal.birthDate) }}</dd></div>
-              <div><dt>Age</dt><dd>{{ ageLabel(animal.birthDate) }}</dd></div>
-              <div><dt>Color</dt><dd>{{ animal.color || '—' }}</dd></div>
-              <div><dt>Status</dt><dd>{{ label(animal.status) }}</dd></div>
-            </dl>
-          } @else {
-            <dl>
-              <div><dt>Health</dt><dd>{{ label(animal.healthStatus) }}</dd></div>
-            </dl>
-            <h3>Open cases on {{ animal.farmName }}</h3>
-            @if (farmCases().length === 0) {
-              <p class="meta">No open health case is recorded for this farm.</p>
-            }
-            @for (item of farmCases(); track item.id) {
-              <article class="case">
-                <strong>{{ item.title }}</strong>
-                <span class="meta">{{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span>
-                @if (item.notes) { <p>{{ item.notes }}</p> }
-              </article>
-            }
-          }
-          <div class="sheet-actions">
-            @if (animal.status === 'ACTIVE') {
-              <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer animal</button>
-            }
-          </div>
-          <p class="meta profile-note">Weight, milk yield, and breeding events are not stored on this animal.</p>
-        </article>
-      } @else {
-        <article class="card">
-          <h2>Alerts</h2>
-          @if (openCaseRows().length === 0 && dueTasks().length === 0) {
-            <p class="meta">No open health case or due treatment is stored.</p>
-          }
-          @for (item of openCaseRows(); track item.id) {
-            <div class="task">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.farmName }} · {{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span>
-            </div>
-          }
-          @for (task of dueTasks(); track task.id) {
-            <div class="task">
-              <strong>{{ task.title }}</strong>
-              <span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span>
-            </div>
-          }
-        </article>
-        <article class="card">
-          <h2>Quick actions</h2>
-          <div class="actions">
-            @if (canWrite()) {
-              <a class="green-btn" routerLink="/livestock/new">Register animal</a>
-              <a class="ghost-btn" routerLink="/alerts/report">Report health</a>
-            }
-            <button class="ghost-btn" type="button" (click)="chooseTab('herds')">Herd batches</button>
-          </div>
-        </article>
-      }
-      </aside>
-      }
     </div>
     }
     <p class="audit">All changes are recorded in the audit trail.</p>
   }
 </section>
+
+<ng-template #animalActions let-animal>
+  <button type="button" class="action-toggle" (click)="toggleActions(animal, $event)" [attr.aria-expanded]="actionMenu() === animal.id" aria-haspopup="menu" [attr.aria-label]="'Actions for ' + (animal.name || animal.tag)">Actions</button>
+  @if (actionMenu() === animal.id) {
+    <div class="action-menu" role="menu" [style.top.px]="menuTop" [style.right.px]="menuRight" (click)="$event.stopPropagation()">
+      <button type="button" role="menuitem" (click)="viewAnimal(animal)">View</button>
+      @if (animal.status === 'ACTIVE') {
+        <button type="button" role="menuitem" (click)="transferFromMenu(animal)">Transfer</button>
+      }
+    </div>
+  }
+</ng-template>
 
 @if (transferAnimal(); as animal) {
   <div class="modal-back" (click)="closeTransfer()">

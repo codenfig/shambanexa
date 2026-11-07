@@ -195,7 +195,8 @@ public class FarmServiceImpl implements FarmService {
                 facility.getStatus(),
                 facility.getCapacity(),
                 facility.getCapacityUnit(),
-                facility.getSupervisorName()
+                facility.getSupervisorName(),
+                facility.getCreatedAt()
         );
     }
 

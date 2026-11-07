@@ -1,10 +1,12 @@
 <section class="directory">
+  @if (!facilityView()) {
   <app-page-header [title]="pageTitle()" [description]="pageDescription()">
     <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error() || filtered().length === 0">Export</button>
-    @if (canCreate() && !facilityView()) {
+    @if (canCreate()) {
       <a class="green-btn" routerLink="/farms/new">Add farm</a>
     }
   </app-page-header>
+  }
 
   @if (loading()) {
     <p class="state">Loading farms…</p>
@@ -40,73 +42,219 @@
     }
 
     @if (view() === 'facilities' || view() === 'types' || view() === 'maintenance') {
-      <article class="panel map-panel" style="margin-bottom:14px">
-        @if (facilitiesLoading()) {
-          <p>Loading facilities…</p>
-        } @else if (facilitiesError()) {
-          <p>{{ facilitiesError() }}</p>
-        } @else if (view() === 'types') {
-          <h2>Facility types</h2>
-          @if (facilityTypes().length === 0) {
-            <p class="meta">No facilities are recorded.</p>
-          } @else {
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th>Type</th><th>Facilities</th></tr></thead>
-                <tbody>
-                  @for (item of facilityTypes(); track item.type) {
-                    <tr><td>{{ item.type }}</td><td>{{ fmt(item.count) }}</td></tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        } @else if (view() === 'maintenance') {
-          <h2>Maintenance</h2>
-          @if (maintenanceRows().length === 0) {
-            <p class="meta">Every recorded facility is active.</p>
-          } @else {
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th>Facility</th><th>Farm</th><th>Type</th><th>Status</th></tr></thead>
-                <tbody>
-                  @for (item of maintenanceRows(); track item.id) {
-                    <tr><td>{{ item.name }}</td><td>{{ item.farmName }}</td><td>{{ item.facilityType }}</td><td>{{ item.status }}</td></tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        } @else {
-          <div class="summary" style="margin-bottom:14px">
-            <article><span>Facilities</span><strong>{{ fmt(facilityRows().length) }}</strong></article>
-            <article><span>Types</span><strong>{{ fmt(facilityTypes().length) }}</strong></article>
-            <article><span>Needs attention</span><strong>{{ fmt(maintenanceRows().length) }}</strong></article>
-            <article><span>Farms</span><strong>{{ fmt(summary().total) }}</strong></article>
+      <div class="board">
+        <header class="banner">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 20h18M4 20V9h16v11"/><path d="M8 9V5h8v4"/><path d="M8 13h3M13 13h3M8 16h3M13 16h3"/></svg>
+          </span>
+          <div>
+            <h1>Facilities</h1>
+            <p>Barns, grazing areas, pens, stores, and cages recorded on the farms you can open.</p>
           </div>
-          <h2>All facilities</h2>
-          @if (facilityRows().length === 0) {
-            <p class="meta">No facilities are recorded.</p>
+        </header>
+
+        <div class="stats">
+          <article>
+            <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V9h16v11M8 9V5h8v4M8 13h3M13 13h3"/></svg></span>
+            <div><span>Total facilities</span><strong>{{ fmt(facilityStats().total) }}</strong></div>
+          </article>
+          <article>
+            <span class="bubble green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7 9 18l-5-5"/></svg></span>
+            <div><span>Operational</span><strong>{{ fmt(facilityStats().operational) }}</strong></div>
+          </article>
+          <article class="warm">
+            <span class="bubble amber" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.5 6.2a3.2 3.2 0 0 0-4.2 4.2L5 15.7 8.3 19l5.3-5.3a3.2 3.2 0 0 0 4.2-4.2L15 12l-3-3 2.5-2.8z"/></svg></span>
+            <div><span>Needs attention</span><strong>{{ fmt(facilityStats().attention) }}</strong></div>
+          </article>
+          <a class="farm-stat" routerLink="/farms">
+            <span class="bubble blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span>
+            <div><span>Farms</span><strong>{{ fmt(facilityStats().farms) }}</strong></div>
+            <span class="chevron" aria-hidden="true">›</span>
+          </a>
+        </div>
+
+        <div class="board-bar">
+          <nav class="tabs" aria-label="Facility views">
+            <a routerLink="/farms" [queryParams]="{ view: 'facilities' }" [class.on]="view() === 'facilities'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M4 20V9h16v11"/><path d="M8 9V5h8v4"/></svg>
+              All facilities
+            </a>
+            <a routerLink="/farms" [queryParams]="{ view: 'types' }" [class.on]="view() === 'types'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 4 8l8 4 8-4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/></svg>
+              Facility types
+            </a>
+            <a routerLink="/farms" [queryParams]="{ view: 'maintenance' }" [class.on]="view() === 'maintenance'">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6.2a3.2 3.2 0 0 0-4.2 4.2L5 15.7 8.3 19l5.3-5.3a3.2 3.2 0 0 0 4.2-4.2L15 12l-3-3 2.5-2.8z"/></svg>
+              Maintenance
+            </a>
+          </nav>
+          <button class="export" type="button" (click)="exportFacilities()" [disabled]="!facilitiesExportable()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>
+            Export
+          </button>
+        </div>
+
+        <div class="filters">
+          <label class="search-field">
+            <span class="sr">Search facilities</span>
+            <input [ngModel]="facilityQuery()" (ngModelChange)="setFacilityQuery($event)" placeholder="Search facilities by name, farm or type…" type="search">
+          </label>
+          <label>
+            <span class="sr">Farm</span>
+            <select [ngModel]="facilityFarm()" (ngModelChange)="setFacilityFarm($event)">
+              <option value="">All farms</option>
+              @for (name of facilityFarmOptions(); track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          </label>
+          @if (view() !== 'types') {
+          <label>
+            <span class="sr">Type</span>
+            <select [ngModel]="facilityType()" (ngModelChange)="setFacilityType($event)">
+              <option value="">All types</option>
+              @for (item of facilityTypes(); track item.type) {
+                <option [value]="item.type">{{ typeLabel(item.type) }}</option>
+              }
+            </select>
+          </label>
+          }
+          <label>
+            <span class="sr">Status</span>
+            <select [ngModel]="facilityStatus()" (ngModelChange)="setFacilityStatus($event)">
+              <option value="">All status</option>
+              @for (item of facilityStatusOptions(); track item) {
+                <option [value]="item">{{ statusLabel(item) }}</option>
+              }
+            </select>
+          </label>
+          @if (view() !== 'types') {
+            <div class="layout" role="group" aria-label="Layout">
+              <button type="button" [class.on]="facilityLayout() === 'grid'" (click)="setFacilityLayout('grid')" aria-label="Grid">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+              </button>
+              <button type="button" [class.on]="facilityLayout() === 'list'" (click)="setFacilityLayout('list')" aria-label="List">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+              </button>
+            </div>
+          }
+          @if (facilityQuery() || facilityFarm() || facilityType() || facilityStatus()) {
+            <button class="text-btn" type="button" (click)="resetFacilities()">Reset</button>
+          }
+        </div>
+
+        @if (facilitiesLoading()) {
+          <p class="state">Loading facilities…</p>
+        } @else if (facilitiesError()) {
+          <div class="state error-state">
+            <p>{{ facilitiesError() }}</p>
+          </div>
+        } @else if (view() === 'types') {
+          @if (visibleTypes().length === 0) {
+            <div class="empty"><h2>No facility types match.</h2><p>Try another farm, status, or search.</p></div>
           } @else {
+            <div class="type-grid">
+              @for (item of visibleTypes(); track item.type) {
+                <button class="type-card" type="button" (click)="openType(item.type)">
+                  <span class="type-photo" aria-hidden="true"><img [src]="typePhoto(item.type)" alt=""></span>
+                  <div>
+                    <strong>{{ typeLabel(item.type) }}</strong>
+                    <span>{{ fmt(item.count) }} {{ item.count === 1 ? 'facility' : 'facilities' }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          }
+        } @else if (visibleFacilities().length === 0) {
+          <div class="empty">
+            @if (view() === 'maintenance' && maintenanceRows().length === 0) {
+              <h2>Every recorded facility is active.</h2>
+              <p>Nothing is waiting for maintenance.</p>
+            } @else {
+              <h2>No facilities match.</h2>
+              <p>Try another search, or reset the filters.</p>
+            }
+          </div>
+        } @else if (facilityLayout() === 'list') {
+          <article class="panel">
             <div class="table-scroll">
               <table>
-                <thead><tr><th>Facility</th><th>Farm</th><th>Type</th><th>Status</th><th>Capacity</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Facility</th>
+                    <th>Farm</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Capacity</th>
+                    <th>Added</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  @for (item of facilityRows(); track item.id) {
+                  @for (item of pagedFacilities(); track item.id) {
                     <tr>
-                      <td>{{ item.name }}</td>
+                      <td><a class="farm-name" [routerLink]="['/farms', item.farmId]">{{ item.name }}</a><span class="meta">{{ item.code }}</span></td>
                       <td>{{ item.farmName }}</td>
-                      <td>{{ item.facilityType }}</td>
-                      <td>{{ item.status }}</td>
-                      <td>@if (item.capacity !== null) { {{ item.capacity }} {{ item.capacityUnit }} }</td>
+                      <td>{{ typeLabel(item.facilityType) }}</td>
+                      <td><span class="flag" [class.attention]="item.status !== 'ACTIVE'">{{ statusLabel(item.status) }}</span></td>
+                      <td>{{ capacityLabel(item) }}</td>
+                      <td>{{ addedLabel(item.createdAt) }}</td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-          }
+          </article>
+          <footer class="pager">
+            <span>{{ facilityRange() }}</span>
+            <div>
+              <button type="button" (click)="goFacility(visibleFacilityPage() - 1)" [disabled]="visibleFacilityPage() === 0" aria-label="Previous page">‹</button>
+              @for (index of facilityPages(); track index) {
+                <button type="button" [class.current]="index === visibleFacilityPage()" (click)="goFacility(index)">{{ index + 1 }}</button>
+              }
+              <button type="button" (click)="goFacility(visibleFacilityPage() + 1)" [disabled]="visibleFacilityPage() >= facilityPageCount() - 1" aria-label="Next page">›</button>
+            </div>
+          </footer>
+        } @else {
+          <div class="facility-grid">
+            @for (item of pagedFacilities(); track item.id) {
+              <article class="facility-card">
+                <a class="scene" [routerLink]="['/farms', item.farmId]" [attr.data-kind]="item.facilityType" [attr.aria-label]="item.name">
+                  <img [src]="facilityPhoto(item)" alt="">
+                  <span class="flag" [class.attention]="item.status !== 'ACTIVE'">
+                    @if (item.status === 'ACTIVE') {
+                      <span class="flag-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7 9 18l-5-5"/></svg></span>
+                    } @else {
+                      <span class="flag-mark warn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span>
+                    }
+                    {{ statusLabel(item.status) }}
+                  </span>
+                </a>
+                <div class="card-body">
+                  <a class="card-name" [routerLink]="['/farms', item.farmId]">{{ item.name }}</a>
+                  <p class="card-meta">
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>{{ item.farmName }}</span>
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9h16v11M8 9V5h8v4"/></svg>{{ typeLabel(item.facilityType) }}</span>
+                  </p>
+                  <p class="card-foot">
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v10H4z"/><path d="M8 8V6h8v2"/></svg>Capacity <strong>{{ capacityLabel(item) }}</strong></span>
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v3M17 4v3M4 9h16"/><path d="M5 7h14v13H5z"/></svg>Added <strong>{{ addedLabel(item.createdAt) }}</strong></span>
+                  </p>
+                </div>
+              </article>
+            }
+          </div>
+          <footer class="pager">
+            <span>{{ facilityRange() }}</span>
+            <div>
+              <button type="button" (click)="goFacility(visibleFacilityPage() - 1)" [disabled]="visibleFacilityPage() === 0" aria-label="Previous page">‹</button>
+              @for (index of facilityPages(); track index) {
+                <button type="button" [class.current]="index === visibleFacilityPage()" (click)="goFacility(index)">{{ index + 1 }}</button>
+              }
+              <button type="button" (click)="goFacility(visibleFacilityPage() + 1)" [disabled]="visibleFacilityPage() >= facilityPageCount() - 1" aria-label="Next page">›</button>
+            </div>
+          </footer>
         }
-      </article>
+      </div>
     }
 
     @if (!facilityView()) {

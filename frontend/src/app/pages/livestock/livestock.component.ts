@@ -1,4 +1,5 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
@@ -23,7 +24,7 @@ const HEALTH_COLORS: Record<string, string> = {
 
 @Component({
   selector: 'app-livestock',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, NgTemplateOutlet],
   templateUrl: './livestock.component.html',
   styleUrl: './livestock.component.css'
 })
@@ -71,6 +72,9 @@ export class LivestockComponent {
   readonly healthOptions = HEALTH;
 
   selected = signal<Animal | null>(null);
+  actionMenu = signal<string | null>(null);
+  menuTop = 0;
+  menuRight = 0;
   transferAnimal = signal<Animal | null>(null);
   destination = signal('');
   reason = signal('');
@@ -665,10 +669,40 @@ export class LivestockComponent {
     this.selected.set(null);
   }
 
+  @HostListener('document:click')
+  closeActionMenu(): void {
+    this.actionMenu.set(null);
+  }
+
   @HostListener('document:keydown.escape')
   closeOnEscape(): void {
+    this.actionMenu.set(null);
     this.closeTransfer();
     this.closeDetail();
+  }
+
+  toggleActions(animal: Animal, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.actionMenu() === animal.id) {
+      this.actionMenu.set(null);
+      return;
+    }
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuHeight = animal.status === 'ACTIVE' ? 84 : 46;
+    const spaceBelow = window.innerHeight - box.bottom;
+    this.menuTop = spaceBelow < menuHeight + 8 ? Math.max(8, box.top - menuHeight - 4) : box.bottom + 4;
+    this.menuRight = Math.max(8, window.innerWidth - box.right);
+    this.actionMenu.set(animal.id);
+  }
+
+  viewAnimal(animal: Animal): void {
+    this.actionMenu.set(null);
+    this.open(animal);
+  }
+
+  transferFromMenu(animal: Animal): void {
+    this.actionMenu.set(null);
+    this.startTransfer(animal);
   }
 
   startTransfer(animal: Animal): void {

@@ -13,6 +13,11 @@ public final class RolePermissions {
     public static final String FARM_MANAGER = "FARM_MANAGER";
     public static final String FARM_EXPERT = "FARM_EXPERT";
     public static final String AUDITOR = "AUDITOR";
+    public static final String MEDICAL_EXPERT = "MEDICAL_EXPERT";
+    public static final String MEDICAL_SELLER = "MEDICAL_SELLER";
+    public static final String MARKET_BUYER = "MARKET_BUYER";
+    public static final String MARKET_SELLER = "MARKET_SELLER";
+    public static final String AGRICULTURAL_TRAINER = "AGRICULTURAL_TRAINER";
 
     private static final Map<String, List<String>> PERMISSIONS = Map.of(
             TENANT_ADMIN, List.of(
@@ -43,7 +48,19 @@ public final class RolePermissions {
                     "INVENTORY_READ",
                     "STAFF_READ",
                     "REPORT_EXPORT"
-            )
+            ),
+            MEDICAL_EXPERT, List.of(
+                    "FARM_READ",
+                    "ANIMAL_READ",
+                    "INVENTORY_READ",
+                    "STAFF_READ",
+                    "REPORT_EXPORT",
+                    "ADVICE_WRITE"
+            ),
+            MEDICAL_SELLER, List.of(),
+            MARKET_BUYER, List.of(),
+            MARKET_SELLER, List.of(),
+            AGRICULTURAL_TRAINER, List.of()
     );
 
     public static final List<PermissionChoice> CHOICES = List.of(
@@ -99,9 +116,14 @@ public final class RolePermissions {
     public static String label(String roleCode) {
         return switch (roleCode) {
             case TENANT_ADMIN -> "Super Admin";
-            case FARM_MANAGER -> "Farm Manager";
+            case FARM_MANAGER -> "Farmer / Farm Manager";
             case FARM_EXPERT -> "Farm Adviser";
             case AUDITOR -> "Auditor";
+            case MEDICAL_EXPERT -> "Veterinary Professional";
+            case MEDICAL_SELLER -> "Veterinary Medicine Supplier";
+            case MARKET_BUYER -> "Agricultural Buyer";
+            case MARKET_SELLER -> "Agricultural Seller";
+            case AGRICULTURAL_TRAINER -> "Agricultural Trainer";
             default -> roleCode;
         };
     }
@@ -112,6 +134,11 @@ public final class RolePermissions {
             case FARM_MANAGER -> "Runs the assigned farms: updates livestock, stock, staff, and farm records. Does not post adviser listings.";
             case FARM_EXPERT -> "Advises farmers, publishes recommendations, and can be found, rated, and recommended. Does not change livestock, stock, or staff records.";
             case AUDITOR -> "Read-only review of the farms in the assigned access scope. Operational records stay unchanged.";
+            case MEDICAL_EXPERT -> "A veterinary professional who advises on animal health and can approve a prescription-required medicine request. Does not change livestock, stock, or staff records, and does not replace Farm Adviser.";
+            case MEDICAL_SELLER -> "A veterinary medicine supplier. The shop stays hidden until an administrator approves the licence. Does not change farm records.";
+            case MARKET_BUYER -> "An agricultural buyer who browses the marketplace and can post a buying request. Does not change farm records.";
+            case MARKET_SELLER -> "An agricultural seller. Listings stay hidden until an administrator approves the seller. Does not change farm records.";
+            case AGRICULTURAL_TRAINER -> "Offers agricultural training. Does not change livestock, stock, or staff records.";
             default -> "Access follows the grants stored for this role.";
         };
     }

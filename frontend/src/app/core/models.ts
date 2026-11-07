@@ -11,6 +11,8 @@ export interface AuthSession {
   canManageAccess: boolean;
   canWriteOperations: boolean;
   canAdvise: boolean;
+  phone?: string | null;
+  hasPhoto?: boolean;
 }
 
 export interface GeoPoint {
@@ -205,6 +207,7 @@ export interface Facility {
   capacity: number | null;
   capacityUnit: string | null;
   supervisorName: string | null;
+  createdAt: string | null;
 }
 
 export interface Animal {

@@ -16,9 +16,11 @@ String token,
         String accessScope,
         boolean canManageAccess,
         boolean canWriteOperations,
-        boolean canAdvise
+        boolean canAdvise,
+        String phone,
+        boolean hasPhoto
 ) {
-public static AuthResponse from(CurrentUser user, String token) {
+public static AuthResponse from(CurrentUser user, String token, String phone, boolean hasPhoto) {
     return new AuthResponse(
             token,
             user.id(),
@@ -31,7 +33,9 @@ public static AuthResponse from(CurrentUser user, String token) {
             user.accessScope(),
             user.canManageAccess(),
             user.canWriteOperations(),
-            user.canAdvise()
+            user.canAdvise(),
+            phone,
+            hasPhoto
     );
     }
 }

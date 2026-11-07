@@ -44,7 +44,7 @@ export class StockSuppliersComponent {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   });
-  chosen = computed(() => this.groups().find(row => row.name === this.selected()) || this.groups()[0] || null);
+  chosen = computed(() => this.groups().find(row => row.name === this.selected()) ?? this.groups().at(0) ?? null);
   lines = computed(() => {
     const name = this.chosen()?.name;
     return name ? this.store.items().filter(item => item.supplierName === name) : [];
@@ -57,6 +57,10 @@ export class StockSuppliersComponent {
       return null;
     }
     return this.store.suppliers().find(row => row.name.toLowerCase() === name.toLowerCase()) || null;
+  }
+
+  isChosen(name: string): boolean {
+    return this.chosen()?.name === name;
   }
 
   canWrite(): boolean {

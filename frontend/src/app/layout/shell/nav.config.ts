@@ -74,12 +74,14 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
           {
             id: 'dash-overview',
             label: 'Overview',
+            icon: 'overview',
             target: { commands: ['/dashboard'], fragment: 'overview' },
             match: { any: [page('/dashboard'), section('/dashboard', 'overview')] }
           },
           {
             id: 'dash-activity',
             label: 'Recent Activity',
+            icon: 'activity',
             target: { commands: ['/dashboard'], fragment: 'activity' },
             match: section('/dashboard', 'activity')
           }
@@ -95,18 +97,21 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
           {
             id: 'farms-all',
             label: 'All Farms',
+            icon: 'plots',
             target: { commands: ['/farms'] },
             match: { path: '/farms', exact: true, withoutQuery: ['view'] }
           },
           {
             id: 'farms-map',
             label: 'Farm Map',
+            icon: 'map',
             target: { commands: ['/farms'], fragment: 'locations' },
             match: section('/farms', 'locations')
           },
           {
             id: 'farms-add',
             label: 'Add Farm',
+            icon: 'add',
             target: { commands: ['/farms', 'new'] },
             match: page('/farms/new'),
             permission: 'manageAccess'
@@ -130,18 +135,21 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
           {
             id: 'facilities-all',
             label: 'All Facilities',
+            icon: 'sheds',
             target: { commands: ['/farms'], query: { view: 'facilities' } },
             match: query('/farms', 'view', 'facilities')
           },
           {
             id: 'facilities-types',
             label: 'Facility Types',
+            icon: 'layers',
             target: { commands: ['/farms'], query: { view: 'types' } },
             match: query('/farms', 'view', 'types')
           },
           {
             id: 'facilities-maintenance',
             label: 'Maintenance',
+            icon: 'wrench',
             target: { commands: ['/farms'], query: { view: 'maintenance' } },
             match: query('/farms', 'view', 'maintenance')
           }

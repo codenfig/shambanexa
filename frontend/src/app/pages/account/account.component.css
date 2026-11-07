@@ -1,0 +1,149 @@
+.account { display: grid; gap: 18px; max-width: 1040px; }
+.eyebrow {
+  margin: 0 0 6px;
+  color: #1e8330;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.page-head p:last-child { max-width: 460px; }
+
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.card {
+  background: #fff;
+  border: 1px solid #e4eee7;
+  border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(23, 48, 36, 0.05);
+}
+.identity {
+  padding: 28px 22px 22px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 6px;
+  background:
+    radial-gradient(circle at 50% 0%, #f3faf4, transparent 58%),
+    #fff;
+}
+.portrait { margin: 0; }
+.portrait-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: zoom-in;
+  line-height: 0;
+}
+.portrait-btn:focus-visible { outline: 2px solid #1e8330; outline-offset: 4px; }
+.portrait img, .letter {
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 15%;
+  background: #fff;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 1px #d7e6db, 0 16px 32px rgba(23, 48, 36, 0.14);
+}
+.letter {
+  display: grid;
+  place-items: center;
+  color: #1e8330;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 64px;
+  font-weight: 650;
+}
+.identity h2 {
+  margin: 10px 0 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.role {
+  display: inline-flex;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e8f6ec;
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.email { margin: 0; color: #5d6b63; font-size: 13px; word-break: break-word; }
+.photo-pick { margin-top: 10px; cursor: pointer; }
+.photo-pick input { display: none; }
+.hint { margin: 4px 0 0; color: #6d7b73; font-size: 12px; line-height: 1.45; }
+
+.stack { display: grid; gap: 16px; }
+.panel { padding: 22px; display: grid; gap: 12px; }
+.panel-title h2 {
+  margin: 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.panel-title p { margin: 4px 0 0; color: #5d6b63; }
+.panel label { display: grid; gap: 6px; font-size: 13px; font-weight: 750; color: #3d4c44; }
+.panel input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d5dfd8;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #fbfefc;
+}
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.secret { position: relative; }
+.secret input { padding-right: 64px; }
+.eye {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: #1e8330;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 32px;
+}
+.panel .green-btn { justify-self: start; min-width: 180px; }
+
+.photo-back {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(16, 24, 18, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.photo-zoom { position: relative; margin: 0; }
+.photo-zoom img {
+  width: min(640px, 86vw);
+  height: min(640px, 80vh);
+  object-fit: contain;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(16, 24, 18, 0.35);
+}
+.photo-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 0;
+  background: #173024;
+  color: #fff;
+  font-weight: 750;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 860px) {
+  .layout, .pair { grid-template-columns: 1fr; }
+  .panel .green-btn { width: 100%; }
+}

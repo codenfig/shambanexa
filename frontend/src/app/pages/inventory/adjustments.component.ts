@@ -53,7 +53,8 @@ export class StockAdjustmentsComponent {
       return `${row.itemName} ${row.sku} ${row.farmName} ${row.reason} ${row.requestedByName}`.toLowerCase().includes(query);
     });
   });
-  chosen = computed(() => this.pending().find(row => row.id === this.selectedId()) || this.pending()[0] || null);
+  chosen = computed((): InventoryAdjustment | null =>
+    this.pending().find(row => row.id === this.selectedId()) ?? this.pending().at(0) ?? null);
 
   constructor() {
     const item = this.route.snapshot.queryParamMap.get('item') || this.store.items()[0]?.id || '';
@@ -63,6 +64,10 @@ export class StockAdjustmentsComponent {
         this.open.set(true);
       }
     }
+  }
+
+  isPicked(row: InventoryAdjustment): boolean {
+    return this.chosen()?.id === row.id;
   }
 
   canWrite(): boolean {

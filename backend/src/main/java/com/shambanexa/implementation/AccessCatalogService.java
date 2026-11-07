@@ -109,7 +109,7 @@ public class AccessCatalogService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "ROLE_NAME", "Enter a role name of 2 to 80 characters");
         }
         if (RESERVED_LABELS.contains(label.toLowerCase(Locale.ROOT))) {
-            throw new ApiException(HttpStatus.CONFLICT, "ROLE_RESERVED", "Super Admin, Farm Manager, Farm Adviser, and Auditor keep their recorded names");
+            throw new ApiException(HttpStatus.CONFLICT, "ROLE_RESERVED", "Super Admin, Farmer / Farm Manager, Farm Adviser, and Auditor keep their recorded names");
         }
         String description = request.description() == null ? "" : request.description().trim();
         if (description.length() > 400) {
@@ -121,7 +121,7 @@ public class AccessCatalogService {
         List<String> permissions = requirePermissions(request.permissions());
         String code = codeFor(label);
         if (RolePermissions.isSystem(code)) {
-            throw new ApiException(HttpStatus.CONFLICT, "ROLE_RESERVED", "Super Admin, Farm Manager, Farm Adviser, and Auditor keep their recorded names");
+            throw new ApiException(HttpStatus.CONFLICT, "ROLE_RESERVED", "Super Admin, Farmer / Farm Manager, Farm Adviser, and Auditor keep their recorded names");
         }
         UUID tenantId = access.tenantId();
         if (roleDefinitions.existsByTenantIdAndCode(tenantId, code)) {

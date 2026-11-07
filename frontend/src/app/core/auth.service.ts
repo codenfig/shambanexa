@@ -10,6 +10,7 @@ const USER_KEY = 'shambanexa.user';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly session = signal<AuthSession | null>(this.read());
+  readonly photoStamp = signal(0);
   private refreshed = false;
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -42,12 +43,37 @@ export class AuthService {
     }
     this.refreshed = true;
     return this.http.get<AuthSession>('/api/v1/auth/me').pipe(
-      tap(session => this.persist({ ...this.normalize(session), token: this.token() }, !!localStorage.getItem(TOKEN_KEY))),
+      tap(session => this.merge(session)),
       catchError(() => {
         this.logout();
         return of(null);
       })
     );
+  }
+
+  updatePhone(phone: string) {
+    return this.http.put<AuthSession>('/api/v1/account/phone', { phone }).pipe(
+      tap(session => this.merge(session))
+    );
+  }
+
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.put('/api/v1/account/password', { currentPassword, newPassword }, { observe: 'response' });
+  }
+
+  uploadPhoto(file: File) {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<AuthSession>('/api/v1/account/photo', body).pipe(
+      tap(session => {
+        this.merge(session);
+        this.photoStamp.update(value => value + 1);
+      })
+    );
+  }
+
+  loadPhoto() {
+    return this.http.get('/api/v1/account/photo', { responseType: 'blob' });
   }
 
   logout(): void {
@@ -58,6 +84,14 @@ export class AuthService {
     sessionStorage.removeItem(USER_KEY);
     this.session.set(null);
     this.router.navigate(['/login']);
+  }
+
+  private merge(session: AuthSession): void {
+    const current = this.session();
+    this.persist({
+      ...this.normalize(session),
+      token: session.token || current?.token || this.token()
+    }, !!localStorage.getItem(TOKEN_KEY) || !sessionStorage.getItem(TOKEN_KEY));
   }
 
   private persist(session: AuthSession, remember: boolean): void {

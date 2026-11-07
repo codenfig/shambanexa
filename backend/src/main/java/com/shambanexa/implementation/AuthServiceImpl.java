@@ -1,9 +1,11 @@
 package com.shambanexa.implementation;
 
+import com.shambanexa.service.AuditTrail;
 import com.shambanexa.service.AuthService;
 
 import com.shambanexa.common.AccessScopes;
 import com.shambanexa.common.ApiException;
+import com.shambanexa.dto.AccountPhoto;
 import com.shambanexa.dto.AuthResponse;
 import com.shambanexa.common.CurrentUser;
 import com.shambanexa.common.RolePermissions;
@@ -38,16 +40,20 @@ public class AuthServiceImpl implements AuthService {
     private final AccessRolePermissionRepository rolePermissions;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditTrail auditTrail;
+
+    private static final int PHOTO_LIMIT = 2_000_000;
 
     public AuthServiceImpl(UserAccountRepository users, UserRoleGrantRepository grants,
                            AccessRoleDefinitionRepository roleDefinitions, AccessRolePermissionRepository rolePermissions,
-                           PasswordEncoder passwordEncoder, JwtService jwtService) {
+                           PasswordEncoder passwordEncoder, JwtService jwtService, AuditTrail auditTrail) {
         this.users = users;
         this.grants = grants;
         this.roleDefinitions = roleDefinitions;
         this.rolePermissions = rolePermissions;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditTrail = auditTrail;
     }
 
     public AuthResponse login(String email, String password) {
@@ -58,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
             throw invalid();
         }
         CurrentUser current = assemble(user);
-        return AuthResponse.from(current, jwtService.issue(user.getId()));
+        return AuthResponse.from(current, jwtService.issue(user.getId()), user.getPhone(), hasPhoto(user));
     }
 
     public CurrentUser load(UUID userId) {
@@ -69,7 +75,76 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public AuthResponse profile(CurrentUser current) {
-        return AuthResponse.from(current, null);
+        UserAccount user = users.findById(current.id()).orElseThrow(this::invalid);
+        return AuthResponse.from(current, null, user.getPhone(), hasPhoto(user));
+    }
+
+    public AuthResponse updatePhone(CurrentUser current, String phone) {
+        UserAccount user = requireUser(current.id());
+        String next = phone == null ? "" : phone.trim();
+        if (next.length() > 40) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHONE_INVALID", "Use a phone number of 40 characters or fewer.");
+        }
+        if (!next.isEmpty() && !next.matches("[0-9+() .\\-]{6,40}")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHONE_INVALID", "Enter a phone number using digits, spaces, and + - ( ).");
+        }
+        user.setPhone(next.isEmpty() ? null : next);
+        users.save(user);
+        auditTrail.record("PROFILE_UPDATED", "USER", user.getId(), "Phone number updated");
+        return profile(current);
+    }
+
+    public void changePassword(CurrentUser current, String currentPassword, String newPassword) {
+        UserAccount user = requireUser(current.id());
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PASSWORD_INCORRECT", "Current password is incorrect.");
+        }
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 80) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PASSWORD_INVALID", "Use a new password of 8 to 80 characters.");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PASSWORD_UNCHANGED", "Choose a new password that is different from the current one.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        users.save(user);
+        auditTrail.record("PASSWORD_CHANGED", "USER", user.getId(), "Password changed");
+    }
+
+    public AuthResponse savePhoto(CurrentUser current, byte[] bytes, String contentType) {
+        UserAccount user = requireUser(current.id());
+        if (bytes == null || bytes.length == 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHOTO_REQUIRED", "Choose an image to add.");
+        }
+        if (bytes.length > PHOTO_LIMIT) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHOTO_TOO_LARGE", "Use an image of 2 MB or smaller.");
+        }
+        String type = contentType == null ? "" : contentType.toLowerCase();
+        if (!type.equals("image/jpeg") && !type.equals("image/png") && !type.equals("image/webp")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHOTO_TYPE", "Use a JPEG, PNG, or WebP image.");
+        }
+        user.setPhoto(bytes);
+        user.setPhotoType(type);
+        users.save(user);
+        auditTrail.record("PROFILE_UPDATED", "USER", user.getId(), "Profile image updated");
+        return profile(current);
+    }
+
+    public AccountPhoto photo(CurrentUser current) {
+        UserAccount user = requireUser(current.id());
+        if (!hasPhoto(user)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "PHOTO_MISSING", "No profile image is stored.");
+        }
+        return new AccountPhoto(user.getPhoto(), user.getPhotoType());
+    }
+
+    private UserAccount requireUser(UUID userId) {
+        return users.findById(userId)
+                .filter(candidate -> "ACTIVE".equals(candidate.getStatus()))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "Sign in to continue"));
+    }
+
+    private boolean hasPhoto(UserAccount user) {
+        return user.getPhoto() != null && user.getPhoto().length > 0;
     }
 
     private CurrentUser assemble(UserAccount user) {

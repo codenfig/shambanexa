@@ -73,6 +73,7 @@ export const routes: Routes = [
       { path: 'suppliers', loadComponent: () => import('./pages/suppliers/suppliers.component').then(m => m.SuppliersComponent) },
       { path: 'market', loadComponent: () => import('./pages/market/market.component').then(m => m.MarketComponent) },
       { path: 'access', canActivate: [accessGuard], loadComponent: () => import('./pages/access/access.component').then(m => m.AccessComponent) },
+      { path: 'account', loadComponent: () => import('./pages/account/account.component').then(m => m.AccountComponent) },
       { path: 'settings', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },
       { path: 'help', loadComponent: () => import('./pages/help/help.component').then(m => m.HelpComponent) }
     ]

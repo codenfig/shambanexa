@@ -1,1 +1,19 @@
 <router-outlet />
+
+@if (toast.current(); as message) {
+  <div class="sweet" [class.err]="message.kind === 'err'" role="status">
+    <span class="sweet-icon" aria-hidden="true">
+      @if (message.kind === 'err') {
+        <svg viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="8"/></svg>
+      } @else {
+        <svg viewBox="0 0 24 24"><path d="m7.5 12.5 3 3 6-7"/></svg>
+      }
+    </span>
+    <div>
+      <strong>{{ message.kind === 'err' ? 'Please check' : 'All set' }}</strong>
+      <p>{{ message.text }}</p>
+    </div>
+    <button type="button" class="sweet-x" (click)="toast.dismiss()" aria-label="Close alert">×</button>
+    <span class="sweet-bar"></span>
+  </div>
+}

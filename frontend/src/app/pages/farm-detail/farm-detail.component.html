@@ -301,7 +301,7 @@
           <div><dt>Address</dt><dd>{{ selected.address }}</dd></div>
           <div><dt>Latitude</dt><dd>{{ selected.latitude }}</dd></div>
           <div><dt>Longitude</dt><dd>{{ selected.longitude }}</dd></div>
-          @if (locationPin()[0]?.notice; as notice) {
+          @if (locationPin()[0].notice; as notice) {
             <div><dt>Health alert</dt><dd>{{ notice }}</dd></div>
           }
           <div><dt>Timezone</dt><dd>{{ selected.timezone }}</dd></div>
