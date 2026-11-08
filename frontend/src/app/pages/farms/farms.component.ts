@@ -193,9 +193,9 @@ export class FarmsComponent {
     }).sort((a, b) => a.name.localeCompare(b.name) || a.farmName.localeCompare(b.farmName));
   });
 
-  visibleFacilities = computed(() => this.view() === 'maintenance'
-    ? this.filteredFacilities().filter(row => row.status !== 'ACTIVE')
-    : this.filteredFacilities());
+  // Maintenance is a facility-health overview, not only a list of flagged facilities.
+  // Keep every accessible facility visible, including when all statuses are ACTIVE.
+  visibleFacilities = computed(() => this.filteredFacilities());
 
   facilityPageCount = computed(() => Math.max(1, Math.ceil(this.visibleFacilities().length / this.facilityPageSize)));
 
