@@ -480,6 +480,9 @@
           <div class="drawer-tabs">
             <button type="button" [class.on]="drawerTab() === 'overview'" (click)="drawerTab.set('overview')">Overview</button>
             <button type="button" [class.on]="drawerTab() === 'health'" (click)="drawerTab.set('health')">Health</button>
+            <button type="button" [class.on]="drawerTab() === 'weights'" (click)="drawerTab.set('weights')">Weight history</button>
+            <button type="button" [class.on]="drawerTab() === 'breeding'" (click)="drawerTab.set('breeding')">Breeding</button>
+            <button type="button" [class.on]="drawerTab() === 'treatments'" (click)="drawerTab.set('treatments')">Treatments</button>
           </div>
           @if (drawerTab() === 'overview') {
             <dl>
@@ -493,7 +496,7 @@
               <div><dt>Color</dt><dd>{{ animal.color || '—' }}</dd></div>
               <div><dt>Status</dt><dd>{{ label(animal.status) }}</dd></div>
             </dl>
-          } @else {
+          } @else if (drawerTab() === 'health') {
             <dl><div><dt>Health</dt><dd>{{ label(animal.healthStatus) }}</dd></div></dl>
             <h3>Open cases on {{ animal.farmName }}</h3>
             @if (farmCases().length === 0) {
@@ -506,8 +509,80 @@
                 @if (item.notes) { <p>{{ item.notes }}</p> }
               </article>
             }
+
+          } @else if (drawerTab() === 'weights') {
+            <section class="lifecycle-panel">
+              <h3>Weight measurements</h3>
+              <p class="meta">A dated record of each measurement in kilograms. Historical entries are preserved.</p>
+              @if (canWrite()) {
+                <form class="lifecycle-form" (ngSubmit)="saveWeight()">
+                  <label>Weight (kg)<input type="number" min="0.001" max="99999.999" step="0.001" required [ngModel]="weightValue()" (ngModelChange)="weightValue.set($event)" name="weight"></label>
+                  <label>Measured on<input type="date" required [ngModel]="weightDate()" (ngModelChange)="weightDate.set($event)" name="measuredOn"></label>
+                  <label class="lifecycle-wide">Notes<input maxlength="500" [ngModel]="weightNotes()" (ngModelChange)="weightNotes.set($event)" name="weightNotes" placeholder="Optional measurement context"></label>
+                  <button class="green-btn" type="submit" [disabled]="lifecycleSaving()">{{ lifecycleSaving() ? 'Saving…' : 'Record weight' }}</button>
+                </form>
+              }
+              @if (!weightRows().length && !lifecycleLoading()) { <p class="meta">No weight measurements recorded yet.</p> }
+              <div class="lifecycle-list">
+                @for (item of weightRows(); track item.id) {
+                  <article><strong>{{ item.weight_kg }} kg</strong><span>{{ dateLabel(item.measured_on) }}</span>@if (item.notes) { <p>{{ item.notes }}</p> }</article>
+                }
+              </div>
+            </section>
+          } @else if (drawerTab() === 'breeding') {
+            <section class="lifecycle-panel">
+              <h3>Breeding and reproductive history</h3>
+              <p class="meta">Track mating, pregnancy checks, births, losses and weaning events.</p>
+              @if (canWrite()) {
+                <form class="lifecycle-form" (ngSubmit)="saveBreeding()">
+                  <label>Event<select required [ngModel]="breedingType()" (ngModelChange)="breedingType.set($event)" name="breedingType">
+                    <option value="MATING">Mating</option><option value="INSEMINATION">Insemination</option>
+                    <option value="PREGNANCY_CHECK">Pregnancy check</option><option value="PREGNANCY_CONFIRMED">Pregnancy confirmed</option>
+                    <option value="BIRTH">Birth</option><option value="LOSS">Loss</option><option value="WEANING">Weaning</option>
+                  </select></label>
+                  <label>Event date<input type="date" required [ngModel]="breedingDate()" (ngModelChange)="breedingDate.set($event)" name="breedingDate"></label>
+                  <label>Expected birth date (optional)<input type="date" [ngModel]="expectedBirthDate()" (ngModelChange)="expectedBirthDate.set($event)" name="expectedBirth"></label>
+                  <label class="lifecycle-wide">Notes<input maxlength="500" [ngModel]="breedingNotes()" (ngModelChange)="breedingNotes.set($event)" name="breedingNotes" placeholder="Observations and supporting details"></label>
+                  <button class="green-btn" type="submit" [disabled]="lifecycleSaving()">{{ lifecycleSaving() ? 'Saving…' : 'Record breeding event' }}</button>
+                </form>
+              }
+              @if (!breedingRows().length && !lifecycleLoading()) { <p class="meta">No breeding events recorded yet.</p> }
+              <div class="lifecycle-list">
+                @for (item of breedingRows(); track item.id) {
+                  <article><strong>{{ label(item.event_type) }}</strong><span>{{ dateLabel(item.event_on) }}</span>
+                    @if (item.expected_birth_on) { <p>Expected birth: {{ dateLabel(item.expected_birth_on) }}</p> }
+                    @if (item.notes) { <p>{{ item.notes }}</p> }
+                  </article>
+                }
+              </div>
+            </section>
+          } @else if (drawerTab() === 'treatments') {
+            <section class="lifecycle-panel">
+              <h3>Treatment and medicine traceability</h3>
+              <p class="meta">Medicine batch and withdrawal data are shown only where they have been recorded on a treatment.</p>
+              @if (withdrawal(); as status) {
+                <div class="withdrawal-status" [class.is-active]="status.activeWithdrawal">
+                  <strong>{{ status.activeWithdrawal ? 'Active recorded withdrawal period' : 'No active recorded withdrawal period' }}</strong>
+                  <span>As of {{ dateLabel(status.asOf) }}. Missing medicine or withdrawal data cannot be interpreted as clearance.</span>
+                </div>
+              }
+              @if (!treatmentRows().length && !lifecycleLoading()) { <p class="meta">No animal-specific treatments recorded yet.</p> }
+              <div class="lifecycle-list">
+                @for (item of treatmentRows(); track item.id + (item.withdrawal_ends_on || '')) {
+                  <article><strong>{{ item.diagnosis }}</strong><span>{{ dateLabel(item.started_on) }} · {{ label(item.treatment_status) }}</span>
+                    <p>Veterinarian: {{ item.veterinarian_name }}</p>
+                    @if (item.withdrawal_ends_on) { <p>Recorded withdrawal end: {{ dateLabel(item.withdrawal_ends_on) }}</p> }
+                    @if (item.issued) { <p>Medicine issued</p> }
+                  </article>
+                }
+              </div>
+            </section>
           }
-          <p class="meta profile-note">Weight, milk yield, and breeding events are not stored on this animal.</p>
+          @if (lifecycleLoading() && drawerTab() !== 'overview' && drawerTab() !== 'health') { <p class="meta">Loading animal history…</p> }
+          @if (lifecycleError() && drawerTab() !== 'overview' && drawerTab() !== 'health') { <p class="error" role="alert">{{ lifecycleError() }}</p> }
+          @if (lifecycleSuccess() && drawerTab() !== 'overview' && drawerTab() !== 'health') { <p class="meta" role="status">{{ lifecycleSuccess() }}</p> }
+
+          <p class="meta profile-note">Milk yield is not yet tracked at individual-animal level. Treatment withdrawal status is advisory and must be verified against complete veterinary records.</p>
           <div class="sheet-actions">
             @if (animal.status === 'ACTIVE') {
               <button class="green-btn" type="button" (click)="startTransfer(animal)">Transfer animal</button>
