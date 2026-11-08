@@ -48,7 +48,7 @@
   @if (tab() === 'overview') {
     <div class="detail-overview-grid">
     <article class="sheet farm-info-sheet">
-      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm Information</h2><p>Profile and operational details</p></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm information</h2><p>Everything you need to know about this farm</p></div></div>
       <dl>
         <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
         <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
@@ -62,7 +62,7 @@
     </article>
     <div class="detail-overview-side">
     <article class="sheet forecast">
-      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☁</span><div><h2>Current Weather &amp; 7-Day Forecast</h2><p>{{ selected.region }}, Tanzania · Live model data</p></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☁</span><div><h2>Weather &amp; 7-day forecast</h2><p>{{ selected.region }}, Tanzania · Open-Meteo forecast</p></div></div>
       <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
       @if (forecastLoading()) {
         <p class="muted">Asking Open-Meteo…</p>
@@ -122,7 +122,7 @@
       }
     </article>
     <article class="sheet climate">
-      <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">♧</span><div><h2>Climate &amp; Historical Trends</h2><p>Environmental insights for your farm</p></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">♧</span><div><h2>Climate &amp; historical trends</h2><p>Detailed environmental insights for your farm</p></div></div>
       <p class="muted">NASA POWER. Advisory model data for this location, not a measurement taken on the farm.</p>
       @if (climateLoading()) {
         <p class="muted">Asking NASA POWER…</p>
