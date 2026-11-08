@@ -1,11 +1,20 @@
 <section class="directory">
   @if (!facilityView()) {
-  <app-page-header [title]="pageTitle()" [description]="pageDescription()">
-    <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error() || filtered().length === 0">Export</button>
-    @if (canCreate()) {
-      <a class="green-btn" routerLink="/farms/new">Add farm</a>
-    }
-  </app-page-header>
+  <header class="farms-hero">
+    <div class="farms-hero-copy">
+      <span class="farms-hero-kicker"><span class="live-dot"></span> SHAMBA NEXA · FARM MANAGEMENT</span>
+      <h1>Every farm.<br><em>One clear view.</em></h1>
+      <p>Stay connected to your land, livestock and facilities. Explore your operations across Tanzania in one beautiful workspace.</p>
+      <div class="farms-hero-actions">
+        @if (canCreate()) {
+          <a class="farms-primary-action" routerLink="/farms/new"><span aria-hidden="true">＋</span> Add new farm</a>
+        }
+        <a class="farms-secondary-action" href="#locations">Explore locations <span aria-hidden="true">↗</span></a>
+        <button class="farms-export-action" type="button" (click)="exportCsv()" [disabled]="loading() || !!error() || filtered().length === 0">↓ Export data</button>
+      </div>
+    </div>
+    <div class="farms-hero-bottom"><span>YOUR AGRICULTURAL PORTFOLIO</span><span>TANZANIA <span aria-hidden="true">↗</span></span></div>
+  </header>
   }
 
   @if (loading()) {
@@ -17,27 +26,16 @@
     </div>
   } @else {
     @if (!facilityView()) {
+    <div class="farms-section-heading">
+      <div><span class="section-kicker">AT A GLANCE</span><h2>Your farm portfolio</h2></div>
+      <span class="section-side-note">Live overview of your operations</span>
+    </div>
     <div class="summary">
-      <article>
-        <span>Total farms</span>
-        <strong>{{ fmt(summary().total) }}</strong>
-      </article>
-      <article>
-        <span>Active</span>
-        <strong>{{ fmt(summary().active) }}</strong>
-      </article>
-      <article>
-        <span>Regions</span>
-        <strong>{{ fmt(summary().regions) }}</strong>
-      </article>
-      <article>
-        <span>Animals</span>
-        <strong>{{ fmt(summary().animals) }}</strong>
-      </article>
-      <article>
-        <span>Inactive</span>
-        <strong>{{ fmt(summary().inactive) }}</strong>
-      </article>
+      <article class="summary-primary"><span class="summary-icon" aria-hidden="true">⌂</span><span>Total farms</span><strong>{{ fmt(summary().total) }}</strong><small>Across your portfolio</small></article>
+      <article><span class="summary-icon" aria-hidden="true">✓</span><span>Active farms</span><strong>{{ fmt(summary().active) }}</strong><small>Currently operational</small></article>
+      <article><span class="summary-icon" aria-hidden="true">⌖</span><span>Regions</span><strong>{{ fmt(summary().regions) }}</strong><small>Geographic coverage</small></article>
+      <article><span class="summary-icon" aria-hidden="true">♧</span><span>Animals</span><strong>{{ fmt(summary().animals) }}</strong><small>Livestock recorded</small></article>
+      <article><span class="summary-icon" aria-hidden="true">◷</span><span>Inactive farms</span><strong>{{ fmt(summary().inactive) }}</strong><small>Not currently active</small></article>
     </div>
     }
 
@@ -301,6 +299,10 @@
     }
 
     @if (!facilityView()) {
+    <div class="farms-section-heading farms-directory-heading">
+      <div><span class="section-kicker">MANAGE & EXPLORE</span><h2>Farm directory <span class="farm-count-chip">{{ filtered().length }}</span></h2></div>
+      <span class="section-side-note">Find, review and manage your farms</span>
+    </div>
     <div class="toolbar">
       <label class="search-field">
         <span class="sr">Search farms</span>
@@ -338,7 +340,7 @@
     </div>
 
     <div class="workspace">
-      <article class="panel">
+      <article class="panel farms-list-panel">
         @if (filtered().length === 0) {
           <div class="empty">
             <h2>No farms found.</h2>
@@ -419,8 +421,10 @@
       </article>
 
       <aside class="panel map-panel" id="locations">
-        <h2>Locations</h2>
-        <p class="meta">Each pin is plotted from the farm’s stored latitude and longitude. A red label is an open health alert.</p>
+        <div class="farms-map-header">
+          <div><span class="section-kicker">GEOGRAPHIC OVERVIEW</span><h2>Farm locations</h2><p>Explore your farms across Tanzania. Hover over a marker to preview its facilities.</p></div>
+          <span class="farms-map-count">{{ mapPins().length }} {{ mapPins().length === 1 ? 'location' : 'locations' }}</span>
+        </div>
         @if (filtered().length === 0) {
           <p class="empty-map">No farms to place on the map.</p>
         } @else {
