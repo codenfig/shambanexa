@@ -249,7 +249,7 @@
         } @else {
           <div class="facility-grid">
             @for (item of pagedFacilities(); track item.id) {
-              <article class="facility-card">
+              <article class="facility-card" [class.maintenance-tile]="view() === 'maintenance'">
                 <a class="scene" [routerLink]="['/farms', item.farmId]" [attr.data-kind]="item.facilityType" [attr.aria-label]="item.name">
                   <img [src]="facilityPhoto(item)" alt="">
                   <span class="flag" [class.attention]="item.status !== 'ACTIVE'">
@@ -262,6 +262,16 @@
                   </span>
                 </a>
                 <div class="card-body">
+                  @if (view() === 'maintenance') {
+                    <span class="maintenance-facility-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M4 20V9h16v11M8 9V5h8v4M8 13h3M13 13h3"/></svg>
+                    </span>
+                    <div class="maintenance-card-summary">
+                      <a class="card-name" [routerLink]="['/farms', item.farmId]">{{ item.name }}</a>
+                      <p>{{ item.farmName }} · {{ typeLabel(item.facilityType) }}</p>
+                    </div>
+                    <a class="maintenance-card-more" [routerLink]="['/farms', item.farmId]" [attr.aria-label]="'View ' + item.name + ' details'">⋮</a>
+                  } @else {
                   <a class="card-name" [routerLink]="['/farms', item.farmId]">{{ item.name }}</a>
                   <p class="card-meta">
                     <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>{{ item.farmName }}</span>
@@ -271,6 +281,7 @@
                     <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v10H4z"/><path d="M8 8V6h8v2"/></svg>Capacity <strong>{{ capacityLabel(item) }}</strong></span>
                     <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v3M17 4v3M4 9h16"/><path d="M5 7h14v13H5z"/></svg>Added <strong>{{ addedLabel(item.createdAt) }}</strong></span>
                   </p>
+                  }
                 </div>
               </article>
             }
