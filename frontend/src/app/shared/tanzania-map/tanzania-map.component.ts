@@ -21,6 +21,11 @@ export interface TanzaniaPin {
   /** Facility image shown when hovering or focusing the farm marker. */
   imageUrl?: string;
   imageCaption?: string;
+  farmName?: string;
+  regionName?: string;
+  facilityType?: string;
+  facilityStatus?: string;
+  facilityCount?: number;
 }
 
 export interface MapCallout {
@@ -88,6 +93,8 @@ export class TanzaniaMapComponent {
   markerLabel = input('Farm');
   ariaLabel = input('Map of Tanzania');
   places = input(false);
+  /** Show hovered farm photography across the full right-hand side of the map. */
+  widePhotoPreview = input(false);
   /** Draw official region borders on top of the country. */
   regions = input(false);
   selectedId = input<string | null>(null);
