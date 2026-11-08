@@ -234,3 +234,58 @@ dd { margin: 4px 0 0; font-weight: 700; }
 @media (max-width: 940px) { .detail-overview-grid { grid-template-columns: 1fr; } .detail-overview-grid .farm-info-sheet dl { grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 20px; } .detail-head { margin: 0; border-radius: 17px; } }
 @media (max-width: 700px) { .summary { grid-template-columns: repeat(2,minmax(0,1fr)); } .detail-head { min-height: 350px; padding: 23px; } .detail-actions { position: static; margin-top: 23px; } .detail-overview-grid .farm-info-sheet dl { grid-template-columns: 1fr; } .detail-overview-grid .climate-grid { grid-template-columns: 1fr; } .tabs button { padding: 0 14px; font-size: 12px; } }
 @media (max-width: 450px) { .summary { gap: 8px; } .summary article { gap: 7px; padding: 10px; } .summary .detail-stat-icon { width: 34px; height: 34px; font-size: 20px; } .summary article strong,.summary article strong.text { font-size: 15px; } .summary .metric-location { grid-column: 1/-1; } .detail-actions a,.detail-actions button { padding: 0 9px; font-size: 11px; } }
+
+/* Screenshot refinement: balanced full-width climate, readable cards, polished hero. */
+:host { display:block; padding-bottom:32px; }
+.detail-head { min-height: 295px; margin: 0; padding: 32px clamp(24px,3.2vw,48px); border-radius: 20px; }
+.detail-head::before { background-position: center 56%; }
+.detail-head::after { background: linear-gradient(90deg,rgba(6,39,23,.9),rgba(8,47,24,.68) 40%,rgba(8,43,23,.16) 100%); }
+.detail-head h1 { font-size: clamp(36px,4vw,56px); line-height:1.1; text-shadow:0 2px 12px rgba(0,0,0,.18); }
+.detail-head .lead { max-width:500px; font-size:14px; }
+.detail-head .detail-hero-meta { gap:12px; margin-top:20px; }
+.detail-actions { right:32px; bottom:30px; }
+.detail-actions a,.detail-actions button { min-height:44px; padding:0 17px; border-radius:11px; box-shadow:0 5px 15px rgba(4,35,18,.12); }
+.summary { margin:20px 0 24px; }
+.summary article { min-height:106px; padding:16px; }
+.summary article strong,.summary article strong.text { font-size:clamp(16px,1.65vw,25px); }
+.tabs { margin-bottom:24px; }
+.detail-overview-grid { grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:20px; align-items:start; }
+.detail-overview-side { display:contents; }
+.detail-overview-grid .farm-info-sheet { grid-column:1; grid-row:1; }
+.detail-overview-grid .forecast { grid-column:2; grid-row:1; }
+.detail-overview-grid .climate { grid-column:1 / -1; grid-row:2; }
+.detail-overview-grid .sheet { padding:clamp(20px,2.5vw,30px); border-radius:19px; border:1px solid #e1ebe4; box-shadow:0 7px 24px rgba(19,55,29,.055); }
+.detail-overview-grid .detail-card-heading { margin-bottom:21px; }
+.detail-overview-grid .detail-card-heading h2 { font-size:21px; }
+.detail-overview-grid .farm-info-sheet dl div { min-height:53px; }
+.detail-overview-grid .farm-info-sheet dt { color:#697c70; font-size:12px; }
+.detail-overview-grid .farm-info-sheet dd { font-size:13px; color:#163e26; }
+.detail-overview-grid .forecast { background:linear-gradient(150deg,#e5f3ff 0%,#f4faff 34%,#fff 78%); }
+.detail-overview-grid .forecast .now { flex-wrap:wrap; gap:12px 18px; padding:16px; border:1px solid #dfeef8; }
+.detail-overview-grid .forecast .now span:first-child { margin-right:auto; }
+.detail-overview-grid .forecast-days { min-width:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+.detail-overview-grid .forecast-days article { min-width:0; padding:13px 4px; border:1px solid #dfeaf0; }
+.detail-overview-grid .forecast-days article strong { font-size:11px; }
+.detail-overview-grid .forecast-days article span { font-size:10px; overflow-wrap:anywhere; }
+.detail-overview-grid .forecast-days article b { font-size:14px; }
+.detail-overview-grid .climate-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; }
+.detail-overview-grid .climate-grid .plot.wide { grid-column:1 / -1; }
+.detail-overview-grid .climate-grid .plot { min-width:0; }
+.detail-overview-grid .climate-grid .plot:not(.wide) { grid-column:span 2; }
+.detail-overview-grid .climate-grid .plot { background:#f7fbf8; border:1px solid #e4ede7; border-radius:15px; }
+.detail-overview-grid .climate { background:#fff; }
+@media (min-width:1250px) { .detail-overview-grid .climate-grid .plot:not(.wide) { grid-column:span 1; } }
+@media (max-width:1050px) {
+ .detail-overview-grid { grid-template-columns:1fr; }
+ .detail-overview-grid .farm-info-sheet,.detail-overview-grid .forecast,.detail-overview-grid .climate { grid-column:1; grid-row:auto; }
+ .detail-overview-grid .forecast-days { gap:8px; }
+ .detail-overview-grid .farm-info-sheet dl { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 22px; }
+}
+@media (max-width:700px) {
+ .detail-head { min-height:340px; padding:24px; }
+ .detail-actions { position:static; margin-top:24px; }
+ .detail-overview-grid .farm-info-sheet dl { grid-template-columns:1fr; }
+ .detail-overview-grid .forecast-days { min-width:540px; }
+ .detail-overview-grid .climate-grid { grid-template-columns:1fr; }
+ .detail-overview-grid .climate-grid .plot:not(.wide) { grid-column:1; }
+}
