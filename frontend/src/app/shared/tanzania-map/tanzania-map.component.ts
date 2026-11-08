@@ -18,6 +18,9 @@ export interface TanzaniaPin {
   notice?: string;
   /** Optional magnitude, such as a herd count. Larger values draw a larger marker. */
   weight?: number;
+  /** Facility image shown when hovering or focusing the farm marker. */
+  imageUrl?: string;
+  imageCaption?: string;
 }
 
 export interface MapCallout {
@@ -98,6 +101,15 @@ export class TanzaniaMapComponent {
   pinPicked = output<string>();
 
   notice = signal('');
+  hoveredPinId = signal<string | null>(null);
+  hoveredPin = computed(() => this.placed().find(pin => pin.id === this.hoveredPinId() && !!pin.imageUrl) ?? null);
+  hoverPosition = computed(() => {
+    const pin = this.hoveredPin();
+    if (!pin) return null;
+    return { left: `${Math.min(82, Math.max(18, pin.x / this.width * 100))}%`, top: `${Math.min(78, Math.max(24, pin.y / this.height * 100))}%` };
+  });
+  focusPin(id: string): void { this.hoveredPinId.set(id); this.pinFocused.emit(id); }
+  blurPin(id: string): void { if (this.hoveredPinId() === id) this.hoveredPinId.set(null); this.pinFocused.emit(''); }
   readonly uid = `tz${Math.random().toString(36).slice(2, 8)}`;
   readonly width = TANZANIA_BOUNDS.width;
   readonly height = TANZANIA_BOUNDS.height;
