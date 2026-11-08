@@ -207,3 +207,48 @@ td .flag { position: static; box-shadow: none; }
   .farm-tile a { font-weight: 800; text-decoration: none; }
   .farm-tile p { margin: 8px 0 0; }
 }
+
+
+/* Maintenance dashboard: same facilities data, redesigned for visual facility-health review. */
+.maintenance-board { gap: 18px; }
+.maintenance-board .banner {
+  position: relative; min-height: 190px; padding: 36px 38px; gap: 0; align-items: center;
+  background: linear-gradient(90deg, #e3f9df 0%, #f1faec 30%, rgba(240,250,237,.95) 42%, rgba(239,249,237,.30) 67%, rgba(239,249,237,0) 100%), url('/assets/facilities/banner.png') right center / cover no-repeat;
+  border: 0; border-radius: 24px; box-shadow: 0 12px 30px rgba(26,67,31,.07);
+}
+.maintenance-board .banner .mark { display: none; }
+.maintenance-board .banner h1 { font-family: inherit; font-weight: 850; font-size: clamp(29px, 3.2vw, 43px); letter-spacing: -.045em; color: #113b23; }
+.maintenance-board .banner p { max-width: 450px; line-height: 1.65; color: #3d6050; font-size: 15px; }
+.maintenance-eyebrow { position: absolute; top: 18px; left: 38px; background: #b8e8a8; color: #17582a; border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 850; }
+.maintenance-board .stats article, .maintenance-board .farm-stat { border: 1px solid #e4eee5; border-radius: 20px; min-height: 104px; box-shadow: 0 8px 26px rgba(19,59,30,.055); }
+.maintenance-board .stats .bubble { width: 53px; height: 53px; border-radius: 16px; }
+.maintenance-board .stats .bubble.green { background: #d9f6d6; }
+.maintenance-board .stats .bubble.amber { background: #fff0e2; }
+.maintenance-board .stats .bubble.blue { background: #dceefe; }
+.maintenance-board .stats strong { font-size: 33px; }
+.maintenance-board .filters { padding: 12px; gap: 10px; border-radius: 18px; box-shadow: 0 7px 23px rgba(16,50,26,.035); }
+.maintenance-board .filters input, .maintenance-board .filters select { min-height: 45px; background: #fbfdfb; }
+.maintenance-board .tabs a.on { background: #147f31; box-shadow: 0 3px 9px rgba(20,127,49,.17); }
+.maintenance-count { font-size: 12px; color: #53735b; font-weight: 750; }
+.maintenance-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 25px; background: linear-gradient(115deg, #f0faf0, #fff); border: 1px solid #dfefdf; border-radius: 20px; }
+.maintenance-kicker { color: #278341; font-size: 10px; font-weight: 900; letter-spacing: .11em; }
+.maintenance-intro h2 { margin: 5px 0; color: #1b3924; font-size: 20px; letter-spacing: -.025em; }
+.maintenance-intro p { margin: 0; max-width: 680px; color: #62746a; font-size: 13px; line-height: 1.6; }
+.maintenance-health { display: flex; align-items: center; gap: 12px; min-width: 205px; padding: 12px 16px; background: #e4f7e7; border-radius: 15px; color: #176b2b; }
+.maintenance-health.has-issues { background: #fff0e1; color: #a44c0b; }
+.maintenance-health-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; background: #fff; border-radius: 50%; font-weight: 900; font-size: 20px; }
+.maintenance-health strong { display: block; font-size: 18px; }
+.maintenance-health span:not(.maintenance-health-icon) { display: block; font-size: 11px; font-weight: 700; }
+.maintenance-board .facility-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+.maintenance-board .facility-card { overflow: hidden; border-radius: 20px; box-shadow: 0 10px 28px rgba(20,55,30,.07); transition: transform .2s ease, box-shadow .2s ease; }
+.maintenance-board .facility-card:hover { transform: translateY(-3px); box-shadow: 0 17px 34px rgba(20,55,30,.13); }
+.maintenance-board .scene { height: 165px; }
+@media (max-width: 1080px) { .maintenance-board .facility-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 690px) {
+  .maintenance-board .banner { min-height: 175px; padding: 47px 22px 24px; background-position: 60% center; }
+  .maintenance-eyebrow { left: 22px; }
+  .maintenance-board .banner p { max-width: 100%; }
+  .maintenance-intro { flex-direction: column; align-items: stretch; }
+  .maintenance-health { min-width: 0; }
+  .maintenance-board .facility-grid { grid-template-columns: 1fr; }
+}
