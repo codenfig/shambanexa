@@ -338,32 +338,59 @@
   }
 
   @if (tab() === 'facilities') {
-    <article class="sheet">
-      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">⌂</span><div><span class="detail-section-kicker">FARM INFRASTRUCTURE</span><h2>Facilities</h2><p>Buildings and operational spaces recorded on this farm.</p></div></div>
+    <section class="farm-facilities-dashboard" aria-labelledby="farm-facilities-title">
+      <header class="facility-dashboard-hero">
+        <div class="facility-dashboard-title">
+          <span class="facility-dashboard-icon" aria-hidden="true">⌂</span>
+          <div>
+            <span class="detail-section-kicker">FARM INFRASTRUCTURE</span>
+            <h2 id="farm-facilities-title">Facilities</h2>
+            <p>Manage buildings and operational spaces recorded on this farm.</p>
+          </div>
+        </div>
+        <a class="facility-add-link" routerLink="/farms" [queryParams]="{ view: 'facilities' }"><span aria-hidden="true">＋</span> Manage facilities</a>
+      </header>
+      <div class="facility-dashboard-stats">
+        <article><span class="facility-stat-icon" aria-hidden="true">⌂</span><div><strong>{{ facilities().length }}</strong><span>Total Facilities</span></div></article>
+        <article><span class="facility-stat-icon" aria-hidden="true">✓</span><div><strong>{{ activeFacilityCount() }}</strong><span>Active Facilities</span></div></article>
+        <article><span class="facility-stat-icon" aria-hidden="true">▱</span><div><strong>{{ facilityTypes().length }}</strong><span>Facility Types</span></div></article>
+      </div>
+      <div class="facility-list-toolbar">
+        <h3>Your Facilities <span>{{ filteredFacilities().length }}</span></h3>
+        <div class="facility-list-controls">
+          <label class="facility-search-control"><span aria-hidden="true">⌕</span><input type="search" aria-label="Search facilities" placeholder="Search facilities..." [value]="facilitySearch()" (input)="facilitySearch.set($any($event.target).value)" /></label>
+          <label class="facility-select-control"><span class="sr-only">Facility type</span><select aria-label="Filter by facility type" [value]="facilityTypeFilter()" (change)="facilityTypeFilter.set($any($event.target).value)"><option value="">All types</option>@for (type of facilityTypes(); track type) { <option [value]="type">{{ facilityTypeLabel(type) }}</option> }</select></label>
+          <label class="facility-select-control"><span class="sr-only">Facility status</span><select aria-label="Filter by facility status" [value]="facilityStatusFilter()" (change)="facilityStatusFilter.set($any($event.target).value)"><option value="">All statuses</option>@for (status of facilityStatuses(); track status) { <option [value]="status">{{ status }}</option> }</select></label>
+          <div class="facility-layout-switch" aria-label="Facility layout">
+            <button type="button" [class.active]="facilityLayout() === 'grid'" [attr.aria-pressed]="facilityLayout() === 'grid'" (click)="facilityLayout.set('grid')" aria-label="Grid view">▦</button>
+            <button type="button" [class.active]="facilityLayout() === 'list'" [attr.aria-pressed]="facilityLayout() === 'list'" (click)="facilityLayout.set('list')" aria-label="List view">☷</button>
+          </div>
+        </div>
+      </div>
       @if (facilities().length === 0) {
-        <p class="muted">No facilities are recorded for this farm.</p>
+        <div class="facility-empty-state"><span aria-hidden="true">⌂</span><h3>No facilities yet</h3><p>Buildings and operational spaces added to this farm will appear here.</p></div>
+      } @else if (filteredFacilities().length === 0) {
+        <div class="facility-empty-state"><h3>No matching facilities</h3><p>Try another search term or change the filters.</p><button type="button" (click)="facilitySearch.set(''); facilityTypeFilter.set(''); facilityStatusFilter.set('')">Clear filters</button></div>
       } @else {
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Code</th><th>Type</th><th>Capacity</th><th>Supervisor</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              @for (facility of facilities(); track facility.id) {
-                <tr>
-                  <td>{{ facility.name }}</td>
-                  <td>{{ facility.code }}</td>
-                  <td>{{ facility.facilityType }}</td>
-                  <td>{{ facility.capacity ?? '—' }} {{ facility.capacityUnit || '' }}</td>
-                  <td>{{ facility.supervisorName || '—' }}</td>
-                  <td><span class="status-pill" [class]="'status-pill ' + statusClass(facility.status)">{{ facility.status }}</span></td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="facility-photo-grid" [class.is-list]="facilityLayout() === 'list'">
+          @for (facility of filteredFacilities(); track facility.id) {
+            <article class="facility-photo-card">
+              <div class="facility-photo-wrap"><img [src]="facilityPhoto(facility.facilityType)" [alt]="facilityTypeLabel(facility.facilityType) + ' facility illustration'" loading="lazy" /></div>
+              <div class="facility-card-content">
+                <div class="facility-card-heading">
+                  <div><h4>{{ facility.name }}</h4><p><span aria-hidden="true">⌂</span> {{ facility.code }} · {{ facilityTypeLabel(facility.facilityType) }}</p></div>
+                  <span class="status-pill" [class]="'status-pill ' + statusClass(facility.status)">{{ facility.status }}</span>
+                </div>
+                <div class="facility-card-metadata">
+                  <div><span class="facility-card-meta-icon" aria-hidden="true">♧</span><span><small>Capacity</small><strong>{{ facility.capacity ?? '—' }} {{ facility.capacityUnit || '' }}</strong></span></div>
+                  <div><span class="facility-card-meta-icon" aria-hidden="true">♙</span><span><small>Supervisor</small><strong>{{ facility.supervisorName || 'Not assigned' }}</strong></span></div>
+                </div>
+              </div>
+            </article>
+          }
         </div>
       }
-    </article>
+    </section>
   }
   }
 }
