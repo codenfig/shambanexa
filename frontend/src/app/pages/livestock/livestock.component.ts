@@ -107,7 +107,7 @@ export class LivestockComponent {
     this.lifecycleSaving.set(true);this.lifecycleError.set('');this.lifecycleSuccess.set('');
     this.api.addAnimalWeight(animal.id,{weightKg:weight,measuredOn:this.weightDate(),notes:this.weightNotes()}).subscribe({
       next:()=>{this.lifecycleSaving.set(false);this.weightValue.set(null);this.weightNotes.set('');this.lifecycleSuccess.set('Weight measurement saved.');this.loadLifecycle(animal.id);},
-      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err));}
+      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err, 'Could not save animal record.'));}
     });
   }
 
@@ -117,7 +117,7 @@ export class LivestockComponent {
     this.lifecycleSaving.set(true);this.lifecycleError.set('');this.lifecycleSuccess.set('');
     this.api.addAnimalBreeding(animal.id,{eventType:this.breedingType(),eventOn:this.breedingDate(),expectedBirthOn:this.expectedBirthDate()||null,notes:this.breedingNotes()}).subscribe({
       next:()=>{this.lifecycleSaving.set(false);this.breedingNotes.set('');this.expectedBirthDate.set('');this.lifecycleSuccess.set('Breeding event saved.');this.loadLifecycle(animal.id);},
-      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err));}
+      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err, 'Could not save animal record.'));}
     });
   }
 
