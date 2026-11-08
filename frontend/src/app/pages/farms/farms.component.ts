@@ -473,7 +473,12 @@ export class FarmsComponent {
         longitude: Number(farm.longitude),
         link: ['/farms', farm.id],
         imageUrl: farmFacility ? this.facilityPhoto(farmFacility) : '/assets/facilities/landscape.png',
-        imageCaption: farmFacility ? `${farmFacility.name} · ${this.typeLabel(farmFacility.facilityType)}` : `${farm.name} · Farm overview`,
+        imageCaption: farmFacility ? farmFacility.name : farm.name,
+        farmName: farm.name,
+        regionName: farm.region,
+        facilityType: farmFacility ? this.typeLabel(farmFacility.facilityType) : undefined,
+        facilityStatus: farmFacility?.status,
+        facilityCount: farm.facilityCount,
         tone: critical || health?.severity === 'CRITICAL' ? 'alert' : warning || health ? 'warn' : 'ok',
         notice: health ? healthNotice(health) : undefined
       };
