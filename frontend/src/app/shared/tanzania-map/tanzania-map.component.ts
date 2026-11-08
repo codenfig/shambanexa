@@ -93,7 +93,6 @@ export class TanzaniaMapComponent {
   markerLabel = input('Farm');
   ariaLabel = input('Map of Tanzania');
   places = input(false);
-  widePhotoPreview = input(false);
   /** Show hovered farm photography across the full right-hand side of the map. */
   widePhotoPreview = input(false);
   /** Draw official region borders on top of the country. */
