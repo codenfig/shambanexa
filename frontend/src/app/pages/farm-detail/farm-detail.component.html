@@ -104,7 +104,7 @@
           } @else {
             <div class="climate-grid">
               <section class="plot wide">
-                <h3>Water</h3>
+                <h3><span class="climate-card-symbol" aria-hidden="true">♧</span> Climate &amp; Historical Trends</h3><p class="climate-card-subtitle">Long-term climate analysis from NASA POWER for this location.</p>
                 <div class="bars" role="img" [attr.aria-label]="waterLabel(report)">
                   @if (report.rainfallMm != null) {
                     <div class="bar">
@@ -137,7 +137,7 @@
                 </div>
               </section>
               <section class="plot">
-                <h3>Soil wetness</h3>
+                <h3><span class="climate-card-symbol" aria-hidden="true">♧</span> Soil Wetness</h3>
                 <div class="gauges">
                   @if (report.averageSurfaceWetness != null) {
                     <div class="gauge" role="img" [attr.aria-label]="'Surface wetness ' + report.averageSurfaceWetness + ' percent, top 5 cm'">
@@ -160,7 +160,7 @@
               </section>
 
               <section class="plot">
-                <h3>Temperature</h3>
+                <h3><span class="climate-card-symbol" aria-hidden="true">♙</span> Temperature</h3>
                 @if (report.averageMinC != null && report.averageMaxC != null) {
                   <div class="thermo" role="img" [attr.aria-label]="'Average low ' + report.averageMinC + ' degrees, average high ' + report.averageMaxC + ' degrees'">
                     <div class="track">
@@ -184,6 +184,8 @@
                 </ul>
               </section>
 
+            </div>
+            <details class="climate-extra-details"><summary>Additional climate indicators <span>Dry days, heat stress, sunlight and wind</span></summary><div class="climate-extra-grid">
               <section class="plot">
                 <h3>Days in this window</h3>
                 <div class="bars" role="img" [attr.aria-label]="daysLabel(report)">
@@ -264,7 +266,7 @@
                   <p class="note">No daily plant-light values for these dates. The bar is the long-term normal.</p>
                 }
               </section>
-            </div>
+            </div></details>
             <p class="muted">{{ climateRange(report) }} · {{ report.days }} days · {{ report.attribution }}</p>
           }
         }
@@ -288,9 +290,9 @@
         }
       </div>
       <div class="intelligence-advisory-topics">
-        <span><span aria-hidden="true">♧</span> Irrigation</span>
-        <span><span aria-hidden="true">☀</span> Heat stress</span>
-        <span><span aria-hidden="true">☂</span> Drainage</span>
+        <span class="advisory-irrigation"><span aria-hidden="true">♧</span><span><strong>Irrigation</strong><small>Monitor</small></span></span>
+        <span class="advisory-heat"><span aria-hidden="true">♨</span><span><strong>Heat Stress</strong><small>Check forecast</small></span></span>
+        <span class="advisory-drainage"><span aria-hidden="true">☂</span><span><strong>Drainage</strong><small>Prepare</small></span></span>
       </div>
     </div>
     <details class="intelligence-profile-details"><summary>Farm information <span>View operational details</span></summary>
