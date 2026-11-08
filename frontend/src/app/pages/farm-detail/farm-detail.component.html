@@ -63,23 +63,14 @@
         </div>
       </header>
       <div class="intelligence-forecast-panel">
-        <article class="sheet forecast">
-      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☁</span><div><h2>Weather &amp; 7-day forecast</h2><p>{{ selected.region }}, Tanzania · Open-Meteo forecast</p></div></div>
-      <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
-      @if (forecastLoading()) {
-        <p class="muted">Asking Open-Meteo…</p>
-      } @else if (forecast()) {
-        @if (forecast(); as outlook) {
-          @if (!outlook.available) {
-            <p>{{ outlook.message }}</p>
-          } @else {
-            <div class="now">
-              @if (outlook.currentTemperatureC != null) { <span><strong>{{ outlook.currentTemperatureC }}°</strong> now</span> }
-              @if (outlook.currentHumidity != null) { <span>Humidity {{ outlook.currentHumidity }}%</span> }
-              @if (outlook.currentRainMm != null) { <span>Rain {{ outlook.currentRainMm }} mm</span> }
-              @if (outlook.currentWindMs != null) { <span>Wind {{ outlook.currentWindMs }} m/s</span> }
-            </div>
-            <div class="forecast-scroll">
+        <div class="weather-comparison-grid">
+<section class="weather-current-card"><div class="weather-panel-title"><div><h3>☁ &nbsp;Current Weather</h3><p>⌖ {{ selected.region }}, Tanzania</p></div><span class="weather-model-badge">Model data</span></div>
+@if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
+<div class="weather-current-hero"><span class="weather-hero-symbol" aria-hidden="true">🌤</span><div class="weather-hero-temp"><strong>{{ outlook.currentTemperatureC ?? '—' }}°C</strong><span>Current temperature</span></div><div class="weather-current-details"><span>Humidity <strong>{{ outlook.currentHumidity ?? '—' }}%</strong></span><span>Wind <strong>{{ outlook.currentWindMs ?? '—' }} m/s</strong></span><span>Rain (today) <strong>{{ outlook.currentRainMm ?? '—' }} mm</strong></span></div></div>
+} } @else { <p>Weather unavailable.</p> }</section>
+<section class="weather-seven-day-card"><h3>▦ &nbsp;7-Day Forecast</h3>
+@if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
+<div class="forecast-scroll">
               <div class="forecast-days" role="img" aria-label="Seven day forecast">
                 @for (day of outlook.days; track day.date) {
                   <article>
@@ -94,35 +85,9 @@
                 }
               </div>
             </div>
-          }
-          <h3>Health records</h3>
-          @if (outlook.reported.length === 0) {
-            <p>No disease report or open health case is stored for this farm.</p>
-          } @else {
-            <ul class="reported">
-              @for (item of outlook.reported; track item.id) {
-                <li>
-                  <a [routerLink]="item.sourceType === 'CASE' ? '/livestock' : '/alerts'" [queryParams]="item.sourceType === 'CASE' ? { farmId: outlook.farmId } : null">{{ item.title }}</a>
-                  <span>{{ illnessLabel(item.sourceType) }}@if (item.farmName) { · {{ item.farmName }} }</span>
-                  @if (item.notes) { <em>{{ item.notes }}</em> }
-                </li>
-              }
-            </ul>
-          }
-          @if (outlook.checks.length > 0) {
-            <h3>Conditions to check</h3>
-            <ul class="checks">
-              @for (note of outlook.checks; track note) {
-                <li>{{ note }}</li>
-              }
-            </ul>
-          }
-          <p class="muted">A forecast does not name a disease or choose a medicine. A Farm Adviser does that. {{ outlook.attribution }}</p>
-        }
-      } @else {
-        <p class="muted">Open-Meteo did not return a forecast for this farm.</p>
-      }
-    </article>
+
+} } @else { <p>Forecast unavailable.</p> }</section></div>
+<p class="weather-data-note">Open-Meteo weather is modelled for this location, not measured by an on-farm station.</p>
       </div>
     </section>
     <div class="intelligence-climate-section">
@@ -327,6 +292,7 @@
         <span><span aria-hidden="true">☂</span> Drainage</span>
       </div>
     </div>
+    <details class="intelligence-profile-details"><summary>Farm information <span>View operational details</span></summary>
     <div class="intelligence-farm-profile">
       <article class="sheet farm-info-sheet">
       <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm information</h2><p>Everything you need to know about this farm</p></div></div>
@@ -342,6 +308,7 @@
       </dl>
     </article>
     </div>
+    </details>
   }
 
   @if (tab() === 'location') {
