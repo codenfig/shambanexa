@@ -92,7 +92,7 @@
 
     @for (pin of placed(); track pin.id) {
       @if (pin.link) {
-        <a class="marker" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" [routerLink]="pin.link" [attr.aria-label]="pin.title" (mouseenter)="pinFocused.emit(pin.id)" (mouseleave)="pinFocused.emit('')" (click)="pinPicked.emit(pin.id); $event.stopPropagation()">
+        <a class="marker" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" [routerLink]="pin.link" [attr.aria-label]="pin.title" (mouseenter)="focusPin(pin.id)" (mouseleave)="blurPin(pin.id)" (focus)="focusPin(pin.id)" (blur)="blurPin(pin.id)" (click)="pinPicked.emit(pin.id); $event.stopPropagation()">
           <title>{{ pin.title }}</title>
           <circle class="ping" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" [style.animation-delay]="pin.delay" />
           <circle class="halo" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r + 3.5" />
@@ -106,7 +106,7 @@
           }
         </a>
       } @else {
-        <g class="marker" role="button" tabindex="0" [attr.aria-label]="pin.title" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" (mouseenter)="pinFocused.emit(pin.id)" (mouseleave)="pinFocused.emit('')" (click)="pinPicked.emit(pin.id); $event.stopPropagation()" (keydown.enter)="pinPicked.emit(pin.id)" (keydown.space)="$event.preventDefault(); pinPicked.emit(pin.id)">
+        <g class="marker" role="button" tabindex="0" [attr.aria-label]="pin.title" [class.selected]="selectedId() === pin.id" [class.tone-warn]="pin.tone === 'warn'" [class.tone-alert]="pin.tone === 'alert'" (mouseenter)="focusPin(pin.id)" (mouseleave)="blurPin(pin.id)" (focus)="focusPin(pin.id)" (blur)="blurPin(pin.id)" (click)="pinPicked.emit(pin.id); $event.stopPropagation()" (keydown.enter)="pinPicked.emit(pin.id)" (keydown.space)="$event.preventDefault(); pinPicked.emit(pin.id)">
           <title>{{ pin.title }}</title>
           <circle class="ping" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r" [style.animation-delay]="pin.delay" />
           <circle class="halo" [attr.cx]="pin.x" [attr.cy]="pin.y" [attr.r]="pin.r + 3.5" />
@@ -142,6 +142,15 @@
       </g>
     }
   </svg>
+  @if (hoveredPin(); as farm) {
+    <div class="farm-photo-preview" [style.left]="hoverPosition()?.left" [style.top]="hoverPosition()?.top" role="status" aria-live="off">
+      <img [src]="farm.imageUrl" [alt]="farm.imageCaption || 'Facility at ' + farm.title" loading="lazy">
+      <div class="farm-photo-preview-content">
+        <strong>{{ farm.imageCaption || farm.label }}</strong>
+        <span>{{ farm.title }}</span>
+      </div>
+    </div>
+  }
 </div>
 @if (selection()?.outside) {
   <p class="notice">These coordinates are outside Tanzania.</p>
