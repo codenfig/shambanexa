@@ -431,3 +431,49 @@ dd { margin: 4px 0 0; font-weight: 700; }
 @media(max-width:1450px) { .intelligence-sources { gap:8px; } .intelligence-source { min-width:145px; padding:10px; } .intelligence-source strong { font-size:13px; } .intelligence-source small { font-size:10px; } .weather-hero-symbol { font-size:57px; } .weather-hero-temp strong { font-size:39px; } .weather-current-details { padding-left:15px; } .weather-current-details > span { font-size:12px; } }
 @media(max-width:1150px) { .intelligence-header { flex-wrap:wrap; } .weather-comparison-grid { grid-template-columns:1fr; } .weather-seven-day-card .forecast-days article { min-height:155px; } }
 @media(max-width:700px) { .intelligence-dashboard { padding:14px; } .intelligence-header { padding:4px 4px 17px; } .intelligence-weather-icon { width:52px; height:56px; font-size:42px; } .intelligence-heading { gap:11px; } .intelligence-heading h2 { font-size:22px; } .intelligence-heading p { font-size:11px; } .intelligence-sources { width:100%; } .intelligence-source { min-width:0; flex:1; } .weather-current-card,.weather-seven-day-card { padding:14px; } .weather-current-hero { flex-wrap:wrap; } .weather-current-details { width:100%; margin:0; padding:12px 0 0; border-left:0; border-top:1px solid rgba(255,255,255,.25); } .weather-seven-day-card .forecast-days { min-width:600px; } }
+
+/* Reference climate strip: three horizontally aligned NASA POWER cards */
+.intelligence-climate-section { margin-top:20px; }
+.intelligence-climate-section .climate-grid { display:grid; grid-template-columns:minmax(0,2.05fr) minmax(0,.98fr) minmax(0,.98fr); gap:17px; align-items:stretch; }
+.intelligence-climate-section .climate-grid .plot.wide { grid-column:1; }
+.intelligence-climate-section .climate-grid .plot:not(.wide) { grid-column:auto; }
+.intelligence-climate-section .climate-grid .plot { min-width:0; padding:21px 25px; background:#fff; border:2px solid #e1e9ed; border-radius:20px; box-shadow:none; }
+.intelligence-climate-section .climate-grid .plot h3 { display:flex; align-items:center; gap:13px; margin:0 0 18px; color:#17251b; font-size:clamp(17px,1.55vw,24px); line-height:1.2; font-weight:850; letter-spacing:-.035em; }
+.climate-card-symbol { color:#18a044; font-size:30px; line-height:1; font-weight:600; }
+.climate-card-subtitle { margin:-11px 0 21px 44px; color:#6c7d80; font-size:13px; line-height:1.4; }
+.intelligence-climate-section .plot.wide .bars { display:grid; gap:13px; }
+.intelligence-climate-section .plot.wide .bar { display:grid; grid-template-columns:minmax(130px,.95fr) minmax(100px,1.65fr) auto; align-items:center; gap:18px; }
+.intelligence-climate-section .plot.wide .bar > span { font-size:14px; font-weight:800; color:#17251b; }
+.intelligence-climate-section .plot.wide .bar > span em { display:block; margin-top:3px; font-size:11px; font-style:normal; font-weight:500; color:#73838c; }
+.intelligence-climate-section .plot.wide .bar > i { height:14px; border-radius:99px; background:#e2e9ec; overflow:hidden; }
+.intelligence-climate-section .plot.wide .bar > i b { height:100%; border-radius:99px; }
+.intelligence-climate-section .plot.wide .bar > strong { min-width:75px; text-align:right; white-space:nowrap; font-size:15px; color:#17251b; }
+.intelligence-climate-section .gauges { display:flex; align-items:center; justify-content:space-evenly; gap:14px; padding-top:5px; }
+.intelligence-climate-section .gauge { min-width:0; text-align:center; }
+.intelligence-climate-section .gauge .ring { width:clamp(85px,8.5vw,137px); height:clamp(85px,8.5vw,137px); margin:0 auto 11px; }
+.intelligence-climate-section .gauge .ring span { font-size:clamp(17px,1.7vw,26px); }
+.intelligence-climate-section .gauge > strong { display:block; font-size:16px; }
+.intelligence-climate-section .gauge > em { display:block; margin-top:3px; font-size:12px; color:#71818c; }
+.intelligence-climate-section .plot .thermo { margin-top:53px; }
+.intelligence-climate-section .plot .thermo .track { height:14px; border-radius:99px; }
+.intelligence-climate-section .plot .pills { display:flex; flex-wrap:wrap; gap:9px 13px; margin-top:22px; }
+.intelligence-climate-section .plot .pills li { font-size:12px; white-space:nowrap; }
+.climate-extra-details { margin-top:12px; border:1px solid #e1eae4; border-radius:14px; background:#fff; }
+.climate-extra-details summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 17px; color:#255d39; font-size:13px; font-weight:850; cursor:pointer; }
+.climate-extra-details summary span { color:#71837a; font-size:11px; font-weight:500; }
+.climate-extra-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:0 14px 14px; }
+.climate-extra-grid .plot { min-width:0; padding:15px; border:1px solid #e3ece6; border-radius:12px; }
+.intelligence-advisory { display:flex; align-items:center; gap:22px; margin-top:22px; min-height:130px; padding:22px 26px; border-radius:20px; background:linear-gradient(110deg,#e8f8ed,#e4f5ee); border:0; }
+.intelligence-advisory-icon { width:75px; height:75px; font-size:47px; background:#c9f3d1; border-radius:16px; }
+.intelligence-advisory h3 { font-size:22px; }
+.intelligence-advisory p { font-size:14px; color:#394d43; }
+.intelligence-advisory-topics { flex:none; display:flex; align-items:center; gap:12px; }
+.intelligence-advisory-topics > span { min-width:140px; display:flex; align-items:center; gap:10px; padding:13px 15px; background:#fff; border:1px solid #dce9e3; border-radius:14px; box-shadow:0 2px 7px rgba(15,65,35,.03); }
+.intelligence-advisory-topics > span > span:first-child { font-size:28px; }
+.intelligence-advisory-topics strong,.intelligence-advisory-topics small { display:block; white-space:nowrap; }
+.intelligence-advisory-topics strong { color:#233c2d; font-size:13px; }
+.intelligence-advisory-topics small { margin-top:3px; color:#178d51; font-size:12px; }
+.intelligence-advisory-topics .advisory-heat > span:first-child,.intelligence-advisory-topics .advisory-heat small { color:#ef713c; }
+.intelligence-advisory-topics .advisory-drainage > span:first-child,.intelligence-advisory-topics .advisory-drainage small { color:#238bda; }
+@media(max-width:1250px) { .intelligence-climate-section .climate-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .intelligence-climate-section .climate-grid .plot.wide { grid-column:1/-1; } .intelligence-advisory { flex-wrap:wrap; } .intelligence-advisory-topics { flex-wrap:wrap; } }
+@media(max-width:720px) { .intelligence-climate-section .climate-grid,.climate-extra-grid { grid-template-columns:1fr; } .intelligence-climate-section .climate-grid .plot.wide,.intelligence-climate-section .climate-grid .plot:not(.wide) { grid-column:1; } .intelligence-climate-section .climate-grid .plot { padding:17px; } .intelligence-climate-section .plot.wide .bar { grid-template-columns:minmax(80px,1fr) minmax(70px,1.3fr) auto; gap:8px; } .intelligence-climate-section .plot.wide .bar > span { font-size:11px; } .intelligence-climate-section .plot.wide .bar > strong { min-width:0; font-size:11px; } .intelligence-advisory { padding:16px; gap:12px; } .intelligence-advisory-topics { width:100%; } .intelligence-advisory-topics > span { flex:1; min-width:110px; } }
