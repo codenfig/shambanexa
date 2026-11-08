@@ -1,4 +1,4 @@
-<div class="map-frame" [class.picking]="selectable()" [class.zoomed]="zoom() !== 1">
+<div class="map-frame" [class.picking]="selectable()" [class.zoomed]="zoom() !== 1" [class.wide-photo-preview]="widePhotoPreview()">
   <svg #surface [attr.viewBox]="viewBox" [style.aspect-ratio]="width + ' / ' + height" [style.transform]="zoom() === 1 ? 'none' : 'scale(' + zoom() + ')'" (click)="onMapClick($event)" role="img" [attr.aria-label]="ariaLabel()">
     <defs>
       <radialGradient [attr.id]="uid + '-sea'" cx="46%" cy="40%" r="78%">
@@ -143,13 +143,41 @@
     }
   </svg>
   @if (hoveredPin(); as farm) {
-    <div class="farm-photo-preview" [style.left]="hoverPosition()?.left" [style.top]="hoverPosition()?.top" role="status" aria-live="off">
-      <img [src]="farm.imageUrl" [alt]="farm.imageCaption || 'Facility at ' + farm.title" loading="lazy">
-      <div class="farm-photo-preview-content">
-        <strong>{{ farm.imageCaption || farm.label }}</strong>
-        <span>{{ farm.title }}</span>
+    @if (widePhotoPreview()) {
+      <section class="farm-wide-preview" aria-label="Selected farm facility preview">
+        <div class="farm-wide-photo">
+          <img [src]="farm.imageUrl" [alt]="farm.imageCaption || 'Farm facility'" loading="lazy">
+          @if (farm.facilityStatus) {
+            <span class="farm-wide-status" [class.needs-attention]="farm.facilityStatus !== 'ACTIVE'">
+              <span aria-hidden="true">{{ farm.facilityStatus === 'ACTIVE' ? '✓' : '!' }}</span>
+              {{ farm.facilityStatus === 'ACTIVE' ? 'Operational' : 'Needs attention' }}
+            </span>
+          }
+        </div>
+        <div class="farm-wide-info">
+          <div class="farm-wide-heading">
+            <div>
+              <h3>{{ farm.imageCaption || farm.farmName || farm.label }}</h3>
+              <p><span aria-hidden="true">⌖</span> {{ farm.farmName }} · {{ farm.regionName }} · {{ farm.latitude.toFixed(4) }}, {{ farm.longitude.toFixed(4) }}</p>
+            </div>
+            <span class="farm-wide-hint">Click map pin to view farm →</span>
+          </div>
+          <div class="farm-wide-details">
+            <div><span class="farm-wide-detail-icon">⌂</span><span>Facility type<strong>{{ farm.facilityType || 'Farm overview' }}</strong></span></div>
+            <div><span class="farm-wide-detail-icon">✓</span><span>Status<strong>{{ farm.facilityStatus === 'ACTIVE' ? 'Operational' : farm.facilityStatus ? 'Needs attention' : 'Not available' }}</strong></span></div>
+            <div><span class="farm-wide-detail-icon">▦</span><span>Facilities<strong>{{ farm.facilityCount ?? 0 }} recorded</strong></span></div>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <div class="farm-photo-preview" [style.left]="hoverPosition()?.left" [style.top]="hoverPosition()?.top" role="status" aria-live="off">
+        <img [src]="farm.imageUrl" [alt]="farm.imageCaption || 'Facility at ' + farm.title" loading="lazy">
+        <div class="farm-photo-preview-content">
+          <strong>{{ farm.imageCaption || farm.label }}</strong>
+          <span>{{ farm.title }}</span>
+        </div>
       </div>
-    </div>
+    }
   }
 </div>
 @if (selection()?.outside) {
