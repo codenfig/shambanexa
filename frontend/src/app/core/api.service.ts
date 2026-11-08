@@ -48,6 +48,31 @@ export class ApiService {
     return this.http.get<Page<Animal>>('/api/v1/animals', { params: httpParams });
   }
 
+
+  animalWeights(id: string) {
+    return this.http.get<Array<{id:string; measured_on:string; weight_kg:number; notes:string|null}>>(`/api/v1/animals/${id}/weights`);
+  }
+
+  addAnimalWeight(id: string, body: {weightKg:number; measuredOn:string; notes?:string}) {
+    return this.http.post(`/api/v1/animals/${id}/weights`, body);
+  }
+
+  animalBreeding(id: string) {
+    return this.http.get<Array<{id:string; event_type:string; event_on:string; expected_birth_on:string|null; notes:string|null}>>(`/api/v1/animals/${id}/breeding`);
+  }
+
+  addAnimalBreeding(id: string, body: {eventType:string; eventOn:string; expectedBirthOn?:string|null; notes?:string}) {
+    return this.http.post(`/api/v1/animals/${id}/breeding`, body);
+  }
+
+  animalTreatmentHistory(id: string) {
+    return this.http.get<Array<{id:string; started_on:string; diagnosis:string; treatment_status:string; veterinarian_name:string; withdrawal_ends_on:string|null; issued:boolean}>>(`/api/v1/animals/${id}/treatment-history`);
+  }
+
+  animalWithdrawalStatus(id: string) {
+    return this.http.get<{activeWithdrawal:boolean; asOf:string; records:unknown[]}>(`/api/v1/animals/${id}/withdrawal-status`);
+  }
+
   createAnimal(body: unknown) {
     return this.http.post<Animal>('/api/v1/animals', body);
   }
