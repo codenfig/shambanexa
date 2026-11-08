@@ -1,4 +1,4 @@
-<a class="back" routerLink="/farms"><span aria-hidden="true">←</span> Back to all farms</a>
+<a class="back" routerLink="/farms"><span aria-hidden="true">←</span> Back to Farms</a>
 
 @if (loading()) {
   <p class="state">Loading farm…</p>
@@ -22,30 +22,33 @@
         <span>{{ selected.region }}, Tanzania</span>
       </div>
       <div class="detail-actions">
-        <a class="detail-hero-primary" [routerLink]="['/farms', selected.id, 'edit']"><span aria-hidden="true">✎</span> Edit farm</a>
-        <a class="detail-hero-secondary" [routerLink]="['/livestock']" [queryParams]="{ farmId: selected.id }">View livestock <span aria-hidden="true">↗</span></a>
+        <a class="detail-hero-primary" [routerLink]="['/farms', selected.id, 'edit']"><span aria-hidden="true">✎</span> Edit Farm</a>
+        <button class="detail-hero-secondary" type="button" (click)="show('facilities')"><span aria-hidden="true">＋</span> Facilities</button>
+        <a class="detail-hero-secondary" [routerLink]="['/livestock']" [queryParams]="{ farmId: selected.id }">Livestock <span aria-hidden="true">↗</span></a>
       </div>
     </div>
     <div class="detail-hero-foot"><span>SHAMBA NEXA · FARM OPERATIONS</span><span>FARM OVERVIEW <span aria-hidden="true">↗</span></span></div>
   </header>
 
-  <div class="detail-section-intro"><div><span class="detail-section-kicker">YOUR FARM AT A GLANCE</span><h2>Operations overview</h2></div><span class="detail-section-subtitle">Key details from your farm records</span></div>
+  <div class="detail-section-intro"><div><span class="detail-section-kicker">FARM DASHBOARD</span><h2>Farm overview</h2></div></div>
   <div class="summary">
-    <article class="detail-summary-featured"><span class="detail-stat-icon" aria-hidden="true">♧</span><span>Animals</span><strong>{{ fmt(selected.animalCount) }}</strong><small>Livestock recorded</small></article>
-    <article><span class="detail-stat-icon" aria-hidden="true">⌂</span><span>Facilities</span><strong>{{ selected.facilityCount }}</strong><small>Farm infrastructure</small></article>
-    <article><span class="detail-stat-icon" aria-hidden="true">◷</span><span>Established</span><strong class="text">{{ dateLabel(selected.establishedOn) }}</strong><small>Farm history</small></article>
-    <article><span class="detail-stat-icon" aria-hidden="true">↻</span><span>Last updated</span><strong class="text">{{ updatedLabel(selected.updatedAt) }}</strong><small>Latest record update</small></article>
+    <article class="metric-animals"><span class="detail-stat-icon" aria-hidden="true">♧</span><div><strong>{{ fmt(selected.animalCount) }}</strong><span>Livestock</span></div></article>
+    <article class="metric-facilities"><span class="detail-stat-icon" aria-hidden="true">⌂</span><div><strong>{{ selected.facilityCount }}</strong><span>Facilities</span></div></article>
+    <article class="metric-established"><span class="detail-stat-icon" aria-hidden="true">▦</span><div><strong class="text">{{ dateLabel(selected.establishedOn) }}</strong><span>Established</span></div></article>
+    <article class="metric-updated"><span class="detail-stat-icon" aria-hidden="true">↻</span><div><strong class="text">{{ updatedLabel(selected.updatedAt) }}</strong><span>Last Updated</span></div></article>
+    <article class="metric-location"><span class="detail-stat-icon" aria-hidden="true">⌖</span><div><strong class="text">{{ selected.region }}</strong><span>Region</span></div></article>
   </div>
 
   <nav class="tabs" aria-label="Farm sections">
-    <button type="button" [class.on]="tab() === 'overview'" (click)="show('overview')">Overview</button>
-    <button type="button" [class.on]="tab() === 'location'" (click)="show('location')">Location</button>
-    <button type="button" [class.on]="tab() === 'facilities'" (click)="show('facilities')">Facilities</button>
+    <button type="button" [class.on]="tab() === 'overview'" (click)="show('overview')"><span aria-hidden="true">▦</span> Overview</button>
+    <button type="button" [class.on]="tab() === 'location'" (click)="show('location')"><span aria-hidden="true">⌖</span> Location</button>
+    <button type="button" [class.on]="tab() === 'facilities'" (click)="show('facilities')"><span aria-hidden="true">⌂</span> Facilities ({{ facilities().length }})</button>
   </nav>
 
   @if (tab() === 'overview') {
+    <div class="detail-overview-grid">
     <article class="sheet farm-info-sheet">
-      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">⌂</span><div><span class="detail-section-kicker">FARM PROFILE</span><h2>Farm information</h2><p>Essential information and contact details for this location.</p></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm Information</h2><p>Profile and operational details</p></div></div>
       <dl>
         <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
         <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
@@ -57,8 +60,9 @@
         <div><dt>Facilities</dt><dd>{{ selected.facilityCount }}</dd></div>
       </dl>
     </article>
+    <div class="detail-overview-side">
     <article class="sheet forecast">
-      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☀</span><div><span class="detail-section-kicker">LOCAL CONDITIONS</span><h2>7-day forecast</h2></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☁</span><div><h2>Current Weather &amp; 7-Day Forecast</h2><p>{{ selected.region }}, Tanzania · Live model data</p></div></div>
       <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
       @if (forecastLoading()) {
         <p class="muted">Asking Open-Meteo…</p>
@@ -118,7 +122,7 @@
       }
     </article>
     <article class="sheet climate">
-      <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">≋</span><div><span class="detail-section-kicker">ENVIRONMENTAL INSIGHTS</span><h2>Historical climate</h2></div></div>
+      <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">♧</span><div><h2>Climate &amp; Historical Trends</h2><p>Environmental insights for your farm</p></div></div>
       <p class="muted">NASA POWER. Advisory model data for this location, not a measurement taken on the farm.</p>
       @if (climateLoading()) {
         <p class="muted">Asking NASA POWER…</p>
@@ -297,6 +301,8 @@
         <p class="muted">NASA POWER did not return climate for this farm.</p>
       }
     </article>
+    </div>
+    </div>
   }
 
   @if (tab() === 'location') {
