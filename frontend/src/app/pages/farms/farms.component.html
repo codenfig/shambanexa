@@ -42,14 +42,14 @@
     }
 
     @if (view() === 'facilities' || view() === 'types' || view() === 'maintenance') {
-      <div class="board">
+      <div class="board" [class.types-board]="view() === 'types'">
         <header class="banner">
           <span class="mark" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M3 20h18M4 20V9h16v11"/><path d="M8 9V5h8v4"/><path d="M8 13h3M13 13h3M8 16h3M13 16h3"/></svg>
           </span>
           <div>
-            <h1>Facilities</h1>
-            <p>Barns, grazing areas, pens, stores, and cages recorded on the farms you can open.</p>
+            <h1>{{ view() === 'types' ? 'Facility Types' : view() === 'maintenance' ? 'Facility Maintenance' : 'Facilities' }}</h1>
+            <p>{{ view() === 'types' ? 'Explore the spaces that keep your farms growing. Browse facility categories and their current usage across your farms.' : 'Barns, grazing areas, pens, stores, and cages recorded on the farms you can open.' }}</p>
           </div>
         </header>
 
@@ -88,16 +88,21 @@
               Maintenance
             </a>
           </nav>
+          <div class="board-actions">
+          @if (view() === 'types') {
+            <span class="type-count">{{ visibleTypes().length }} categories</span>
+          }
           <button class="export" type="button" (click)="exportFacilities()" [disabled]="!facilitiesExportable()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>
             Export
           </button>
+          </div>
         </div>
 
         <div class="filters">
           <label class="search-field">
             <span class="sr">Search facilities</span>
-            <input [ngModel]="facilityQuery()" (ngModelChange)="setFacilityQuery($event)" placeholder="Search facilities by name, farm or type…" type="search">
+            <input [ngModel]="facilityQuery()" (ngModelChange)="setFacilityQuery($event)" [placeholder]="view() === 'types' ? 'Search facility types…' : 'Search facilities by name, farm or type…'" type="search">
           </label>
           <label>
             <span class="sr">Farm</span>
@@ -155,13 +160,23 @@
           } @else {
             <div class="type-grid">
               @for (item of visibleTypes(); track item.type) {
-                <button class="type-card" type="button" (click)="openType(item.type)">
-                  <span class="type-photo" aria-hidden="true"><img [src]="typePhoto(item.type)" alt=""></span>
-                  <div>
-                    <strong>{{ typeLabel(item.type) }}</strong>
-                    <span>{{ fmt(item.count) }} {{ item.count === 1 ? 'facility' : 'facilities' }}</span>
+                <article class="type-card">
+                  <button class="type-photo" type="button" (click)="openType(item.type)" [attr.aria-label]="'View ' + typeLabel(item.type) + ' facilities'">
+                    <img [src]="typePhoto(item.type)" [alt]="typeLabel(item.type) + ' facility category'" loading="lazy">
+                    <span class="photo-overlay">View facilities <span aria-hidden="true">↗</span></span>
+                  </button>
+                  <div class="type-content">
+                    <div class="type-heading">
+                      <h2>{{ typeLabel(item.type) }}</h2>
+                      <span class="type-status"><span aria-hidden="true" class="status-dot"></span> In use</span>
+                    </div>
+                    <p>{{ typeDescription(item.type) }}</p>
+                    <div class="type-footer">
+                      <span class="type-quantity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M4 20V9h16v11M8 9V5h8v4"/></svg>{{ fmt(item.count) }} {{ item.count === 1 ? 'facility' : 'facilities' }}</span>
+                      <button class="type-view" type="button" (click)="openType(item.type)" [attr.aria-label]="'View ' + typeLabel(item.type) + ' facilities'">View details <span aria-hidden="true">→</span></button>
+                    </div>
                   </div>
-                </button>
+                </article>
               }
             </div>
           }
