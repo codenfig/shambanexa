@@ -4,6 +4,7 @@ import com.shambanexa.common.ApiException;
 import com.shambanexa.entity.Animal;
 import com.shambanexa.repository.AnimalRepository;
 import com.shambanexa.security.AccessGuard;
+import com.shambanexa.service.AuditTrail;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
@@ -22,11 +23,13 @@ public class AnimalLifecycleController {
     private final AnimalRepository animals;
     private final AccessGuard access;
     private final JdbcTemplate jdbc;
+    private final AuditTrail audit;
 
-    public AnimalLifecycleController(AnimalRepository animals, AccessGuard access, JdbcTemplate jdbc) {
+    public AnimalLifecycleController(AnimalRepository animals, AccessGuard access, JdbcTemplate jdbc, AuditTrail audit) {
         this.animals = animals;
         this.access = access;
         this.jdbc = jdbc;
+        this.audit = audit;
     }
 
     private Animal visible(UUID id) {
@@ -68,6 +71,7 @@ public class AnimalLifecycleController {
             VALUES(?,?,?,?,?,?,?)
             """, id, access.tenantId(), animalId, Date.valueOf(input.measuredOn()), input.weightKg(),
                 input.notes(), access.current().id());
+        audit.record("ANIMAL_WEIGHT_RECORDED", "ANIMAL", animalId, "Weight measurement recorded on " + input.measuredOn());
         return Map.of("id",id,"measuredOn",input.measuredOn(),"weightKg",input.weightKg());
     }
 
@@ -104,6 +108,7 @@ public class AnimalLifecycleController {
             """,id,access.tenantId(),animalId,type,Date.valueOf(input.eventOn()),
             input.expectedBirthOn()==null?null:Date.valueOf(input.expectedBirthOn()),
             input.partnerAnimalId(),input.offspringCount(),input.notes(),access.current().id());
+        audit.record("ANIMAL_BREEDING_RECORDED", "ANIMAL", animalId, type + " on " + input.eventOn());
         return Map.of("id",id,"eventType",type,"eventOn",input.eventOn());
     }
 
