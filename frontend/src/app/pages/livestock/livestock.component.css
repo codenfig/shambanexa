@@ -438,3 +438,62 @@ tr.picked { background: #f3faf4; }
 @media(max-width:1200px){.livestock-overview .ls-head{align-items:flex-start;flex-direction:column;gap:22px}.livestock-overview .ls-actions{align-self:flex-start}.livestock-overview .stage{grid-template-columns:minmax(0,1fr) 280px}.livestock-overview .insights .donut{width:135px;height:135px}.livestock-overview .insights .donut span{width:90px;height:90px;font-size:21px}}
 @media(max-width:920px){.livestock-overview .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.livestock-overview .insights.pair,.livestock-overview .stage{grid-template-columns:1fr}.livestock-overview .insights .donut{width:155px;height:155px}.livestock-overview .insights .donut span{width:105px;height:105px}}
 @media(max-width:600px){.livestock-overview .ls-head{min-height:0;padding:24px 20px}.livestock-overview .ls-head h1{font-size:29px}.livestock-overview .ls-actions{width:100%}.livestock-overview .ls-actions .ghost-btn,.livestock-overview .ls-actions .green-btn{flex:1;text-align:center}.livestock-overview .kpis{grid-template-columns:1fr 1fr;gap:9px}.livestock-overview .kpis article{padding:12px;gap:9px;min-height:96px}.livestock-overview .kpis .bubble{width:38px;height:38px}.livestock-overview .kpis .bubble svg{width:20px;height:20px}.livestock-overview .kpis strong{font-size:25px}.livestock-overview .kpis em{font-size:10px}.livestock-overview .insights .card{padding:16px}.livestock-overview .insights .chart-row{gap:13px}.livestock-overview .insights .donut{width:112px;height:112px}.livestock-overview .insights .donut span{width:76px;height:76px;font-size:18px}.livestock-overview .insights .chart-row li{font-size:11px}.livestock-overview .board{padding:13px}.livestock-overview .board .table-scroll{overflow-x:auto}.livestock-overview .board table{min-width:590px}}
+
+/* Animal Health Center — mockup-aligned, scoped to /livestock/health */
+.ls.livestock-health{gap:17px}
+.livestock-health .ls-head{position:relative;isolation:isolate;display:flex;align-items:flex-end;min-height:190px;padding:27px 31px;overflow:hidden;border-radius:19px;background:linear-gradient(90deg,rgba(0,70,39,.96),rgba(0,72,39,.85) 38%,rgba(0,68,38,.1) 67%,rgba(0,57,36,.76)),url('/assets/facilities/landscape.png') center 50%/cover no-repeat;box-shadow:0 10px 28px rgba(8,65,33,.12)}
+.livestock-health .livestock-hero-copy{position:relative;z-index:1;max-width:620px;align-self:center}
+.livestock-health .livestock-eyebrow{display:block;margin-bottom:10px;font-size:13px;font-weight:800;letter-spacing:.04em;color:#d9ffe2}
+.livestock-health .ls-head h1{font-family:inherit;font-size:clamp(30px,3.4vw,46px);font-weight:850;letter-spacing:-.04em;line-height:1.08;color:white}
+.livestock-health .ls-head p{max-width:590px;margin-top:11px;color:#e7f6e9;font-size:14px;line-height:1.55}
+.livestock-health .ls-actions{position:relative;z-index:1;display:flex;align-self:stretch;align-items:flex-end;justify-content:flex-end;flex-wrap:wrap;gap:10px;max-width:480px;padding-top:42px}
+.livestock-health .ls-actions .ghost-btn{border:1px solid #e0efe6;background:#fff;color:#17482c;font-weight:800}
+.livestock-health .ls-actions .green-btn{background:#08a83b;color:white;border:1px solid #18ba4a;font-weight:800;box-shadow:0 5px 17px rgba(0,49,20,.2)}
+.health-hero-farm{position:absolute;right:0;top:0}
+.health-hero-farm select{min-width:150px;padding:10px 34px 10px 13px;border:1px solid #e2efe6;border-radius:11px;background:#fff;color:#193b27;font-weight:750}
+.livestock-health .health-kpis{gap:13px}
+.livestock-health .health-kpis article{position:relative;min-height:110px;padding:18px;border:1px solid #f0e7e7;border-radius:17px;background:linear-gradient(110deg,#fff,#fff0f0);box-shadow:0 5px 18px rgba(20,52,29,.045);overflow:hidden}
+.livestock-health .health-kpis article:nth-child(2){background:linear-gradient(110deg,#fff,#fff5e4);border-color:#f4ebd8}
+.livestock-health .health-kpis article:nth-child(3){background:linear-gradient(110deg,#fff,#e8f8ee);border-color:#e0efe4}
+.livestock-health .health-kpis article:nth-child(4){background:linear-gradient(110deg,#fff,#fff1e7);border-color:#f3e9dd}
+.livestock-health .health-kpis article::after{content:'';position:absolute;right:14px;bottom:30px;width:70px;height:28px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 28'%3E%3Cpath d='M1 24 Q 12 22 20 13 T 40 13 T 69 3' fill='none' stroke='%232a9e4a' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");opacity:.8}
+.livestock-health .health-kpis article:nth-child(1)::after{filter:hue-rotate(125deg)}
+.livestock-health .health-kpis article:nth-child(2)::after,.livestock-health .health-kpis article:nth-child(4)::after{filter:hue-rotate(270deg)}
+.livestock-health .health-kpis .bubble{width:54px;height:54px;border-radius:15px}
+.livestock-health .health-kpis .bubble svg{width:29px;height:29px}
+.livestock-health .health-kpis strong{font-size:32px;font-weight:850;color:#10261b}
+.livestock-health .health-kpis small{font-size:12px;font-weight:750;color:#344b3e}
+.livestock-health .health-kpis em{font-size:12px}
+.livestock-health .health-page{display:grid;gap:16px}
+.livestock-health .health-page .card.sheet{border:1px solid #e0eae5;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(19,55,31,.05);overflow:hidden}
+.livestock-health .health-page .panel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:#fff;border-bottom:1px solid #eef2ef}
+.livestock-health .health-page .panel-head h2{display:flex;align-items:center;gap:12px;font-family:inherit;font-size:19px;font-weight:850;letter-spacing:-.025em;color:#14291c}
+.health-panel-icon{color:#147b35;font-size:25px;line-height:1}
+.livestock-health .health-page .panel-head .count{border-radius:99px;background:#e9f6ec;color:#186333;padding:5px 10px;font-weight:800}
+.livestock-health .health-overview-card .breed-layout{display:grid;grid-template-columns:220px 1fr;align-items:center;gap:25px;padding:22px 25px 9px}
+.livestock-health .health-overview-card .donut{width:190px;height:190px}
+.livestock-health .health-overview-card .donut span{width:128px;height:128px;font-size:35px;font-weight:850}
+.livestock-health .health-overview-card .donut small{font-size:14px;color:#16763b}
+.livestock-health .health-overview-card .breed-tiles{display:grid;gap:13px}
+.livestock-health .health-overview-card .breed-tiles li{padding:15px 18px;border:1px solid #e5eee7;border-radius:14px;background:#fcfefd}
+.livestock-health .health-overview-card .breed-top{font-size:14px;font-weight:800}
+.livestock-health .health-overview-card .breed-tiles .bar{height:10px;margin:11px 0 8px}
+.livestock-health .health-overview-card .note{padding:0 24px 17px;margin:0;color:#698071}
+.livestock-health .health-split{gap:16px}
+.livestock-health .health-split .case-list{padding:16px}
+.livestock-health .health-split .case-card{min-height:132px;padding:17px;border:1px solid #dceadf;border-radius:14px;background:linear-gradient(110deg,#fff,#fbfefb)}
+.livestock-health .health-split .case-card.late{background:linear-gradient(110deg,#fff9f9,#fff0f2);border-color:#f4c4ca}
+.livestock-health .health-split .case-top strong{display:flex;align-items:center;gap:12px;font-size:16px}
+.health-case-icon{display:inline-grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#fff1dd;color:#c77a14;font-size:23px}
+.health-case-icon.treatment-icon{background:#ffe4e6;color:#ce2e44}
+.livestock-health .health-split .case-card .meta{display:block;margin:5px 0 0 54px;color:#687d70}
+.livestock-health .health-split .case-card p{margin:7px 0 0 54px}
+.livestock-health .health-split .note{padding:0 16px 16px}
+.livestock-health .health-attention-card .watch-list{padding:15px}
+.livestock-health .health-attention-card .watch-list li{padding:13px 16px;border:1px solid #e1ebe4;border-radius:14px;gap:17px;background:#fcfefd}
+.livestock-health .health-attention-card .avatar{width:66px;height:66px;border-radius:12px}
+.livestock-health .health-attention-card .name{font-size:17px;font-weight:850}
+.livestock-health .health-attention-card .meta{font-size:12px}
+.livestock-health .health-attention-card .text-btn{border:1px solid #1a8b40;border-radius:9px;background:#fff;color:#126b30;padding:10px 16px;font-weight:800}
+@media(max-width:1000px){.livestock-health .ls-head{flex-direction:column;align-items:flex-start;gap:20px}.livestock-health .ls-actions{align-self:stretch;width:100%;max-width:none;padding-top:40px;justify-content:flex-start}.health-hero-farm{right:auto;left:0}.livestock-health .health-overview-card .breed-layout{grid-template-columns:170px 1fr}.livestock-health .health-overview-card .donut{width:155px;height:155px}.livestock-health .health-overview-card .donut span{width:105px;height:105px;font-size:27px}}
+@media(max-width:650px){.livestock-health .ls-head{padding:22px}.livestock-health .ls-head h1{font-size:30px}.livestock-health .health-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.livestock-health .health-kpis article{min-height:95px;padding:12px;gap:9px}.livestock-health .health-kpis .bubble{width:38px;height:38px}.livestock-health .health-kpis .bubble svg{width:20px;height:20px}.livestock-health .health-kpis strong{font-size:26px}.livestock-health .health-kpis article::after{display:none}.livestock-health .health-overview-card .breed-layout{grid-template-columns:1fr;justify-items:center;gap:18px;padding:18px}.livestock-health .health-overview-card .breed-tiles{width:100%}.livestock-health .health-split{grid-template-columns:1fr}.livestock-health .health-attention-card .watch-list li{flex-wrap:wrap}.livestock-health .health-attention-card .text-btn{width:100%;text-align:center}}
