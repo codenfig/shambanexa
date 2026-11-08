@@ -54,6 +54,7 @@ export class FarmsComponent {
   page = signal(0);
   readonly pageSize = 8;
   readonly facilityPageSize = 8;
+  readonly maintenancePageSize = 6;
   fmt = formatNumber;
 
   canCreate = computed(() => this.auth.session()?.allFarms === true);
@@ -197,13 +198,15 @@ export class FarmsComponent {
   // Keep every accessible facility visible, including when all statuses are ACTIVE.
   visibleFacilities = computed(() => this.filteredFacilities());
 
-  facilityPageCount = computed(() => Math.max(1, Math.ceil(this.visibleFacilities().length / this.facilityPageSize)));
+  facilityPageLimit = computed(() => this.view() === 'maintenance' ? this.maintenancePageSize : this.facilityPageSize);
+
+  facilityPageCount = computed(() => Math.max(1, Math.ceil(this.visibleFacilities().length / this.facilityPageLimit())));
 
   visibleFacilityPage = computed(() => Math.min(this.facilityPage(), this.facilityPageCount() - 1));
 
   pagedFacilities = computed(() => {
-    const start = this.visibleFacilityPage() * this.facilityPageSize;
-    return this.visibleFacilities().slice(start, start + this.facilityPageSize);
+    const start = this.visibleFacilityPage() * this.facilityPageLimit();
+    return this.visibleFacilities().slice(start, start + this.facilityPageLimit());
   });
 
   facilityPages = computed(() => Array.from({ length: this.facilityPageCount() }, (_, index) => index));
@@ -213,8 +216,8 @@ export class FarmsComponent {
     if (total === 0) {
       return 'Showing 0 facilities';
     }
-    const start = this.visibleFacilityPage() * this.facilityPageSize + 1;
-    const end = Math.min(total, start + this.facilityPageSize - 1);
+    const start = this.visibleFacilityPage() * this.facilityPageLimit() + 1;
+    const end = Math.min(total, start + this.facilityPageLimit() - 1);
     return `Showing ${start}–${end} of ${formatNumber(total)} facilities`;
   });
 
