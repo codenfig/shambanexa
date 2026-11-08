@@ -454,6 +454,7 @@ export class LivestockComponent {
         this.animals.set(items);
         if (this.detailId) {
           this.selected.set(items.find(animal => animal.id === this.detailId) || null);
+          if (this.selected()) this.loadLifecycle(this.detailId);
         }
         this.loading.set(false);
       },
