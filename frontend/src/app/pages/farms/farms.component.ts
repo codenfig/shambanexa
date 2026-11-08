@@ -485,6 +485,19 @@ export class FarmsComponent {
     return names[type] || type.charAt(0) + type.slice(1).toLowerCase();
   }
 
+  typeDescription(type: string): string {
+    const descriptions: Record<string, string> = {
+      BARN: 'Sheltered spaces for livestock housing, care and daily farm operations.',
+      CAGE: 'Secure, managed enclosures for smaller animals and poultry.',
+      GRAZING: 'Open pasture areas where animals can roam, feed and thrive.',
+      PEN: 'Dedicated enclosures for safe livestock handling and management.',
+      WAREHOUSE: 'Protected storage for harvests, feed, equipment and supplies.',
+      POND: 'Managed water facilities for aquaculture and farm operations.',
+      MILKING: 'Purpose-built spaces for hygienic and efficient milk collection.'
+    };
+    return descriptions[type] || 'Facilities supporting the day-to-day needs of your farm.';
+  }
+
   facilityPhoto(row: FacilityRow): string {
     const kind = this.photoKind(row.facilityType);
     if (!kind) {
