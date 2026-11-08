@@ -186,3 +186,27 @@
   .pie-body { gap: 10px; }
   .pie-svg { width: 88%; margin-inline: auto; margin-bottom: -28px; }
 }
+
+
+/* 2026 dashboard experience: consistent premium hierarchy and accessible shortcuts */
+.dash-title { min-width: 0; }
+.dash-eyebrow { display:block; margin-bottom:8px; color:#178047; font-size:11px; font-weight:850; letter-spacing:.15em; }
+.dash-title h1 { font-size:clamp(25px,2.6vw,38px); line-height:1.12; }
+.dash-title p { margin:8px 0 0; color:#607269; font-size:13px; line-height:1.5; max-width:560px; }
+.dash-head { padding:22px 26px; border:1px solid #dcebe1; border-radius:20px; background:linear-gradient(112deg,#f0fbf3 0%,#fff 58%,#f7faf8 100%); box-shadow:0 8px 24px rgba(20,67,40,.045); }
+.dash-shortcuts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:0 0 18px; }
+.dash-shortcuts a { min-width:0; display:flex; align-items:center; gap:12px; padding:15px; border:1px solid #e0eae3; border-radius:16px; background:#fff; color:#20372a; text-decoration:none; box-shadow:0 6px 18px rgba(17,54,31,.045); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.dash-shortcuts a:hover { transform:translateY(-2px); border-color:#8ecda0; box-shadow:0 10px 25px rgba(17,54,31,.09); }
+.dash-shortcuts a:focus-visible { outline:3px solid #2f9e44; outline-offset:3px; }
+.dash-shortcuts a > span:nth-child(2) { display:grid; gap:4px; flex:1; min-width:0; }
+.dash-shortcuts strong { font-size:13px; font-weight:850; }
+.dash-shortcuts small { color:#6b7c72; font-size:11px; }
+.dash-shortcuts a > span:last-child { color:#2c914c; font-size:18px; }
+.shortcut-icon { display:grid; place-items:center; flex:0 0 40px; width:40px; height:40px; border-radius:12px; background:#e5f7e9; color:#16843d; font-size:23px; font-weight:800; }
+.dash-shortcuts a:nth-child(2) .shortcut-icon { background:#e9f2ff; color:#2875ba; }
+.dash-shortcuts a:nth-child(3) .shortcut-icon { background:#fff0eb; color:#d56a43; }
+.dash-shortcuts a:nth-child(4) .shortcut-icon { background:#fff5df; color:#a47615; }
+@media(max-width:1100px) { .dash-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:650px) { .dash-head { padding:18px; flex-direction:column; align-items:stretch; } .dash-actions { margin-left:0; justify-content:flex-start; } .dash-shortcuts { gap:9px; } .dash-shortcuts a { padding:11px; gap:8px; } .shortcut-icon { flex-basis:34px; width:34px; height:34px; } .dash-shortcuts small { font-size:10px; } }
+@media(max-width:390px) { .dash-shortcuts { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .dash-shortcuts a { transition:none; } .dash-shortcuts a:hover { transform:none; } }
