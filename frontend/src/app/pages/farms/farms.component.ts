@@ -251,6 +251,7 @@ export class FarmsComponent {
         this.facilityPage.set(0);
       }
       this.view.set(view);
+      if (!view) this.loadFacilities();
       if (view === 'facilities' || view === 'types' || view === 'maintenance') {
         this.sort.set('facilities');
         this.loadFacilities();
@@ -461,6 +462,7 @@ export class FarmsComponent {
       const health = healthAlert(this.alerts(), farm.id);
       const warning = this.alerts().some(alert => alert.farmId === farm.id && alert.status === 'OPEN' && alert.severity === 'WARNING');
       const critical = this.alerts().some(alert => alert.farmId === farm.id && alert.status === 'OPEN' && alert.severity === 'CRITICAL');
+      const farmFacility = this.facilityRows().find(row => row.farmId === farm.id);
       return {
         id: farm.id,
         label: farm.code,
@@ -470,6 +472,8 @@ export class FarmsComponent {
         latitude: Number(farm.latitude),
         longitude: Number(farm.longitude),
         link: ['/farms', farm.id],
+        imageUrl: farmFacility ? this.facilityPhoto(farmFacility) : '/assets/facilities/landscape.png',
+        imageCaption: farmFacility ? `${farmFacility.name} · ${this.typeLabel(farmFacility.facilityType)}` : `${farm.name} · Farm overview`,
         tone: critical || health?.severity === 'CRITICAL' ? 'alert' : warning || health ? 'warn' : 'ok',
         notice: health ? healthNotice(health) : undefined
       };
