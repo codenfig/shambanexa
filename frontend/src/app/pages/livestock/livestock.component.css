@@ -373,3 +373,68 @@ tr.picked { background: #f3faf4; }
   .pager { flex-direction: column; align-items: stretch; }
   .pager-controls { justify-content: center; }
 }
+
+/* Livestock Intelligence — scoped redesign of /livestock overview */
+.ls.livestock-overview{gap:18px}
+.livestock-overview .ls-head{position:relative;isolation:isolate;min-height:200px;padding:30px 32px;overflow:hidden;border-radius:22px;background:linear-gradient(90deg,rgba(1,64,38,.98) 0%,rgba(1,70,40,.94) 38%,rgba(1,71,42,.47) 75%,rgba(1,56,38,.65) 100%),url('/assets/facilities/landscape.png') center 53%/cover no-repeat;align-items:center;box-shadow:0 12px 32px rgba(5,58,32,.13)}
+.livestock-overview .livestock-hero-copy{position:relative;z-index:1;max-width:620px}
+.livestock-eyebrow{display:block;margin-bottom:12px;font-size:11px;font-weight:850;letter-spacing:.14em;color:#c2f0d1}
+.livestock-overview .ls-head h1{color:#fff;font-family:inherit;font-size:clamp(29px,3vw,44px);font-weight:850;letter-spacing:-.045em;line-height:1.08}
+.livestock-overview .ls-head p{max-width:510px;margin-top:12px;color:#e5f7eb;font-size:14px;line-height:1.55}
+.livestock-overview .farm-chip{order:0;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff}
+.livestock-overview .ls-actions{position:relative;z-index:1;align-self:flex-end;flex-wrap:wrap;justify-content:flex-end}
+.livestock-overview .ls-actions .ghost-btn{border:1px solid #e5f4e9;background:#fff;color:#11612d;font-weight:850}
+.livestock-overview .ls-actions .green-btn{background:#20a743;color:#fff;border:1px solid #20a743;font-weight:850;box-shadow:0 7px 18px rgba(0,45,22,.2)}
+.livestock-overview .kpis{gap:14px}
+.livestock-overview .kpis article{min-height:116px;gap:15px;padding:19px;border:1px solid #e2eee7;border-radius:17px;background:linear-gradient(125deg,#fff,#f4fcf6);box-shadow:0 6px 20px rgba(15,54,28,.045)}
+.livestock-overview .kpis article:nth-child(2){background:linear-gradient(125deg,#fff,#f2faf7)}
+.livestock-overview .kpis article:nth-child(3){background:linear-gradient(125deg,#fff,#fff3f3)}
+.livestock-overview .kpis article:nth-child(4){background:linear-gradient(125deg,#fff,#fffaf0)}
+.livestock-overview .kpis article::before{display:none}
+.livestock-overview .kpis .bubble{width:55px;height:55px;border-radius:15px}
+.livestock-overview .kpis .bubble svg{width:29px;height:29px}
+.livestock-overview .kpis small{font-size:12px;color:#455f50}
+.livestock-overview .kpis strong{font-size:clamp(26px,2.4vw,36px);font-weight:850;color:#10281b}
+.livestock-overview .kpis em{font-size:11px;font-weight:650}
+.livestock-overview .insights.pair{gap:16px;grid-template-columns:1fr 1fr}
+.livestock-overview .insights .card{min-height:258px;padding:22px 24px;border-radius:18px;border:1px solid #e0eae5;box-shadow:0 7px 22px rgba(15,54,28,.05)}
+.livestock-overview .insights .card h2,.livestock-overview .board h2,.livestock-overview .rail h2{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:850;color:#152d1e;letter-spacing:-.025em}
+.livestock-section-icon{display:inline-grid;place-items:center;color:#168b3b;font-size:23px;line-height:1}
+.livestock-overview .insights .chart-row{gap:26px;margin-top:19px}
+.livestock-overview .insights .donut{width:174px;height:174px}
+.livestock-overview .insights .donut span{width:118px;height:118px;font-size:26px}
+.livestock-overview .insights .donut small{font-size:12px}
+.livestock-overview .insights .chart-row ul{width:100%;gap:5px}
+.livestock-overview .insights .chart-row li{min-height:38px;padding:5px 0;border-bottom:1px solid #f1f5f2;font-size:13px}
+.livestock-overview .insights .chart-row li:last-child{border-bottom:0}
+.livestock-overview .insights .chart-row li strong{margin-left:auto;white-space:nowrap}
+.livestock-overview .insights .chart-row li em{min-width:41px;text-align:right;color:#257e43}
+.livestock-overview .insights .species-photo{width:34px;height:34px;object-fit:contain}
+.livestock-overview .stage{grid-template-columns:minmax(0,2.5fr) minmax(275px,.95fr);gap:16px}
+.livestock-overview .board,.livestock-overview .rail .card{padding:19px 20px;border-radius:18px;border:1px solid #e0eae5;box-shadow:0 7px 22px rgba(15,54,28,.05)}
+.livestock-overview .tab-row{margin-bottom:12px}
+.livestock-overview .tab-row .text-btn{background:#eef8f1;color:#117634;border-color:#d9ecdf}
+.livestock-overview .board table{border-collapse:separate;border-spacing:0}
+.livestock-overview .board th{padding:12px 11px;background:#f0f9f3;color:#516d5b;font-size:10px}
+.livestock-overview .board th:first-child{border-radius:9px 0 0 9px}
+.livestock-overview .board th:last-child{border-radius:0 9px 9px 0}
+.livestock-overview .board td{padding:12px 11px}
+.livestock-overview .board tbody tr:hover{background:#f3faf5}
+.livestock-registry-animal{display:flex;align-items:center;gap:10px}
+.livestock-registry-photo{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:9px;overflow:hidden;background:#e6f4e8;color:#16833b}
+.livestock-registry-photo img{width:100%;height:100%;object-fit:contain}
+.livestock-overview .board .name{font-size:13px}
+.livestock-overview .board .meta{font-size:11px}
+.livestock-overview .board .status-pill{font-size:11px}
+.livestock-overview .board .text-btn{border-radius:9px;padding:7px 13px}
+.livestock-overview .rail .card{padding:19px 18px}
+.livestock-overview .rail h2{margin-bottom:17px}
+.livestock-overview .rail .task{margin-bottom:10px;padding:13px 12px;border:1px solid #f5e7d0;border-radius:12px;background:#fff9ed}
+.livestock-overview .rail .task.livestock-alert-due{border-color:#f4dbdb;background:#fff4f4}
+.livestock-overview .rail .task strong{font-size:13px}
+.livestock-overview .rail .task span{font-size:11px;line-height:1.5}
+.livestock-overview .rail .quiet{margin:16px 0 0}
+.livestock-overview .rail .quiet a{color:#117b36}
+@media(max-width:1200px){.livestock-overview .ls-head{align-items:flex-start;flex-direction:column;gap:22px}.livestock-overview .ls-actions{align-self:flex-start}.livestock-overview .stage{grid-template-columns:minmax(0,1fr) 280px}.livestock-overview .insights .donut{width:135px;height:135px}.livestock-overview .insights .donut span{width:90px;height:90px;font-size:21px}}
+@media(max-width:920px){.livestock-overview .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.livestock-overview .insights.pair,.livestock-overview .stage{grid-template-columns:1fr}.livestock-overview .insights .donut{width:155px;height:155px}.livestock-overview .insights .donut span{width:105px;height:105px}}
+@media(max-width:600px){.livestock-overview .ls-head{min-height:0;padding:24px 20px}.livestock-overview .ls-head h1{font-size:29px}.livestock-overview .ls-actions{width:100%}.livestock-overview .ls-actions .ghost-btn,.livestock-overview .ls-actions .green-btn{flex:1;text-align:center}.livestock-overview .kpis{grid-template-columns:1fr 1fr;gap:9px}.livestock-overview .kpis article{padding:12px;gap:9px;min-height:96px}.livestock-overview .kpis .bubble{width:38px;height:38px}.livestock-overview .kpis .bubble svg{width:20px;height:20px}.livestock-overview .kpis strong{font-size:25px}.livestock-overview .kpis em{font-size:10px}.livestock-overview .insights .card{padding:16px}.livestock-overview .insights .chart-row{gap:13px}.livestock-overview .insights .donut{width:112px;height:112px}.livestock-overview .insights .donut span{width:76px;height:76px;font-size:18px}.livestock-overview .insights .chart-row li{font-size:11px}.livestock-overview .board{padding:13px}.livestock-overview .board .table-scroll{overflow-x:auto}.livestock-overview .board table{min-width:590px}}
