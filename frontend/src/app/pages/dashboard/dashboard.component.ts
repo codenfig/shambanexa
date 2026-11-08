@@ -518,6 +518,21 @@ export class DashboardComponent {
     return `${count} items low or expiring within 30 days`;
   }
 
+  /** Stable, accessible species palette independent of API ordering.
+   * Species are categories, not health/severity states.
+   */
+  private livestockColor(name: string, index: number): string {
+    const palette: Record<string, string> = {
+      cattle: '#176B4A',  // forest green
+      goats: '#2563EB',   // blue
+      sheep: '#D97706',   // amber
+      poultry: '#9333EA'  // violet
+    };
+    const key = name.trim().toLowerCase();
+    const extra = ['#0891B2', '#BE185D', '#4F46E5', '#B45309', '#0F766E'];
+    return palette[key] ?? extra[index % extra.length];
+  }
+
   private speciesPie(data: Dashboard): OverviewPie {
     const counts = data.species.map(item => Number(item.count));
     const shares = this.shares(counts);
@@ -525,7 +540,7 @@ export class DashboardComponent {
       label: item.name,
       count: Number(item.count),
       share: shares[index] ?? 0,
-      color: sliceColor(index)
+      color: this.livestockColor(item.name, index)
     })));
     const counted = counts.reduce((sum, count) => sum + count, 0);
     const change = data.animalChangePercent !== null
