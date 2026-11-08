@@ -107,3 +107,78 @@ dd { margin: 4px 0 0; font-weight: 700; }
   .plot.wide { grid-column: auto; }
   .bar i { grid-column: auto; }
 }
+
+/* Premium farm profile redesign, using existing local farm photography. */
+.back { display: inline-flex; align-items: center; gap: 9px; margin: 2px 0 14px; padding: 9px 13px; border-radius: 11px; background: #edf7ed; color: #236a39; font-size: 12px; font-weight: 800; transition: background .2s ease; }
+.back:hover { background: #dcefdc; }
+.detail-head { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: 340px; margin-top: 0; padding: clamp(25px,3.6vw,46px); border-radius: 25px; overflow: hidden; color: #fff; background: #123b24; box-shadow: 0 18px 44px rgba(11,51,26,.14); }
+.detail-head::before { content: ''; position: absolute; z-index: -2; inset: 0; background: url('/assets/facilities/banner.png') center / cover no-repeat; }
+.detail-head::after { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg,rgba(8,41,24,.97) 0%,rgba(12,54,31,.88) 40%,rgba(10,50,27,.49) 75%,rgba(10,38,23,.19) 100%); }
+.detail-hero-copy { max-width: 720px; }
+.detail-hero-kicker { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px; color: #d4f0d7; font-size: 10px; font-weight: 850; letter-spacing: .14em; }
+.detail-hero-dot { width: 8px; height: 8px; background: #a3e68d; border-radius: 50%; box-shadow: 0 0 0 5px rgba(163,230,141,.15); }
+.detail-head .eyebrow { color: #b9e5c0; font-size: 11px; letter-spacing: .14em; }
+.detail-head h1 { margin: 10px 0 13px; color: #fff; font-family: Fraunces,Georgia,serif; font-size: clamp(35px,4.4vw,58px); line-height: 1.08; font-weight: 650; letter-spacing: -.045em; }
+.detail-head .lead { color: #e0eee2; font-size: 14px; line-height: 1.6; }
+.detail-head .lead span { color: #a9e4ac; font-size: 19px; }
+.detail-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 17px; color: #d4e8d7; font-size: 12px; font-weight: 700; }
+.detail-head .status-pill { padding: 7px 13px; border: 1px solid rgba(255,255,255,.22); font-size: 11px; letter-spacing: .05em; }
+.detail-head .status-pill.is-active { background: #c5f2bd; color: #14532d; }
+.detail-head .status-pill.is-inactive { background: #e5e7eb; color: #334155; }
+.detail-actions { flex-wrap: wrap; margin-top: 24px; gap: 10px; }
+.detail-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 43px; padding: 0 18px; border-radius: 12px; font-size: 13px; font-weight: 850; transition: transform .2s ease; }
+.detail-actions a:hover { transform: translateY(-2px); }
+.detail-hero-primary { background: #b9eaa9; color: #173f25; }
+.detail-hero-secondary { border: 1px solid rgba(255,255,255,.38); background: rgba(255,255,255,.12); color: #fff; }
+.detail-hero-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 29px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.22); color: #d8e7da; font-size: 10px; font-weight: 850; letter-spacing: .13em; }
+.detail-section-intro { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin: 25px 0 12px; }
+.detail-section-kicker { color: #238144; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.detail-section-intro h2 { margin: 5px 0 0; color: #193d27; font-size: clamp(22px,2.3vw,28px); font-weight: 850; letter-spacing: -.045em; }
+.detail-section-subtitle { color: #809085; font-size: 12px; }
+.summary { margin: 0 0 25px; gap: 14px; }
+.summary article { display: flex; flex-direction: column; align-items: flex-start; min-height: 158px; padding: 19px; border-color: #e2ece5; border-radius: 20px; box-shadow: 0 9px 28px rgba(17,58,30,.045); transition: transform .2s ease,box-shadow .2s ease; }
+.summary article:hover { transform: translateY(-3px); box-shadow: 0 15px 32px rgba(17,58,30,.09); }
+.summary article.detail-summary-featured { background: linear-gradient(145deg,#175f34,#0f4127); border-color: #175f34; color: #fff; }
+.summary .detail-stat-icon { display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 14px; border-radius: 12px; background: #e8f7e9; color: #21823f; font-size: 22px; font-weight: 800; }
+.summary .detail-summary-featured .detail-stat-icon { background: rgba(255,255,255,.15); color: #fff; }
+.summary article span:not(.detail-stat-icon) { font-size: 11px; }
+.summary article strong { margin-top: 7px; color: #183e28; font-size: 32px; }
+.summary article strong.text { font-size: clamp(15px,1.7vw,21px); line-height: 1.4; }
+.summary .detail-summary-featured strong, .summary .detail-summary-featured span:not(.detail-stat-icon) { color: #fff; }
+.summary small { margin-top: 5px; color: #8b9a90; font-size: 11px; }
+.summary .detail-summary-featured small { color: #c8e9d0; }
+.tabs { gap: 8px; margin-bottom: 17px; padding: 7px; width: fit-content; max-width: 100%; overflow-x: auto; background: #fff; border: 1px solid #e1ece4; border-radius: 15px; box-shadow: 0 7px 24px rgba(17,58,30,.035); }
+.tabs button { min-height: 42px; padding: 9px 19px; border-radius: 10px; white-space: nowrap; cursor: pointer; transition: background .2s ease; }
+.tabs button.on { background: #197b38; color: #fff; border-color: #197b38; box-shadow: 0 4px 12px rgba(25,123,56,.2); }
+.tabs button:focus-visible { outline: 3px solid #8bd09a; outline-offset: 2px; }
+.sheet { padding: clamp(18px,2.5vw,29px); border: 1px solid #e2ece5; border-radius: 22px; box-shadow: 0 9px 28px rgba(17,58,30,.04); }
+.detail-card-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; }
+.detail-card-icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: #e6f7e8; color: #208341; font-size: 25px; }
+.detail-card-icon.weather-icon { background: #fff5dd; color: #ba831a; }
+.detail-card-icon.climate-icon { background: #e6f4fa; color: #237ca0; }
+.detail-card-heading h2 { margin: 4px 0 0; color: #183c28; font-size: 22px; font-weight: 850; letter-spacing: -.035em; }
+.detail-card-heading p { margin: 5px 0 0; color: #839188; font-size: 12px; }
+.farm-info-sheet dl { gap: 0 28px; }
+.farm-info-sheet dl div { padding: 15px 0; border-bottom: 1px solid #edf2ed; }
+.farm-info-sheet dt { color: #819085; font-size: 11px; }
+.farm-info-sheet dd { margin-top: 7px; color: #203f2c; font-size: 14px; font-weight: 800; }
+.forecast, .climate { margin-top: 16px; }
+.forecast-days article { border-color: #e1ece5; border-radius: 16px; padding: 15px 7px; }
+.forecast-days article > b { color: #174f30; }
+.location { gap: 24px; }
+.location .map-frame { border-radius: 17px; }
+.table-scroll table { width: 100%; border-collapse: collapse; }
+.table-scroll th { padding: 15px 12px; text-align: left; background: #f5faf6; color: #6c8070; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+.table-scroll td { padding: 16px 12px; border-bottom: 1px solid #edf2ed; color: #344b3b; font-size: 13px; }
+.table-scroll tbody tr:hover { background: #f5faf5; }
+@media (max-width: 800px) {
+  .detail-head { min-height: 320px; padding: 25px; }
+  .detail-head::after { background: linear-gradient(90deg,rgba(8,41,24,.96),rgba(8,41,24,.7)); }
+  .detail-hero-foot { flex-wrap: wrap; }
+  .detail-section-subtitle { display: none; }
+  .summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; }
+}
+@media (max-width: 480px) { .detail-head h1 { font-size: 36px; } .summary { gap: 9px; } .summary article { padding: 13px; min-height: 145px; } .detail-hero-kicker { letter-spacing: .08em; } .detail-actions a { flex: 1; } }
+@media (prefers-reduced-motion: reduce) { .summary article,.detail-actions a { transition: none; } }
