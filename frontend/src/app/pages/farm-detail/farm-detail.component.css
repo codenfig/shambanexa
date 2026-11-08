@@ -182,3 +182,55 @@ dd { margin: 4px 0 0; font-weight: 700; }
 }
 @media (max-width: 480px) { .detail-head h1 { font-size: 36px; } .summary { gap: 9px; } .summary article { padding: 13px; min-height: 145px; } .detail-hero-kicker { letter-spacing: .08em; } .detail-actions a { flex: 1; } }
 @media (prefers-reduced-motion: reduce) { .summary article,.detail-actions a { transition: none; } }
+
+/* Approved farm mockup: five horizontal metrics and split overview. */
+.detail-head { min-height: 265px; border-radius: 0; margin: 0 -18px; padding: 25px 38px 23px; box-shadow: none; }
+.detail-head::before { background-position: center 56%; }
+.detail-head::after { background: linear-gradient(90deg,rgba(12,47,24,.89) 0%,rgba(12,50,24,.66) 35%,rgba(10,50,27,.16) 80%); }
+.detail-hero-kicker,.detail-head .eyebrow,.detail-hero-foot { display: none; }
+.detail-head h1 { margin: 8px 0 10px; font-family: inherit; font-size: clamp(29px,3.5vw,47px); font-weight: 850; letter-spacing: -.045em; }
+.detail-head .lead { font-size: 15px; }
+.detail-hero-meta { margin-top: 12px; }
+.detail-head .status-pill.is-active { background: #008c24; color: #fff; border-color: transparent; }
+.detail-actions { position: absolute; right: 28px; bottom: 26px; margin: 0; }
+.detail-actions a,.detail-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 41px; padding: 0 16px; border-radius: 9px; border: 1px solid #e5eae5; background: #fff; color: #1d2c21; font: inherit; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
+.detail-actions a:hover,.detail-actions button:hover { background: #e9f7e9; transform: none; }
+.back { margin: 0; border-radius: 0; padding: 10px 16px; background: #f7faf7; }
+.detail-section-intro { display: none; }
+.summary { grid-template-columns: repeat(5,minmax(0,1fr)); gap: 13px; margin: 24px 0 21px; }
+.summary article,.summary article.detail-summary-featured { display: flex; flex-direction: row; align-items: center; gap: 13px; min-height: 91px; padding: 14px 16px; border-radius: 15px; border: 1px solid rgba(18,54,28,.045); box-shadow: none; color: #1d3025; }
+.summary article:hover { transform: none; box-shadow: 0 7px 18px rgba(20,55,30,.07); }
+.summary .detail-stat-icon { width: 46px; height: 46px; flex: none; margin: 0; border-radius: 13px; font-size: 27px; }
+.summary article strong,.summary article strong.text { display: block; margin: 0; font-size: clamp(15px,1.55vw,24px); line-height: 1.25; font-weight: 850; color: #172a1d; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.summary article span:not(.detail-stat-icon) { display: block; margin-top: 5px; color: #4e6154; font-size: 12px; font-weight: 650; text-transform: none; letter-spacing: 0; }
+.summary .metric-animals { background: #eaf8ed; } .summary .metric-animals .detail-stat-icon { color: #058b31; background: #d8f4dc; }
+.summary .metric-facilities { background: #eaf3ff; } .summary .metric-facilities .detail-stat-icon { color: #1867ac; background: #d9eafa; }
+.summary .metric-established { background: #fff5e8; } .summary .metric-established .detail-stat-icon { color: #a36922; background: #ffebd2; }
+.summary .metric-updated { background: #f1eeff; } .summary .metric-updated .detail-stat-icon { color: #6042bc; background: #e6dfff; }
+.summary .metric-location { background: #e9f8f1; } .summary .metric-location .detail-stat-icon { color: #16854b; background: #d7f4e6; }
+.tabs { width: 100%; margin: 0 0 22px; padding: 0; border: 0; border-bottom: 2px solid #e3e9e4; border-radius: 0; box-shadow: none; background: transparent; }
+.tabs button { min-height: 55px; padding: 0 25px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; font-size: 14px; }
+.tabs button span { margin-right: 7px; font-size: 19px; }
+.tabs button.on { background: #fff; color: #008e24; border-color: #009b2b; box-shadow: none; }
+.detail-overview-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.05fr); align-items: start; gap: 20px; }
+.detail-overview-side { display: grid; gap: 20px; min-width: 0; }
+.detail-overview-grid .sheet { min-width: 0; margin: 0; border-radius: 16px; padding: 22px; box-shadow: 0 3px 10px rgba(20,48,27,.05); }
+.detail-overview-grid .detail-card-heading { margin-bottom: 18px; }
+.detail-overview-grid .detail-card-icon { width: 34px; height: 34px; background: transparent; color: #008c35; font-size: 25px; }
+.detail-overview-grid .detail-card-heading h2 { margin: 0; color: #17251b; font-size: 20px; }
+.detail-overview-grid .detail-card-heading p { margin-top: 4px; }
+.detail-overview-grid .farm-info-sheet dl { display: grid; grid-template-columns: 1fr; gap: 0; }
+.detail-overview-grid .farm-info-sheet dl div { display: grid; grid-template-columns: 42% minmax(0,1fr); align-items: center; gap: 12px; min-height: 47px; padding: 9px 0; }
+.detail-overview-grid .farm-info-sheet dt { color: #405047; font-size: 12px; font-weight: 750; letter-spacing: 0; text-transform: none; }
+.detail-overview-grid .farm-info-sheet dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.detail-overview-grid .forecast { background: linear-gradient(155deg,#d9edff 0%,#fff 63%); }
+.detail-overview-grid .forecast .now { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; background: rgba(255,255,255,.78); }
+.detail-overview-grid .forecast .now span:first-child strong { color: #152d3c; font-size: 34px; }
+.detail-overview-grid .forecast-days { min-width: 560px; }
+.detail-overview-grid .forecast-days article { background: rgba(255,255,255,.78); }
+.detail-overview-grid .climate { background: #fff; }
+.detail-overview-grid .climate-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+@media (max-width: 1180px) { .summary { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 940px) { .detail-overview-grid { grid-template-columns: 1fr; } .detail-overview-grid .farm-info-sheet dl { grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 20px; } .detail-head { margin: 0; border-radius: 17px; } }
+@media (max-width: 700px) { .summary { grid-template-columns: repeat(2,minmax(0,1fr)); } .detail-head { min-height: 350px; padding: 23px; } .detail-actions { position: static; margin-top: 23px; } .detail-overview-grid .farm-info-sheet dl { grid-template-columns: 1fr; } .detail-overview-grid .climate-grid { grid-template-columns: 1fr; } .tabs button { padding: 0 14px; font-size: 12px; } }
+@media (max-width: 450px) { .summary { gap: 8px; } .summary article { gap: 7px; padding: 10px; } .summary .detail-stat-icon { width: 34px; height: 34px; font-size: 20px; } .summary article strong,.summary article strong.text { font-size: 15px; } .summary .metric-location { grid-column: 1/-1; } .detail-actions a,.detail-actions button { padding: 0 9px; font-size: 11px; } }
