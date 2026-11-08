@@ -65,11 +65,11 @@
       <div class="intelligence-forecast-panel">
         <div class="weather-comparison-grid">
 <section class="weather-current-card"><div class="weather-panel-title"><div><h3>☁ &nbsp;Current Weather</h3><p>⌖ {{ selected.region }}, Tanzania</p></div><span class="weather-model-badge"><span aria-hidden="true">●</span> Forecast</span></div>
-@if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
+@if (forecastLoading()) { <p>Loading forecast…</p> } @else { @if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
 <div class="weather-current-hero"><span class="weather-hero-symbol" aria-hidden="true">🌤</span><div class="weather-hero-temp"><strong>{{ outlook.currentTemperatureC ?? '—' }}°C</strong><span>Current conditions</span></div><div class="weather-current-details"><span>Humidity <strong>{{ outlook.currentHumidity ?? '—' }}%</strong></span><span>Wind <strong>{{ outlook.currentWindMs ?? '—' }} m/s</strong></span><span>Rain (today) <strong>{{ outlook.currentRainMm ?? '—' }} mm</strong></span></div></div>
-} } @else { <p>Weather unavailable.</p> }</section>
+} } @else { <p>Weather unavailable.</p> } }</section>
 <section class="weather-seven-day-card"><h3><span class="forecast-heading-icon" aria-hidden="true">▦</span> 7-Day Forecast</h3>
-@if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
+@if (forecastLoading()) { <p>Loading forecast…</p> } @else { @if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
 <div class="forecast-scroll">
               <div class="forecast-days" role="img" aria-label="Seven day forecast">
                 @for (day of outlook.days; track day.date) {
@@ -87,7 +87,7 @@
               </div>
             </div>
 
-} } @else { <p>Forecast unavailable.</p> }</section></div>
+} } @else { <p>Forecast unavailable.</p> } }</section></div>
 <p class="weather-data-note">Open-Meteo weather is modelled for this location, not measured by an on-farm station.</p>
       </div>
     </section>
