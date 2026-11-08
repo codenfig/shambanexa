@@ -49,26 +49,26 @@
     <section class="intelligence-dashboard" aria-labelledby="intelligence-title">
       <header class="intelligence-header">
         <div class="intelligence-heading">
-          <span class="intelligence-weather-icon" aria-hidden="true">☀</span>
+          <span class="intelligence-weather-icon" aria-hidden="true">🌤️</span>
           <div>
             <span class="intelligence-kicker">SHAMBA NEXA · FARM INTELLIGENCE</span>
             <h2 id="intelligence-title">Weather &amp; Climate Intelligence</h2>
-            <p>Current conditions, seven-day forecasts and long-term climate insights for better farm decisions.</p>
+            <p>Live weather, 7-day forecast and long-term climate insights combined for better farm decisions.</p>
           </div>
         </div>
         <div class="intelligence-sources" aria-label="Data sources">
-          <span class="intelligence-source"><span aria-hidden="true">ϟ</span><span><strong>Open-Meteo</strong><small>Current &amp; forecast</small></span></span>
+          <span class="intelligence-source"><span aria-hidden="true">⚡</span><span><strong>Open-Meteo</strong><small>Current &amp; forecast</small></span></span>
           <span class="intelligence-source-plus" aria-hidden="true">+</span>
-          <span class="intelligence-source"><span aria-hidden="true">♧</span><span><strong>NASA POWER</strong><small>Historical climate</small></span></span>
+          <span class="intelligence-source"><span aria-hidden="true">🛰</span><span><strong>NASA POWER</strong><small>Historical &amp; Climate</small></span></span>
         </div>
       </header>
       <div class="intelligence-forecast-panel">
         <div class="weather-comparison-grid">
-<section class="weather-current-card"><div class="weather-panel-title"><div><h3>☁ &nbsp;Current Weather</h3><p>⌖ {{ selected.region }}, Tanzania</p></div><span class="weather-model-badge">Model data</span></div>
+<section class="weather-current-card"><div class="weather-panel-title"><div><h3>☁ &nbsp;Current Weather</h3><p>⌖ {{ selected.region }}, Tanzania</p></div><span class="weather-model-badge"><span aria-hidden="true">●</span> Forecast</span></div>
 @if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
-<div class="weather-current-hero"><span class="weather-hero-symbol" aria-hidden="true">🌤</span><div class="weather-hero-temp"><strong>{{ outlook.currentTemperatureC ?? '—' }}°C</strong><span>Current temperature</span></div><div class="weather-current-details"><span>Humidity <strong>{{ outlook.currentHumidity ?? '—' }}%</strong></span><span>Wind <strong>{{ outlook.currentWindMs ?? '—' }} m/s</strong></span><span>Rain (today) <strong>{{ outlook.currentRainMm ?? '—' }} mm</strong></span></div></div>
+<div class="weather-current-hero"><span class="weather-hero-symbol" aria-hidden="true">🌤</span><div class="weather-hero-temp"><strong>{{ outlook.currentTemperatureC ?? '—' }}°C</strong><span>Current conditions</span></div><div class="weather-current-details"><span>Humidity <strong>{{ outlook.currentHumidity ?? '—' }}%</strong></span><span>Wind <strong>{{ outlook.currentWindMs ?? '—' }} m/s</strong></span><span>Rain (today) <strong>{{ outlook.currentRainMm ?? '—' }} mm</strong></span></div></div>
 } } @else { <p>Weather unavailable.</p> }</section>
-<section class="weather-seven-day-card"><h3>▦ &nbsp;7-Day Forecast</h3>
+<section class="weather-seven-day-card"><h3><span class="forecast-heading-icon" aria-hidden="true">▦</span> 7-Day Forecast</h3>
 @if (forecastLoading()) { <p>Loading forecast…</p> } @else if (forecast(); as outlook) { @if (!outlook.available) { <p>{{ outlook.message }}</p> } @else {
 <div class="forecast-scroll">
               <div class="forecast-days" role="img" aria-label="Seven day forecast">
@@ -76,6 +76,7 @@
                   <article>
                     <strong>{{ weekday(day.date) }}</strong>
                     <span>{{ day.label }}</span>
+                    <span class="forecast-weather-icon" aria-hidden="true">{{ day.label.toLowerCase().includes('rain') || day.label.toLowerCase().includes('drizzle') || day.label.toLowerCase().includes('shower') ? '🌧️' : day.label.toLowerCase().includes('cloud') ? '☁️' : '🌤️' }}</span>
                     <b>{{ day.highC }}°</b>
                     <em>{{ day.lowC }}°</em>
                     <i class="chance" [attr.title]="(day.rainChance ?? 0) + '% chance of rain'"><b [style.height.%]="day.rainChance ?? 0"></b></i>
