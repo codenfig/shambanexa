@@ -252,3 +252,22 @@ td .flag { position: static; box-shadow: none; }
   .maintenance-health { min-width: 0; }
   .maintenance-board .facility-grid { grid-template-columns: 1fr; }
 }
+
+/* Mockup-faithful maintenance tiles with existing local farm photography. */
+.maintenance-board .maintenance-intro { padding: 14px 20px; }
+.maintenance-board .maintenance-intro h2 { font-size: 18px; }
+.maintenance-board .maintenance-intro p { font-size: 12px; }
+.maintenance-board .maintenance-tile { border: 1px solid #e6f0e9; border-radius: 21px; }
+.maintenance-board .maintenance-tile .scene { display: block; height: 143px; }
+.maintenance-board .maintenance-tile .scene img { width: 100%; height: 100%; object-fit: cover; }
+.maintenance-board .maintenance-tile .flag { top: 11px; right: 11px; background: #f5fff3; color: #176c28; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.maintenance-board .maintenance-tile .flag.attention { background: #fff3e6; color: #a74e11; }
+.maintenance-board .maintenance-tile .card-body { display: flex; align-items: center; gap: 12px; padding: 12px 15px; min-height: 74px; }
+.maintenance-facility-icon { width: 45px; height: 45px; flex: none; display: grid; place-items: center; border-radius: 13px; background: #d9f7d9; color: #168037; }
+.maintenance-facility-icon svg { width: 23px; height: 23px; }
+.maintenance-card-summary { min-width: 0; flex: 1; }
+.maintenance-card-summary .card-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #16291d; font-size: 15px; font-weight: 850; }
+.maintenance-card-summary p { margin: 3px 0 0; color: #647c6b; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maintenance-card-more { flex: none; padding: 4px 8px; font-size: 23px; line-height: 1; font-weight: 900; color: #18833b; text-decoration: none; border-radius: 8px; }
+.maintenance-card-more:hover { background: #edf8ed; }
+.maintenance-board .maintenance-tile .card-meta, .maintenance-board .maintenance-tile .card-foot { display: none; }
