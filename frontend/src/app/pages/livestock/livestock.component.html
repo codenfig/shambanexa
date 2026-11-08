@@ -1,11 +1,12 @@
-<section class="ls" [class.has-drawer]="!!selected()">
+<section class="ls" [class.has-drawer]="!!selected()" [class.livestock-overview]="screen() === 'overview'">
   <header class="ls-head">
-    <div>
+    <div class="livestock-hero-copy">
+      @if (screen() === 'overview') { <span class="livestock-eyebrow">SHAMBA NEXA · LIVESTOCK MANAGEMENT</span> }
       <div class="title-row">
-        <h1>{{ pageTitle() }}</h1>
+        <h1>{{ screen() === 'overview' ? 'Livestock Intelligence' : pageTitle() }}</h1>
         <span class="farm-chip">{{ chip() }}</span>
       </div>
-      <p>{{ pageBlurb() }}</p>
+      <p>{{ screen() === 'overview' ? 'Monitor herd performance, animal health and farm operations.' : pageBlurb() }}</p>
     </div>
     <div class="ls-actions">
       <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">Export CSV</button>
@@ -222,7 +223,7 @@
     } @else if (screen() === 'overview') {
       <section class="insights pair">
         <article class="card">
-          <h2>Animals by species</h2>
+          <h2><span class="livestock-section-icon" aria-hidden="true">◈</span> Livestock by species</h2>
           @if (distribution().length === 0) {
             <p class="meta">No species counts recorded.</p>
           } @else {
@@ -246,7 +247,7 @@
           }
         </article>
         <article class="card">
-          <h2>Health status</h2>
+          <h2><span class="livestock-section-icon" aria-hidden="true">♡</span> Animal health</h2>
           <p class="meta">Tagged animals only. Herd batches are not health-scored individually.</p>
           @if (healthMix().length === 0) {
             <p class="meta">No tagged animals recorded.</p>
@@ -270,7 +271,7 @@
       <div class="stage">
         <article class="board">
           <div class="tab-row">
-            <h2>Tagged animals</h2>
+            <h2><span class="livestock-section-icon" aria-hidden="true">♧</span> Animal registry</h2>
             <a class="text-btn" routerLink="/livestock/registry">Open registry</a>
           </div>
           @if (preview().length === 0) {
@@ -282,7 +283,7 @@
                 <tbody>
                   @for (animal of preview(); track animal.id) {
                     <tr>
-                      <td><button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button><span class="meta">{{ animal.tag }}</span></td>
+                      <td><div class="livestock-registry-animal"><span class="livestock-registry-photo">@if (speciesPhoto(animal.speciesName); as photo) { <img [src]="photo" alt="" loading="lazy"> } @else { <span aria-hidden="true">♧</span> }</span><span><button class="name" type="button" (click)="open(animal)">{{ animal.name || animal.tag }}</button><span class="meta">{{ animal.tag }}</span></span></div></td>
                       <td>{{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</td>
                       <td>{{ animal.farmName }}</td>
                       <td><span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span></td>
@@ -295,16 +296,16 @@
           }
         </article>
         <aside class="rail">
-          <article class="card">
-            <h2>Alerts</h2>
+          <article class="card livestock-alerts-card">
+            <h2><span class="livestock-section-icon" aria-hidden="true">♧</span> Alerts</h2>
             @if (openCaseRows().length === 0 && dueTasks().length === 0) {
               <p class="meta">No open health case or due treatment is stored.</p>
             }
             @for (item of openCaseRows(); track item.id) {
-              <div class="task"><strong>{{ item.title }}</strong><span>{{ item.farmName }} · {{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span></div>
+              <div class="task livestock-alert-case"><strong>{{ item.title }}</strong><span>{{ item.farmName }} · {{ label(item.severity) }} · opened {{ dateLabel(item.openedOn) }}</span></div>
             }
             @for (task of dueTasks(); track task.id) {
-              <div class="task"><strong>{{ task.title }}</strong><span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span></div>
+              <div class="task livestock-alert-due"><strong>{{ task.title }}</strong><span>{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}</span></div>
             }
             <p class="quiet"><a routerLink="/livestock/health">Open health records</a></p>
           </article>
