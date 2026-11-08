@@ -42,14 +42,15 @@
     }
 
     @if (view() === 'facilities' || view() === 'types' || view() === 'maintenance') {
-      <div class="board" [class.types-board]="view() === 'types'">
+      <div class="board" [class.types-board]="view() === 'types'" [class.maintenance-board]="view() === 'maintenance'">
         <header class="banner">
+          @if (view() === 'maintenance') { <span class="maintenance-eyebrow">Farm operations</span> }
           <span class="mark" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M3 20h18M4 20V9h16v11"/><path d="M8 9V5h8v4"/><path d="M8 13h3M13 13h3M8 16h3M13 16h3"/></svg>
           </span>
           <div>
             <h1>{{ view() === 'types' ? 'Facility Types' : view() === 'maintenance' ? 'Facility Maintenance' : 'Facilities' }}</h1>
-            <p>{{ view() === 'types' ? 'Explore the spaces that keep your farms growing. Browse facility categories and their current usage across your farms.' : 'Barns, grazing areas, pens, stores, and cages recorded on the farms you can open.' }}</p>
+            <p>{{ view() === 'types' ? 'Explore the spaces that keep your farms growing. Browse facility categories and their current usage across your farms.' : view() === 'maintenance' ? 'Keep your farm facilities in great shape. Browse their condition, spot issues and plan your next maintenance checks.' : 'Barns, grazing areas, pens, stores, and cages recorded on the farms you can open.' }}</p>
           </div>
         </header>
 
@@ -91,6 +92,9 @@
           <div class="board-actions">
           @if (view() === 'types') {
             <span class="type-count">{{ visibleTypes().length }} categories</span>
+          }
+          @if (view() === 'maintenance') {
+            <span class="maintenance-count">{{ fmt(visibleFacilities().length) }} facilities shown</span>
           }
           <button class="export" type="button" (click)="exportFacilities()" [disabled]="!facilitiesExportable()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg>
@@ -148,6 +152,19 @@
           }
         </div>
 
+        @if (view() === 'maintenance' && !facilitiesLoading() && !facilitiesError()) {
+          <section class="maintenance-intro" aria-label="Maintenance overview">
+            <div>
+              <span class="maintenance-kicker">FACILITY HEALTH</span>
+              <h2>{{ facilityStats().attention === 0 ? 'Your facilities are looking good' : 'Facilities needing attention' }}</h2>
+              <p>{{ facilityStats().attention === 0 ? 'No facilities are currently flagged for attention. Review all your facilities below to stay ahead of maintenance needs.' : 'Review facilities flagged as not operational, alongside the rest of your farm infrastructure.' }}</p>
+            </div>
+            <div class="maintenance-health" [class.has-issues]="facilityStats().attention > 0">
+              <span class="maintenance-health-icon" aria-hidden="true">{{ facilityStats().attention === 0 ? '✓' : '!' }}</span>
+              <div><strong>{{ fmt(facilityStats().operational) }} / {{ fmt(facilityStats().total) }}</strong><span>Operational facilities</span></div>
+            </div>
+          </section>
+        }
         @if (facilitiesLoading()) {
           <p class="state">Loading facilities…</p>
         } @else if (facilitiesError()) {
@@ -182,11 +199,11 @@
           }
         } @else if (visibleFacilities().length === 0) {
           <div class="empty">
-            @if (view() === 'maintenance' && maintenanceRows().length === 0) {
-              <h2>Every recorded facility is active.</h2>
-              <p>Nothing is waiting for maintenance.</p>
+            @if (view() === 'maintenance' && facilityRows().length === 0) {
+              <h2>No facilities recorded yet</h2>
+              <p>Facilities will appear here once they are added to a farm.</p>
             } @else {
-              <h2>No facilities match.</h2>
+              <h2>No facilities match your filters</h2>
               <p>Try another search, or reset the filters.</p>
             }
           </div>
