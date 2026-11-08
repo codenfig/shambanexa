@@ -46,22 +46,24 @@
   </nav>
 
   @if (tab() === 'overview') {
-    <div class="detail-overview-grid">
-    <article class="sheet farm-info-sheet">
-      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm information</h2><p>Everything you need to know about this farm</p></div></div>
-      <dl>
-        <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
-        <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
-        <div><dt>Region</dt><dd>{{ selected.region }}</dd></div>
-        <div><dt>Manager</dt><dd>{{ selected.managerName || '—' }}</dd></div>
-        <div><dt>Phone</dt><dd>{{ selected.contactPhone || '—' }}</dd></div>
-        <div><dt>Timezone</dt><dd>{{ selected.timezone }}</dd></div>
-        <div><dt>Animals</dt><dd>{{ fmt(selected.animalCount) }}</dd></div>
-        <div><dt>Facilities</dt><dd>{{ selected.facilityCount }}</dd></div>
-      </dl>
-    </article>
-    <div class="detail-overview-side">
-    <article class="sheet forecast">
+    <section class="intelligence-dashboard" aria-labelledby="intelligence-title">
+      <header class="intelligence-header">
+        <div class="intelligence-heading">
+          <span class="intelligence-weather-icon" aria-hidden="true">☀</span>
+          <div>
+            <span class="intelligence-kicker">SHAMBA NEXA · FARM INTELLIGENCE</span>
+            <h2 id="intelligence-title">Weather &amp; Climate Intelligence</h2>
+            <p>Current conditions, seven-day forecasts and long-term climate insights for better farm decisions.</p>
+          </div>
+        </div>
+        <div class="intelligence-sources" aria-label="Data sources">
+          <span class="intelligence-source"><span aria-hidden="true">ϟ</span><span><strong>Open-Meteo</strong><small>Current &amp; forecast</small></span></span>
+          <span class="intelligence-source-plus" aria-hidden="true">+</span>
+          <span class="intelligence-source"><span aria-hidden="true">♧</span><span><strong>NASA POWER</strong><small>Historical climate</small></span></span>
+        </div>
+      </header>
+      <div class="intelligence-forecast-panel">
+        <article class="sheet forecast">
       <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☁</span><div><h2>Weather &amp; 7-day forecast</h2><p>{{ selected.region }}, Tanzania · Open-Meteo forecast</p></div></div>
       <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
       @if (forecastLoading()) {
@@ -121,7 +123,10 @@
         <p class="muted">Open-Meteo did not return a forecast for this farm.</p>
       }
     </article>
-    <article class="sheet climate">
+      </div>
+    </section>
+    <div class="intelligence-climate-section">
+      <article class="sheet climate">
       <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">♧</span><div><h2>Climate &amp; historical trends</h2><p>Detailed environmental insights for your farm</p></div></div>
       <p class="muted">NASA POWER. Advisory model data for this location, not a measurement taken on the farm.</p>
       @if (climateLoading()) {
@@ -302,6 +307,40 @@
       }
     </article>
     </div>
+    <div class="intelligence-advisory" role="note">
+      <span class="intelligence-advisory-icon" aria-hidden="true">♧</span>
+      <div>
+        <h3>Farm advisory</h3>
+        @if (forecast(); as outlook) {
+          @if (outlook.available && outlook.checks.length > 0) {
+            <p>{{ outlook.checks[0] }}</p>
+          } @else {
+            <p>Review the forecast and historical climate indicators when planning irrigation, drainage and livestock care.</p>
+          }
+        } @else {
+          <p>Review the forecast and historical climate indicators when planning irrigation, drainage and livestock care.</p>
+        }
+      </div>
+      <div class="intelligence-advisory-topics">
+        <span><span aria-hidden="true">♧</span> Irrigation</span>
+        <span><span aria-hidden="true">☀</span> Heat stress</span>
+        <span><span aria-hidden="true">☂</span> Drainage</span>
+      </div>
+    </div>
+    <div class="intelligence-farm-profile">
+      <article class="sheet farm-info-sheet">
+      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">ⓘ</span><div><h2>Farm information</h2><p>Everything you need to know about this farm</p></div></div>
+      <dl>
+        <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
+        <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
+        <div><dt>Region</dt><dd>{{ selected.region }}</dd></div>
+        <div><dt>Manager</dt><dd>{{ selected.managerName || '—' }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ selected.contactPhone || '—' }}</dd></div>
+        <div><dt>Timezone</dt><dd>{{ selected.timezone }}</dd></div>
+        <div><dt>Animals</dt><dd>{{ fmt(selected.animalCount) }}</dd></div>
+        <div><dt>Facilities</dt><dd>{{ selected.facilityCount }}</dd></div>
+      </dl>
+    </article>
     </div>
   }
 
