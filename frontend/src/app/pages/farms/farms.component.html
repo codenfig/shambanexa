@@ -424,7 +424,7 @@
         @if (filtered().length === 0) {
           <p class="empty-map">No farms to place on the map.</p>
         } @else {
-          <app-tanzania-map [pins]="mapPins()" [rings]="boundaries()" ariaLabel="Farm locations in Tanzania" />
+          <app-tanzania-map [pins]="mapPins()" [rings]="boundaries()" [widePhotoPreview]="true" ariaLabel="Farm locations in Tanzania" />
         }
       </aside>
     </div>
