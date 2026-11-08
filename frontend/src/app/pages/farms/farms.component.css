@@ -271,3 +271,72 @@ td .flag { position: static; box-shadow: none; }
 .maintenance-card-more { flex: none; padding: 4px 8px; font-size: 23px; line-height: 1; font-weight: 900; color: #18833b; text-decoration: none; border-radius: 8px; }
 .maintenance-card-more:hover { background: #edf8ed; }
 .maintenance-board .maintenance-tile .card-meta, .maintenance-board .maintenance-tile .card-foot { display: none; }
+
+/* Farms overview — editorial agriculture dashboard */
+.directory:has(.farms-hero) { gap: 22px; }
+.farms-hero { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: 330px; overflow: hidden; padding: clamp(24px,3.6vw,48px); border-radius: 26px; color: #fff; background: #123b24; box-shadow: 0 18px 44px rgba(12,50,28,.15); }
+.farms-hero::before { content: ''; position: absolute; z-index: -2; inset: 0; background: url('/assets/facilities/banner.png') center 48% / cover no-repeat; }
+.farms-hero::after { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg,rgba(9,43,24,.96) 0%,rgba(10,53,30,.91) 35%,rgba(11,55,30,.56) 66%,rgba(11,42,23,.14) 100%); }
+.farms-hero-copy { max-width: 650px; }
+.farms-hero-kicker { display: inline-flex; align-items: center; gap: 10px; color: #d2f1d4; font-size: 11px; font-weight: 850; letter-spacing: .15em; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #9bea85; box-shadow: 0 0 0 5px rgba(155,234,133,.16); }
+.farms-hero h1 { margin: 20px 0 12px; font-size: clamp(37px,4.1vw,62px); line-height: 1.04; letter-spacing: -.055em; font-weight: 850; }
+.farms-hero h1 em { color: #b8edaa; font-family: Fraunces,Georgia,serif; font-weight: 550; }
+.farms-hero-copy > p { max-width: 490px; margin: 0; color: #e2efe4; line-height: 1.7; font-size: 14px; }
+.farms-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; }
+.farms-hero-actions a { text-decoration: none; }
+.farms-primary-action, .farms-secondary-action, .farms-export-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 43px; padding: 0 17px; border-radius: 12px; font-size: 13px; font-weight: 800; transition: transform .18s ease, background .18s ease; }
+.farms-primary-action { background: #b7e7a9; color: #143e24; }
+.farms-secondary-action { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+.farms-export-action { background: transparent; border: 1px solid rgba(255,255,255,.26); color: #fff; cursor: pointer; }
+.farms-export-action:disabled { opacity: .45; cursor: not-allowed; }
+.farms-hero-actions a:hover, .farms-export-action:not(:disabled):hover { transform: translateY(-2px); }
+.farms-hero-bottom { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,.22); font-size: 10px; font-weight: 800; letter-spacing: .14em; color: #d7e8da; }
+.farms-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.section-kicker { color: #238042; font-size: 10px; font-weight: 900; letter-spacing: .15em; }
+.farms-section-heading h2 { margin: 5px 0 0; color: #193b27; font-size: clamp(21px,2.2vw,27px); letter-spacing: -.045em; font-weight: 850; }
+.section-side-note { color: #829187; font-size: 12px; }
+.farm-count-chip { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; min-width: 27px; height: 27px; padding: 0 8px; margin-left: 5px; border-radius: 9px; background: #e5f5e5; color: #187b37; font-size: 13px; letter-spacing: 0; }
+.directory:has(.farms-hero) .summary { gap: 14px; }
+.directory:has(.farms-hero) .summary article { display: flex; flex-direction: column; align-items: flex-start; min-height: 154px; padding: 19px; border: 1px solid #e3eee5; border-radius: 20px; box-shadow: 0 9px 28px rgba(17,58,30,.045); transition: transform .2s ease, box-shadow .2s ease; }
+.directory:has(.farms-hero) .summary article:hover { transform: translateY(-3px); box-shadow: 0 15px 32px rgba(17,58,30,.09); }
+.directory:has(.farms-hero) .summary article::before { display: none; }
+.directory:has(.farms-hero) .summary .summary-primary { background: linear-gradient(145deg,#165e32,#0e4226); border-color: #165e32; color: #fff; }
+.directory:has(.farms-hero) .summary .summary-primary span:not(.summary-icon), .directory:has(.farms-hero) .summary .summary-primary strong, .directory:has(.farms-hero) .summary .summary-primary small { color: #fff; }
+.summary .summary-icon { display: grid; place-items: center; width: 37px; height: 37px; margin-bottom: 15px; border-radius: 12px; background: #e9f7ea; color: #238642; font-size: 22px; font-weight: 800; }
+.summary .summary-primary .summary-icon { background: rgba(255,255,255,.16); color: #fff; }
+.directory:has(.farms-hero) .summary span:not(.summary-icon) { font-size: 11px; }
+.directory:has(.farms-hero) .summary strong { margin-top: 5px; color: #163b25; font-size: 32px; }
+.directory:has(.farms-hero) .summary small { display: block; margin-top: 4px; color: #8a9b8f; font-size: 11px; }
+.farms-directory-heading { margin-top: 7px; }
+.directory:has(.farms-hero) .toolbar { gap: 12px; padding: 14px; border-color: #e3eee5; border-radius: 19px; box-shadow: 0 8px 26px rgba(17,58,30,.035); }
+.directory:has(.farms-hero) .toolbar input, .directory:has(.farms-hero) .toolbar select { min-height: 45px; background: #f8fbf8; border-color: #e0eae1; font-size: 13px; }
+.directory:has(.farms-hero) .toolbar input:focus-visible, .directory:has(.farms-hero) .toolbar select:focus-visible { outline: 2px solid #6bbb7c; outline-offset: 1px; }
+.farms-list-panel { padding: 6px 14px 12px; border-color: #e2ece5; border-radius: 20px; }
+.farms-list-panel th { padding: 16px 12px; background: #f7faf7; color: #6b8170; }
+.farms-list-panel td { padding: 16px 12px; border-bottom-color: #edf3ee; color: #344a3a; font-size: 13px; }
+.farms-list-panel tbody tr { transition: background .15s ease; }
+.farms-list-panel tbody tr:hover { background: #f4faf4; }
+.farms-list-panel .farm-name { color: #17482b; font-size: 14px; }
+.farms-list-panel .actions a:first-child { color: #147b33; }
+.farms-list-panel .status-pill { padding: 6px 11px; letter-spacing: 0; }
+.farms-map-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.farms-map-header h2 { margin: 5px 0 4px; color: #183c27; font-size: 24px; font-weight: 850; letter-spacing: -.04em; }
+.farms-map-header p { margin: 0; color: #7a8e80; font-size: 12px; line-height: 1.55; }
+.farms-map-count { flex: none; padding: 8px 12px; border-radius: 999px; background: #e9f7ea; color: #1d7d3a; font-size: 12px; font-weight: 800; }
+.directory:has(.farms-hero) .map-panel { padding: 20px; border-radius: 22px; border-color: #e2ece5; }
+.directory:has(.farms-hero) .map-panel app-tanzania-map { display: block; overflow: hidden; border-radius: 16px; }
+@media (max-width: 1100px) { .directory:has(.farms-hero) .summary { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 760px) {
+  .farms-hero { min-height: 350px; padding: 24px; }
+  .farms-hero::after { background: linear-gradient(90deg,rgba(9,43,24,.96),rgba(9,43,24,.72)); }
+  .farms-hero h1 { font-size: 40px; }
+  .directory:has(.farms-hero) .summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .farms-section-heading { align-items: flex-start; }
+  .section-side-note { display: none; }
+  .farms-map-header { flex-wrap: wrap; }
+  .farms-list-panel { padding: 8px; }
+  .directory:has(.farms-hero) .summary article { min-height: 145px; padding: 14px; }
+}
+@media (max-width: 420px) { .directory:has(.farms-hero) .summary { grid-template-columns: 1fr 1fr; gap: 9px; } .farms-hero-actions { gap: 8px; } .farms-primary-action,.farms-secondary-action,.farms-export-action { font-size: 12px; padding: 0 11px; } }
+@media (prefers-reduced-motion: reduce) { .directory:has(.farms-hero) .summary article, .farms-hero-actions a { transition: none; } }
