@@ -2,6 +2,20 @@
 
 Scope: source-tree and route inspection on `feature/facility-types-redesign`; comparison with public feature documentation for AgriWebb, Farmbrite and AGRIVI. This is **not** a full runtime, security penetration, UX accessibility, or database integration audit. A module/entity existing does not prove that a complete workflow is functional.
 
+## Implementation update — 8 November 2026
+
+The following changes have since been committed on `feature/facility-types-redesign`:
+
+| Area | Updated state | Important limitation |
+| --- | --- | --- |
+| CI | Angular production build and Spring Boot unit tests added; run [42475763972](https://github.com/codenfig/shambanexa/actions/runs/42475763972) passed | No database integration or end-to-end workflow verification yet |
+| Animal weights | Dated append-only weight measurements, API and profile tab added | No growth charts or scale imports |
+| Breeding | Event history, API and profile form added | No completed genealogy, offspring links or reminders |
+| Treatment traceability | Animal treatment/dose history and advisory withdrawal status exposed | No enforced sales restriction; missing data is not clearance |
+| Audit | New weight and breeding writes recorded in audit trail | Audit retention and broader compliance review outstanding |
+
+The original prioritization below is retained as the baseline audit. For current implementation details and request examples, see [README](../README.md#livestock-lifecycle-records-november-2026).
+
 ## Existing foundations observed
 - Farm and facility management; location/boundary data; Tanzania map.
 - Tagged livestock, herd batches, animal movements, health cases, treatments and vaccinations.
