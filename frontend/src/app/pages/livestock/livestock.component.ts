@@ -10,7 +10,7 @@ import { speciesPicture } from '../../core/catalog-images';
 import { apiError, formatNumber, signedPercent } from '../../core/format';
 
 type ViewMode = 'list' | 'cards' | 'herds';
-type DrawerTab = 'overview' | 'health';
+type DrawerTab = 'overview' | 'health' | 'weights' | 'breeding' | 'treatments';
 type AnimalScreen = 'overview' | 'registry' | 'species' | 'herds' | 'health' | 'detail';
 
 const SEXES = ['FEMALE', 'MALE', 'UNKNOWN'];
@@ -72,6 +72,55 @@ export class LivestockComponent {
   readonly healthOptions = HEALTH;
 
   selected = signal<Animal | null>(null);
+
+  weightRows = signal<Array<{id:string; measured_on:string; weight_kg:number; notes:string|null}>>([]);
+  breedingRows = signal<Array<{id:string; event_type:string; event_on:string; expected_birth_on:string|null; notes:string|null}>>([]);
+  treatmentRows = signal<Array<{id:string; started_on:string; diagnosis:string; treatment_status:string; veterinarian_name:string; withdrawal_ends_on:string|null; issued:boolean}>>([]);
+  withdrawal = signal<{activeWithdrawal:boolean; asOf:string; records:unknown[]}|null>(null);
+  lifecycleLoading = signal(false);
+  lifecycleSaving = signal(false);
+  lifecycleError = signal('');
+  lifecycleSuccess = signal('');
+  weightValue = signal<number|null>(null);
+  weightDate = signal(new Date().toISOString().slice(0,10));
+  weightNotes = signal('');
+  breedingType = signal('MATING');
+  breedingDate = signal(new Date().toISOString().slice(0,10));
+  expectedBirthDate = signal('');
+  breedingNotes = signal('');
+
+  loadLifecycle(animalId:string):void {
+    this.lifecycleLoading.set(true);
+    this.lifecycleError.set('');
+    this.weightRows.set([]); this.breedingRows.set([]); this.treatmentRows.set([]); this.withdrawal.set(null);
+    let pending=4;
+    const done=()=>{ if(--pending===0) this.lifecycleLoading.set(false); };
+    this.api.animalWeights(animalId).subscribe({next:rows=>{if(this.selected()?.id===animalId)this.weightRows.set(rows);done();},error:()=>{this.lifecycleError.set('Some history could not be loaded.');done();}});
+    this.api.animalBreeding(animalId).subscribe({next:rows=>{if(this.selected()?.id===animalId)this.breedingRows.set(rows);done();},error:()=>{this.lifecycleError.set('Some history could not be loaded.');done();}});
+    this.api.animalTreatmentHistory(animalId).subscribe({next:rows=>{if(this.selected()?.id===animalId)this.treatmentRows.set(rows);done();},error:()=>{this.lifecycleError.set('Some history could not be loaded.');done();}});
+    this.api.animalWithdrawalStatus(animalId).subscribe({next:row=>{if(this.selected()?.id===animalId)this.withdrawal.set(row);done();},error:()=>{this.lifecycleError.set('Some history could not be loaded.');done();}});
+  }
+
+  saveWeight():void {
+    const animal=this.selected(), weight=this.weightValue();
+    if(!animal||!this.canWrite()||weight===null||!Number.isFinite(weight)||weight<=0||weight>=100000||!this.weightDate())return;
+    this.lifecycleSaving.set(true);this.lifecycleError.set('');this.lifecycleSuccess.set('');
+    this.api.addAnimalWeight(animal.id,{weightKg:weight,measuredOn:this.weightDate(),notes:this.weightNotes()}).subscribe({
+      next:()=>{this.lifecycleSaving.set(false);this.weightValue.set(null);this.weightNotes.set('');this.lifecycleSuccess.set('Weight measurement saved.');this.loadLifecycle(animal.id);},
+      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err));}
+    });
+  }
+
+  saveBreeding():void {
+    const animal=this.selected();
+    if(!animal||!this.canWrite()||!this.breedingDate())return;
+    this.lifecycleSaving.set(true);this.lifecycleError.set('');this.lifecycleSuccess.set('');
+    this.api.addAnimalBreeding(animal.id,{eventType:this.breedingType(),eventOn:this.breedingDate(),expectedBirthOn:this.expectedBirthDate()||null,notes:this.breedingNotes()}).subscribe({
+      next:()=>{this.lifecycleSaving.set(false);this.breedingNotes.set('');this.expectedBirthDate.set('');this.lifecycleSuccess.set('Breeding event saved.');this.loadLifecycle(animal.id);},
+      error:err=>{this.lifecycleSaving.set(false);this.lifecycleError.set(apiError(err));}
+    });
+  }
+
   actionMenu = signal<string | null>(null);
   menuTop = 0;
   menuRight = 0;
@@ -347,6 +396,7 @@ export class LivestockComponent {
       }
       this.applyRoute();
       this.selected.set(this.detailId ? this.animals().find(animal => animal.id === this.detailId) || null : null);
+      if(this.detailId && this.selected()) this.loadLifecycle(this.detailId);
     });
     this.api.farms().subscribe({ next: farms => this.farms.set(farms), error: () => this.farms.set([]) });
     this.api.dashboard().subscribe({ next: board => this.board.set(board), error: () => this.board.set(null) });
