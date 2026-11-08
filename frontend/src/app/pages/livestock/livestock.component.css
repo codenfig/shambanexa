@@ -497,3 +497,27 @@ tr.picked { background: #f3faf4; }
 .livestock-health .health-attention-card .text-btn{border:1px solid #1a8b40;border-radius:9px;background:#fff;color:#126b30;padding:10px 16px;font-weight:800}
 @media(max-width:1000px){.livestock-health .ls-head{flex-direction:column;align-items:flex-start;gap:20px}.livestock-health .ls-actions{align-self:stretch;width:100%;max-width:none;padding-top:40px;justify-content:flex-start}.health-hero-farm{right:auto;left:0}.livestock-health .health-overview-card .breed-layout{grid-template-columns:170px 1fr}.livestock-health .health-overview-card .donut{width:155px;height:155px}.livestock-health .health-overview-card .donut span{width:105px;height:105px;font-size:27px}}
 @media(max-width:650px){.livestock-health .ls-head{padding:22px}.livestock-health .ls-head h1{font-size:30px}.livestock-health .health-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.livestock-health .health-kpis article{min-height:95px;padding:12px;gap:9px}.livestock-health .health-kpis .bubble{width:38px;height:38px}.livestock-health .health-kpis .bubble svg{width:20px;height:20px}.livestock-health .health-kpis strong{font-size:26px}.livestock-health .health-kpis article::after{display:none}.livestock-health .health-overview-card .breed-layout{grid-template-columns:1fr;justify-items:center;gap:18px;padding:18px}.livestock-health .health-overview-card .breed-tiles{width:100%}.livestock-health .health-split{grid-template-columns:1fr}.livestock-health .health-attention-card .watch-list li{flex-wrap:wrap}.livestock-health .health-attention-card .text-btn{width:100%;text-align:center}}
+
+
+/* Individual animal lifecycle records */
+.ls .drawer-tabs{display:flex;flex-wrap:wrap;gap:7px}
+.ls .drawer-tabs button{white-space:nowrap}
+.lifecycle-panel{display:grid;gap:16px;padding:18px 0}
+.lifecycle-panel h3{margin:0;color:#173e29;font-size:20px;font-weight:850}
+.lifecycle-panel>.meta{margin:0;color:#62766a}
+.lifecycle-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px;border:1px solid #dcece2;border-radius:16px;background:linear-gradient(120deg,#f1faf4,#fff)}
+.lifecycle-form label{display:grid;gap:6px;color:#294d37;font-size:12px;font-weight:750}
+.lifecycle-form input,.lifecycle-form select{min-width:0;width:100%;padding:10px 12px;border:1px solid #cfded4;border-radius:10px;background:#fff;color:#172d20;font:inherit}
+.lifecycle-form input:focus-visible,.lifecycle-form select:focus-visible{outline:3px solid #8ed6a1;outline-offset:1px}
+.lifecycle-form .lifecycle-wide{grid-column:1/-1}
+.lifecycle-form .green-btn{justify-self:start}
+.lifecycle-list{display:grid;gap:9px}
+.lifecycle-list article{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:14px 16px;border:1px solid #e1ebe5;border-radius:12px;background:#fff}
+.lifecycle-list article strong{color:#163d27;font-size:14px}
+.lifecycle-list article span{color:#60766a;font-size:12px}
+.lifecycle-list article p{flex-basis:100%;margin:0;color:#4b6254;font-size:12px}
+.withdrawal-status{display:grid;gap:5px;padding:15px 17px;border:1px solid #c9e7d0;border-radius:13px;background:#f0fbf2;color:#205e34}
+.withdrawal-status.is-active{border-color:#f1c78c;background:#fff5e6;color:#8a4d0d}
+.withdrawal-status strong{font-size:14px}
+.withdrawal-status span{font-size:12px;line-height:1.5}
+@media(max-width:600px){.lifecycle-form{grid-template-columns:1fr;padding:13px}.lifecycle-form .lifecycle-wide{grid-column:auto}.lifecycle-form .green-btn{width:100%}}
