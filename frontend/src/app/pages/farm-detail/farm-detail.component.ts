@@ -21,6 +21,29 @@ export class FarmDetailComponent {
   farm = signal<Farm | null>(null);
   alerts = signal<AlertItem[]>([]);
   facilities = signal<Facility[]>([]);
+  facilitySearch = signal('');
+  facilityTypeFilter = signal('');
+  facilityStatusFilter = signal('');
+  facilityLayout = signal<'grid' | 'list'>('grid');
+  facilityTypes = computed(() => [...new Set(this.facilities().map(f => f.facilityType))].sort());
+  facilityStatuses = computed(() => [...new Set(this.facilities().map(f => f.status))].sort());
+  activeFacilityCount = computed(() => this.facilities().filter(f => f.status === 'ACTIVE').length);
+  filteredFacilities = computed(() => {
+    const q = this.facilitySearch().trim().toLowerCase();
+    return this.facilities().filter(f =>
+      (!q || [f.name, f.code, f.facilityType, f.supervisorName ?? ''].some(v => v.toLowerCase().includes(q))) &&
+      (!this.facilityTypeFilter() || f.facilityType === this.facilityTypeFilter()) &&
+      (!this.facilityStatusFilter() || f.status === this.facilityStatusFilter())
+    );
+  });
+  facilityTypeLabel(type: string): string {
+    const labels: Record<string, string> = { BARN: 'Barn', GRAZING: 'Grazing', PEN: 'Pen', WAREHOUSE: 'Warehouse', CAGE: 'Cage', POND: 'Pond', MILKING: 'Milking unit' };
+    return labels[type] ?? type.toLowerCase().replace(/(^|_)([a-z])/g, (_, space: string, letter: string) => (space ? ' ' : '') + letter.toUpperCase());
+  }
+  facilityPhoto(type: string): string {
+    const kind = type === 'BARN' || type === 'MILKING' ? 'barn' : type === 'GRAZING' ? 'grazing' : type === 'PEN' ? 'pen' : type === 'WAREHOUSE' ? 'store' : null;
+    return kind ? `/assets/facilities/${kind}-a.png` : '/assets/facilities/landscape.png';
+  }
   loading = signal(true);
   error = signal('');
   climate = signal<FarmClimate | null>(null);
