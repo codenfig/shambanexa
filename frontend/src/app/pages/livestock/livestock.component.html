@@ -1,17 +1,18 @@
-<section class="ls" [class.has-drawer]="!!selected()" [class.livestock-overview]="screen() === 'overview'">
+<section class="ls" [class.has-drawer]="!!selected()" [class.livestock-overview]="screen() === 'overview'" [class.livestock-health]="screen() === 'health'">
   <header class="ls-head">
     <div class="livestock-hero-copy">
-      @if (screen() === 'overview') { <span class="livestock-eyebrow">SHAMBA NEXA · LIVESTOCK MANAGEMENT</span> }
+      @if (screen() === 'overview') { <span class="livestock-eyebrow">SHAMBA NEXA · LIVESTOCK MANAGEMENT</span> } @else if (screen() === 'health') { <span class="livestock-eyebrow">♡ LIVESTOCK HEALTH</span> }
       <div class="title-row">
-        <h1>{{ screen() === 'overview' ? 'Livestock Intelligence' : pageTitle() }}</h1>
-        <span class="farm-chip">{{ chip() }}</span>
+        <h1>{{ screen() === 'overview' ? 'Livestock Intelligence' : screen() === 'health' ? 'Animal Health Center' : pageTitle() }}</h1>
+        @if (screen() !== 'health') { <span class="farm-chip">{{ chip() }}</span> }
       </div>
-      <p>{{ screen() === 'overview' ? 'Monitor herd performance, animal health and farm operations.' : pageBlurb() }}</p>
+      <p>{{ screen() === 'overview' ? 'Monitor herd performance, animal health and farm operations.' : screen() === 'health' ? 'Monitor animal wellness, manage health cases, and stay ahead of treatments.' : pageBlurb() }}</p>
     </div>
     <div class="ls-actions">
-      <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">Export CSV</button>
+      @if (screen() === 'health') { <label class="health-hero-farm"><span class="sr">Filter health by farm</span><select [ngModel]="farmId()" (ngModelChange)="setFarm($event)"><option value="">All farms</option>@for (farm of farms(); track farm.id) { <option [value]="farm.id">{{ farm.name }}</option> }</select></label> }
+      <button class="ghost-btn" type="button" (click)="exportCsv()" [disabled]="loading() || !!error()">{{ screen() === 'health' ? '↓ Export report' : 'Export CSV' }}</button>
       @if (canWrite()) {
-        <a class="green-btn" routerLink="/livestock/new">Register animal</a>
+        @if (screen() === 'health') { <a class="green-btn" routerLink="/alerts/report">＋ Report health issue</a> } @else { <a class="green-btn" routerLink="/livestock/new">Register animal</a> }
       }
     </div>
   </header>
@@ -254,7 +255,7 @@
           } @else {
             <div class="chart-row">
               <div class="donut" [style.background]="healthDonut()" role="img" aria-label="Health overview">
-                <span>{{ fmt(summary().tagged) }}<small>tagged</small></span>
+                <span>{{ summary().tagged ? ((summary().healthy / summary().tagged) * 100).toFixed(0) : 0 }}%<small>Healthy</small></span>
               </div>
               <ul>
                 @for (item of healthMix(); track item.status) {
@@ -287,7 +288,7 @@
                       <td>{{ animal.speciesName }}@if (animal.breedName) { · {{ animal.breedName }} }</td>
                       <td>{{ animal.farmName }}</td>
                       <td><span class="status-pill" [class]="'status-pill ' + healthClass(animal.healthStatus)">{{ label(animal.healthStatus) }}</span></td>
-                      <td><button class="text-btn" type="button" (click)="open(animal)">View</button></td>
+                      <td><button class="text-btn" type="button" (click)="open(animal)">View details →</button></td>
                     </tr>
                   }
                 </tbody>
@@ -349,9 +350,9 @@
         </article>
       </section>
       <section class="health-page">
-        <article class="card sheet">
+        <article class="card sheet health-overview-card">
           <header class="panel-head">
-            <h2>Tagged health</h2>
+            <h2><span class="health-panel-icon">▥</span> Herd health overview</h2>
             <span class="count">{{ fmt(summary().tagged) }}</span>
           </header>
           @if (healthMix().length === 0) {
@@ -380,7 +381,7 @@
         <div class="health-split">
           <article class="card sheet">
             <header class="panel-head">
-              <h2>Open health cases</h2>
+              <h2><span class="health-panel-icon">✚</span> Open health cases</h2>
               <span class="count">{{ fmt(openCaseRows().length) }}</span>
             </header>
             @if (openCaseRows().length === 0) {
@@ -390,7 +391,7 @@
                 @for (item of openCaseRows(); track item.id) {
                   <article class="case-card">
                     <div class="case-top">
-                      <strong>{{ item.title }}</strong>
+                      <strong><span class="health-case-icon">♧</span>{{ item.title }}</strong>
                       <span class="status-pill" [class]="'status-pill ' + severityClass(item.severity)">{{ label(item.severity) }}</span>
                     </div>
                     <span class="meta">{{ item.farmName }} · opened {{ dateLabel(item.openedOn) }}</span>
@@ -402,7 +403,7 @@
           </article>
           <article class="card sheet">
             <header class="panel-head">
-              <h2>Due treatments</h2>
+              <h2><span class="health-panel-icon">♢</span> Due treatments</h2>
               @if (canWrite()) {
                 <a routerLink="/alerts/report">Report health</a>
               } @else {
@@ -416,7 +417,7 @@
                 @for (task of dueTasks(); track task.id) {
                   <article class="case-card" [class.late]="treatmentLate(task)">
                     <div class="case-top">
-                      <strong>{{ task.title }}</strong>
+                      <strong><span class="health-case-icon treatment-icon">✚</span>{{ task.title }}</strong>
                       @if (treatmentLate(task)) { <em class="overdue">Overdue</em> }
                     </div>
                     <span class="meta">{{ task.farmName }} · due {{ dueLabel(task.dueOn) }}@if (task.assigneeName) { · {{ task.assigneeName }} }</span>
@@ -427,9 +428,9 @@
             <p class="meta note">Breeding events are not stored.</p>
           </article>
         </div>
-        <article class="card sheet">
+        <article class="card sheet health-attention-card">
           <header class="panel-head">
-            <h2>Needs attention</h2>
+            <h2><span class="health-panel-icon">⚠</span> Animals requiring attention</h2>
             <span class="count">{{ fmt(attentionAnimals().length) }}</span>
           </header>
           @if (attentionAnimals().length === 0) {
