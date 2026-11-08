@@ -1,4 +1,4 @@
-<a class="back" routerLink="/farms">← Farms</a>
+<a class="back" routerLink="/farms"><span aria-hidden="true">←</span> Back to all farms</a>
 
 @if (loading()) {
   <p class="state">Loading farm…</p>
@@ -10,25 +10,31 @@
 } @else if (farm()) {
   @if (farm(); as selected) {
   <header class="detail-head">
-    <div>
-      <p class="eyebrow">{{ selected.region }} · {{ selected.code }}</p>
+    <div class="detail-hero-copy">
+      <span class="detail-hero-kicker"><span class="detail-hero-dot"></span> FARM PORTFOLIO / {{ selected.region }}</span>
+      <p class="eyebrow">FARM PROFILE · {{ selected.code }}</p>
       <div class="title-row">
         <h1>{{ selected.name }}</h1>
-        <span class="status-pill" [class]="'status-pill ' + statusClass(selected.status)">{{ selected.status }}</span>
       </div>
-      <p class="lead">{{ selected.address }}</p>
+      <p class="lead"><span aria-hidden="true">⌖</span> {{ selected.address }}</p>
+      <div class="detail-hero-meta">
+        <span class="status-pill" [class]="'status-pill ' + statusClass(selected.status)">{{ selected.status }}</span>
+        <span>{{ selected.region }}, Tanzania</span>
+      </div>
+      <div class="detail-actions">
+        <a class="detail-hero-primary" [routerLink]="['/farms', selected.id, 'edit']"><span aria-hidden="true">✎</span> Edit farm</a>
+        <a class="detail-hero-secondary" [routerLink]="['/livestock']" [queryParams]="{ farmId: selected.id }">View livestock <span aria-hidden="true">↗</span></a>
+      </div>
     </div>
-    <div class="detail-actions">
-      <a class="ghost-btn" [routerLink]="['/livestock']" [queryParams]="{ farmId: selected.id }">Livestock</a>
-      <a class="green-btn" [routerLink]="['/farms', selected.id, 'edit']">Edit farm</a>
-    </div>
+    <div class="detail-hero-foot"><span>SHAMBA NEXA · FARM OPERATIONS</span><span>FARM OVERVIEW <span aria-hidden="true">↗</span></span></div>
   </header>
 
+  <div class="detail-section-intro"><div><span class="detail-section-kicker">YOUR FARM AT A GLANCE</span><h2>Operations overview</h2></div><span class="detail-section-subtitle">Key details from your farm records</span></div>
   <div class="summary">
-    <article><span>Animals</span><strong>{{ fmt(selected.animalCount) }}</strong></article>
-    <article><span>Facilities</span><strong>{{ selected.facilityCount }}</strong></article>
-    <article><span>Established</span><strong class="text">{{ dateLabel(selected.establishedOn) }}</strong></article>
-    <article><span>Updated</span><strong class="text">{{ updatedLabel(selected.updatedAt) }}</strong></article>
+    <article class="detail-summary-featured"><span class="detail-stat-icon" aria-hidden="true">♧</span><span>Animals</span><strong>{{ fmt(selected.animalCount) }}</strong><small>Livestock recorded</small></article>
+    <article><span class="detail-stat-icon" aria-hidden="true">⌂</span><span>Facilities</span><strong>{{ selected.facilityCount }}</strong><small>Farm infrastructure</small></article>
+    <article><span class="detail-stat-icon" aria-hidden="true">◷</span><span>Established</span><strong class="text">{{ dateLabel(selected.establishedOn) }}</strong><small>Farm history</small></article>
+    <article><span class="detail-stat-icon" aria-hidden="true">↻</span><span>Last updated</span><strong class="text">{{ updatedLabel(selected.updatedAt) }}</strong><small>Latest record update</small></article>
   </div>
 
   <nav class="tabs" aria-label="Farm sections">
@@ -38,8 +44,8 @@
   </nav>
 
   @if (tab() === 'overview') {
-    <article class="sheet">
-      <h2>Farm information</h2>
+    <article class="sheet farm-info-sheet">
+      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">⌂</span><div><span class="detail-section-kicker">FARM PROFILE</span><h2>Farm information</h2><p>Essential information and contact details for this location.</p></div></div>
       <dl>
         <div><dt>Farm code</dt><dd>{{ selected.code }}</dd></div>
         <div><dt>Status</dt><dd>{{ selected.status }}</dd></div>
@@ -52,7 +58,7 @@
       </dl>
     </article>
     <article class="sheet forecast">
-      <h2>7-day forecast</h2>
+      <div class="detail-card-heading"><span class="detail-card-icon weather-icon" aria-hidden="true">☀</span><div><span class="detail-section-kicker">LOCAL CONDITIONS</span><h2>7-day forecast</h2></div></div>
       <p class="muted">Open-Meteo. A model for this location, not a guarantee of weather on the farm.</p>
       @if (forecastLoading()) {
         <p class="muted">Asking Open-Meteo…</p>
@@ -112,7 +118,7 @@
       }
     </article>
     <article class="sheet climate">
-      <h2>Historical climate</h2>
+      <div class="detail-card-heading"><span class="detail-card-icon climate-icon" aria-hidden="true">≋</span><div><span class="detail-section-kicker">ENVIRONMENTAL INSIGHTS</span><h2>Historical climate</h2></div></div>
       <p class="muted">NASA POWER. Advisory model data for this location, not a measurement taken on the farm.</p>
       @if (climateLoading()) {
         <p class="muted">Asking NASA POWER…</p>
@@ -318,7 +324,7 @@
 
   @if (tab() === 'facilities') {
     <article class="sheet">
-      <h2>Facilities</h2>
+      <div class="detail-card-heading"><span class="detail-card-icon" aria-hidden="true">⌂</span><div><span class="detail-section-kicker">FARM INFRASTRUCTURE</span><h2>Facilities</h2><p>Buildings and operational spaces recorded on this farm.</p></div></div>
       @if (facilities().length === 0) {
         <p class="muted">No facilities are recorded for this farm.</p>
       } @else {
