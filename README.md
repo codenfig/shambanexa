@@ -59,7 +59,57 @@ Registration joins the existing workspace as a Farm Manager on Own Farm Only, af
 - Separate Farm Manager operations screens and Farm Adviser overview
 - CSV export of the same figures the dashboard shows
 
-Medicine withdrawal, full finance journals, and offline sync stay out of this release. NASA POWER is called for the historical climate card on a farm. Open-Meteo is called for the 7-day forecast on a farm. The other services in this list are not called yet. Farm coordinates and boundaries stay in PostgreSQL, and the map is drawn in the app. Jurisdictional compliance is not claimed.
+Animal-level treatment withdrawal dates are now visible as advisory records; automatic sale restrictions and guaranteed clearance remain out of scope. Full finance journals and offline sync also remain out of scope. NASA POWER is called for the historical climate card on a farm. Open-Meteo is called for the 7-day forecast on a farm. The other services in this list are not called yet. Farm coordinates and boundaries stay in PostgreSQL, and the map is drawn in the app. Jurisdictional compliance is not claimed.
+
+## Livestock lifecycle records (November 2026)
+
+Animal profiles now include **Weight history**, **Breeding**, and **Treatments** tabs alongside the existing Overview and Health tabs. Open Livestock, choose a tagged animal, and select a tab. Forms and histories use the API and PostgreSQL rather than mock data.
+
+- **Weight history:** append a measurement with date, positive weight in kilograms (up to 99,999.999 kg) and optional notes. Earlier measurements remain available.
+- **Breeding:** append an event of type `MATING`, `INSEMINATION`, `PREGNANCY_CHECK`, `PREGNANCY_CONFIRMED`, `BIRTH`, `LOSS`, or `WEANING`, with an event date, optional expected birth date and notes. The backend also accepts a same-species `partnerAnimalId` and `offspringCount`, but the current profile form does not expose these fields. Parent–offspring genealogy is **not** complete.
+- **Treatment traceability:** view animal-specific treatments and associated dose withdrawal dates where available, plus an advisory active-withdrawal indicator based on recorded dose and vaccination dates. Missing data **must not** be treated as proof that an animal or its products are cleared for sale. No automatic sales block has been implemented.
+
+### Animal lifecycle API
+
+All paths are under `/api/v1/animals/{animalId}`. Authentication, tenant/farm scope and animal write authority apply. Dates use ISO `YYYY-MM-DD`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/weights` | List the latest 500 dated measurements, newest first |
+| POST | `/weights` | Append a weight measurement |
+| GET | `/breeding` | List the latest 500 breeding events |
+| POST | `/breeding` | Append a breeding event |
+| GET | `/treatment-history` | List treatments joined to dose records (up to 500 rows) |
+| GET | `/withdrawal-status` | Return recorded active withdrawal periods and an `asOf` date |
+
+Example request bodies:
+
+```json
+{"weightKg": 320.5, "measuredOn": "2026-11-08", "notes": "Morning measurement"}
+```
+
+```json
+{"eventType": "PREGNANCY_CONFIRMED", "eventOn": "2026-11-08", "expectedBirthOn": "2027-06-15", "notes": "Vet confirmed"}
+```
+
+The example values above illustrate request formats; they are **not** real farm records. The implementation uses append-only `animal_weights` and `animal_breeding_events` tables added by `backend/src/main/resources/db/migration/V118__animal_lifecycle.sql`, with `tenant_id`, `animal_id`, `recorded_by`, and creation timestamps. New writes are also sent to the audit trail.
+
+**Important limitations:** The API returns database-style snake_case keys for history reads; the create responses use camelCase. The treatment endpoint is a read-only history view, not a medicine-administration form. The withdrawal indicator is based on recorded issued doses/vaccinations and end dates; it is not a veterinary certification or a compliance guarantee.
+
+### Build and verification
+
+The GitHub Actions workflow at `.github/workflows/build-and-test.yml` runs the Angular production build and Maven unit tests on pushes to the feature branch and on pull requests. Workflow run [42475763972](https://github.com/codenfig/shambanexa/actions/runs/42475763972), for commit `11acd11f886f542981c11f437e771d18160deea3`, completed **successfully**. This confirms compilation and existing tests, **not** that the Flyway migration has been exercised against PostgreSQL or that the complete lifecycle workflows have passed end-to-end testing. Component stylesheet budgets were increased to accommodate the current UI; remaining CSS size warnings should be reviewed.
+
+### Remaining release tasks
+
+1. Run Flyway against a disposable PostgreSQL database and verify constraints and references.
+2. Add integration tests for tenant/farm authorization, input validation, record ordering and withdrawal queries.
+3. Enforce treatment withdrawal rules in livestock/product sales, including missing-data handling and authorized overrides.
+4. Complete breeding partner/offspring linking, genealogy and due-date reminders.
+5. Add growth charts, meaningful weight-change summaries and clinical traceability exports.
+6. Review dependency audit findings, accessibility, mobile behavior and production backup/restore procedures.
+
+See [competitive gap audit](docs/competitive-gap-audit-2026-11.md) for the wider roadmap.
 
 ## External services
 
